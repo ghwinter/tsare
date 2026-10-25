@@ -1,0 +1,93 @@
+//! Generated from the Python core SPECS table.  Regenerate rather than edit.
+
+pub type Field = (&'static str, &'static str, bool);
+
+pub fn spec(kind: &str) -> Option<&'static [Field]> {
+    Some(match kind {
+        "fact" => &[
+            ("claim", "str", true),
+            ("evidence", "evidence", true),
+            ("attrs", "attrs", false),
+            ("confirmed_by", "str", false),
+            ("scope", "str", false),
+            ("confidence", "num", false),
+            ("layer", "ref:layer", false),
+        ],
+        "concept" => &[
+            ("name", "str", true),
+            ("params", "list:str", false),
+            ("grounded_by", "list:ref:fact", true),
+            ("against", "list:ref:fact", false),
+            ("parent", "ref:concept", false),
+            ("layer", "ref:layer", false),
+        ],
+        "proposition" => &[
+            ("statement", "str", true),
+            ("uses", "list:ref:concept", false),
+            ("from", "list:ref:any", false),
+            ("by", "enum:deductive,inductive,abductive", false),
+            ("status", "enum:asserted,open", false),
+            ("confidence", "num", false),
+            ("layer", "ref:layer", false),
+        ],
+        "hypothesis" => &[
+            ("assumes", "list:ref:any", true),
+            ("predicts", "str", true),
+            ("test", "str", false),
+            ("rival", "ref:hypothesis", false),
+            ("verdict", "enum:open,supported,refuted", false),
+            ("verdict_by", "ref:fact", false),
+            ("layer", "ref:layer", false),
+        ],
+        "question" => &[
+            ("asks", "str", true),
+            ("answers", "list:str", true),
+            ("separates", "list:ref:hypothesis", true),
+            ("to", "enum:user,tool,experiment", false),
+            ("layer", "ref:layer", false),
+        ],
+        "blindspot" => &[
+            ("cannot_express", "str", true),
+            ("witness", "list:ref:any", true),
+            ("signature", "list:ref:concept", true),
+            ("closes_with", "list:ref:question", false),
+            ("layer", "ref:layer", false),
+        ],
+        "warrant" => &[
+            ("claim", "str", true),
+            ("from", "list:ref:any", true),
+            ("to", "ref:proposition", false),
+            ("concludes", "rec:any", false),
+            ("basis", "list:ref:any", false),
+            ("attacks", "list:ref:warrant", false),
+            ("confidence", "num", false),
+            ("layer", "ref:layer", false),
+        ],
+        "layer" => &[
+            ("name", "str", true),
+            ("exposes", "list:ref:any", true),
+        ],
+        "law" => &[
+            ("statement", "str", true),
+            ("holds_in", "ref:layer", true),
+            ("checked_by", "list:ref:any", false),
+            ("layer", "ref:layer", false),
+        ],
+        "value" => &[
+            ("metric", "str", true),
+            ("direction", "enum:min,max", true),
+            ("unit", "str", false),
+            ("threshold", "num", false),
+            ("priority", "num", false),
+            ("measured_by", "instrument", false),
+            ("layer", "ref:layer", false),
+        ],
+        "note" => &[
+            ("tag", "enum:intuition,conjecture,preference,hunch", true),
+            ("text", "str", true),
+            ("about", "list:ref:any", false),
+            ("layer", "ref:layer", false),
+        ],
+        _ => return None,
+    })
+}

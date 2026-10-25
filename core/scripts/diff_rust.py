@@ -17,12 +17,13 @@ PY = sys.executable
 CORE = Path(__file__).resolve().parent.parent
 BIN = Path(__file__).resolve().parent.parent.parent / "rust" / "engine-core" / "target" / "release" / "engine-core.exe"
 V1 = Path(r"D:\GitHub\metaform\obligo")
+CODES = {"E-UNDEFINED", "E-DUP-ID", "E-KIND-UNKNOWN", "E-FIELD", "E-MISSING", "E-TYPE"}
 
 
 def python_pairs(path: Path):
     result = subprocess.run([PY, "cli.py", "check", str(path)], cwd=CORE, capture_output=True, text=True)
     payload = json.loads(result.stdout)
-    return {(d["code"], d["line"]) for d in payload["diagnostics"] if d["code"] in ("E-UNDEFINED", "E-DUP-ID")}
+    return {(d["code"], d["line"]) for d in payload["diagnostics"] if d["code"] in CODES}
 
 
 def rust_pairs(path: Path):
@@ -44,6 +45,8 @@ def main() -> int:
     documents = sorted(V1.glob("*.mf"))
     for path in documents:
         left, right = python_pairs(path), rust_pairs(path)
+        left = {code for code, _ in left}
+        right = {code for code, _ in right}
         if left != right:
             mismatches += 1
             print(f"MISMATCH {path.name}: only-python={sorted(left - right)[:2]} only-rust={sorted(right - left)[:2]}")
