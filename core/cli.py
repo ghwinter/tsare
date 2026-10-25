@@ -12,6 +12,7 @@ import json
 import sys
 from pathlib import Path
 
+import apply as applymod
 import diag
 import project as projectmod
 import engine as enginemod
@@ -93,6 +94,27 @@ def cmd_engine(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_apply(args: argparse.Namespace) -> int:
+    path = Path(args.file)
+    text = path.read_text(encoding="utf-8")
+    decls, parse_errors, _ = load(path)
+    if parse_errors:
+        print(json.dumps({"applied": [], "error": "syntax errors"}, ensure_ascii=False))
+        return 1
+    items = []
+    for description, trial, _ in fix.repairs(decls, path.parent):
+        items.append(suggestion.from_fix(decls, trial, True, description))
+    for description, trial, _ in fix.from_diagnostics(decls, path.parent):
+        items.append(suggestion.Suggestion(description, suggestion.Applicability.MaybeIncorrect, fix.render(trial)))
+    before = applymod.score(text, path.parent)
+    updated, applied = applymod.apply_best(text, path.parent, items)
+    after = applymod.score(updated, path.parent)
+    if not args.dry_run:
+        path.write_text(updated, encoding="utf-8")
+    print(json.dumps({"applied": applied, "before": list(before), "after": list(after)}, ensure_ascii=False, indent=2))
+    return 0
+
+
 def cmd_suggest(args: argparse.Namespace) -> int:
     path = Path(args.file)
     if path.is_dir():
@@ -142,9 +164,11 @@ def cmd_suggest(args: argparse.Namespace) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(prog="engine")
     sub = parser.add_subparsers(dest="cmd", required=True)
-    for name, func in (("check", cmd_check), ("engine", cmd_engine), ("suggest", cmd_suggest)):
+    for name, func in (("check", cmd_check), ("engine", cmd_engine), ("suggest", cmd_suggest), ("apply", cmd_apply)):
         item = sub.add_parser(name)
         item.add_argument("file")
+        if name == "apply":
+            item.add_argument("--dry-run", action="store_true")
         item.set_defaults(func=func)
     args = parser.parse_args()
     return args.func(args)
