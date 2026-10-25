@@ -17,6 +17,8 @@ pub const LITERALS: &[&str] = &["tool", "doc", "code", "user", "model", "observa
 pub struct Diagnostic {
     pub code: &'static str,
     pub message: String,
+    pub line: usize,
+    pub col: usize,
 }
 
 pub fn refs(value: &Val, out: &mut Vec<String>) {
@@ -37,6 +39,8 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
             out.push(Diagnostic {
                 code: "E-DUP-ID",
                 message: format!("{} is declared twice", decl.name),
+                line: decl.line,
+                col: decl.col,
             });
         } else {
             by_name.insert(decl.name.as_str(), decl.kind.as_str());
@@ -59,6 +63,8 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
                     out.push(Diagnostic {
                         code: "E-UNDEFINED",
                         message: format!("{}.{key} refers to {name}", decl.name),
+                        line: decl.line,
+                        col: decl.col,
                     });
                 }
             }

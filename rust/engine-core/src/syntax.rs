@@ -1,4 +1,4 @@
-//! Lexer and parser for the declaration syntax.
+//! Lexer and parser for the declaration syntax, with positions.
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Val {
@@ -16,56 +16,87 @@ pub struct Decl {
     pub kind: String,
     pub name: String,
     pub fields: Vec<(String, Val)>,
+    pub line: usize,
+    pub col: usize,
 }
 
-fn lex(src: &str) -> Vec<String> {
-    let mut out = Vec::new();
+#[derive(Debug, Clone)]
+pub struct Token {
+    pub text: String,
+    pub line: usize,
+    pub col: usize,
+}
+
+fn lex(src: &str) -> Vec<Token> {
+    let mut out: Vec<Token> = Vec::new();
     let mut chars = src.chars().peekable();
+    let mut line = 1usize;
+    let mut col = 1usize;
     while let Some(&c) = chars.peek() {
         match c {
             '#' => {
                 while let Some(&n) = chars.peek() {
                     chars.next();
                     if n == '\n' {
+                        line += 1;
+                        col = 1;
                         break;
                     }
+                    col += 1;
                 }
             }
             c if c.is_whitespace() => {
                 chars.next();
+                if c == '\n' {
+                    line += 1;
+                    col = 1;
+                } else {
+                    col += 1;
+                }
             }
             '"' => {
+                let start_line = line;
+                let start_col = col;
                 chars.next();
-                let mut s = String::new();
+                col += 1;
+                let mut text = String::new();
                 while let Some(n) = chars.next() {
+                    col += 1;
                     if n == '"' {
                         break;
                     }
                     if n == '\\' {
                         if let Some(next) = chars.next() {
-                            s.push(next);
+                            col += 1;
+                            text.push(next);
                             continue;
                         }
                     }
-                    s.push(n);
+                    text.push(n);
                 }
-                out.push(format!("\x00{}", s));
+                out.push(Token { text: format!("\x00{}", text), line: start_line, col: start_col });
             }
             c if c.is_alphanumeric() || c == '_' || c == '.' => {
-                let mut s = String::new();
+                let start_line = line;
+                let start_col = col;
+                let mut text = String::new();
                 while let Some(&n) = chars.peek() {
                     if n.is_alphanumeric() || n == '_' || n == '.' {
-                        s.push(n);
+                        text.push(n);
                         chars.next();
+                        col += 1;
                     } else {
                         break;
                     }
                 }
-                out.push(s);
+                out.push(Token { text, line: start_line, col: start_col });
             }
             _ => {
+                let start_line = line;
+                let start_col = col;
                 chars.next();
-                out.push(c.to_string());
+                col += 1;
+                out.push(Token { text: c.to_string(), line: start_line, col: start_col });
             }
         }
     }
@@ -73,25 +104,33 @@ fn lex(src: &str) -> Vec<String> {
 }
 
 struct Parser {
-    toks: Vec<String>,
+    toks: Vec<Token>,
     pos: usize,
 }
 
 impl Parser {
     fn peek(&self) -> Option<&str> {
-        self.toks.get(self.pos).map(|s| s.as_str())
+        self.toks.get(self.pos).map(|token| token.text.as_str())
     }
 
-    fn bump(&mut self) -> Option<String> {
+    fn position(&self) -> (usize, usize) {
+        self.toks
+            .get(self.pos)
+            .map(|token| (token.line, token.col))
+            .unwrap_or((0, 0))
+    }
+
+    fn bump(&mut self) -> Option<Token> {
         let token = self.toks.get(self.pos).cloned();
         self.pos += 1;
         token
     }
 
     fn expect(&mut self, want: &str) -> Result<(), String> {
-        match self.bump().as_deref() {
-            Some(got) if got == want => Ok(()),
-            other => Err(format!("expected {want}, got {other:?}")),
+        match self.bump() {
+            Some(token) if token.text == want => Ok(()),
+            Some(token) => Err(format!("line {}: expected {want}, got {:?}", token.line, token.text)),
+            None => Err(format!("expected {want}, reached the end")),
         }
     }
 
@@ -101,7 +140,7 @@ impl Parser {
                 self.bump();
                 let mut fields = Vec::new();
                 while self.peek() != Some("}") {
-                    let key = self.bump().ok_or("missing key")?;
+                    let key = self.bump().ok_or("missing key")?.text;
                     self.expect(":")?;
                     fields.push((key, self.value()?));
                     if self.peek() == Some(",") {
@@ -127,15 +166,15 @@ impl Parser {
                 self.bump();
                 Ok(Val::Hole)
             }
-            Some(t) if t.starts_with('\x00') => {
+            Some(text) if text.starts_with('\x00') => {
                 let token = self.bump().unwrap();
-                Ok(Val::Str(token[1..].to_string()))
+                Ok(Val::Str(token.text[1..].to_string()))
             }
-            Some(t) if t.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false) => {
-                Ok(Val::Num(self.bump().unwrap()))
+            Some(text) if text.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false) => {
+                Ok(Val::Num(self.bump().unwrap().text))
             }
             Some(_) => {
-                let name = self.bump().ok_or("missing value")?;
+                let name = self.bump().ok_or("missing value")?.text;
                 if self.peek() == Some("(") {
                     self.bump();
                     let mut args = Vec::new();
@@ -159,17 +198,18 @@ impl Parser {
 pub fn parse(src: &str) -> Result<Vec<Decl>, String> {
     let mut parser = Parser { toks: lex(src), pos: 0 };
     let mut out = Vec::new();
-    while let Some(kind) = parser.peek().map(|s| s.to_string()) {
+    while let Some(kind) = parser.peek().map(|text| text.to_string()) {
         if kind == "}" || kind == "]" {
             parser.bump();
             continue;
         }
+        let (line, col) = parser.position();
         parser.bump();
-        let name = parser.bump().ok_or("declaration without a name")?;
+        let name = parser.bump().ok_or("declaration without a name")?.text;
         parser.expect("{")?;
         let mut fields = Vec::new();
         while parser.peek() != Some("}") {
-            let key = parser.bump().ok_or("field without a name")?;
+            let key = parser.bump().ok_or("field without a name")?.text;
             parser.expect(":")?;
             fields.push((key, parser.value()?));
             if parser.peek() == Some(",") {
@@ -177,7 +217,7 @@ pub fn parse(src: &str) -> Result<Vec<Decl>, String> {
             }
         }
         parser.expect("}")?;
-        out.push(Decl { kind, name, fields });
+        out.push(Decl { kind, name, fields, line, col });
     }
     Ok(out)
 }

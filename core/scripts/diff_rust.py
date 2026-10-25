@@ -19,34 +19,34 @@ BIN = Path(__file__).resolve().parent.parent.parent / "rust" / "engine-core" / "
 V1 = Path(r"D:\GitHub\metaform\obligo")
 
 
-def python_counts(path: Path) -> dict[str, int]:
+def python_pairs(path: Path):
     result = subprocess.run([PY, "cli.py", "check", str(path)], cwd=CORE, capture_output=True, text=True)
     payload = json.loads(result.stdout)
-    counts = {"E-UNDEFINED": 0, "E-DUP-ID": 0}
-    for item in payload["diagnostics"]:
-        if item["code"] in counts:
-            counts[item["code"]] += 1
-    return counts
+    return {(d["code"], d["line"]) for d in payload["diagnostics"] if d["code"] in ("E-UNDEFINED", "E-DUP-ID")}
 
 
-def rust_counts(path: Path) -> dict[str, int]:
+def rust_pairs(path: Path):
     result = subprocess.run([str(BIN), str(path)], capture_output=True, text=True)
-    undefined = re.search(r"undefined: (\d+)", result.stdout)
-    duplicates = re.search(r"duplicates: (\d+)", result.stdout)
-    return {
-        "E-UNDEFINED": int(undefined.group(1)) if undefined else -1,
-        "E-DUP-ID": int(duplicates.group(1)) if duplicates else -1,
-    }
+    pairs = set()
+    for line in result.stdout.splitlines():
+        parts = line.strip().split(" ", 2)
+        if len(parts) < 2 or not parts[0].startswith("E-"):
+            continue
+        rest = parts[1]
+        match = re.search(r":(\d+)$", rest)
+        if match:
+            pairs.add((parts[0], int(match.group(1))))
+    return pairs
 
 
 def main() -> int:
     mismatches = 0
     documents = sorted(V1.glob("*.mf"))
     for path in documents:
-        left, right = python_counts(path), rust_counts(path)
+        left, right = python_pairs(path), rust_pairs(path)
         if left != right:
             mismatches += 1
-            print(f"MISMATCH {path.name}: python={left} rust={right}")
+            print(f"MISMATCH {path.name}: only-python={sorted(left - right)[:2]} only-rust={sorted(right - left)[:2]}")
     print(f"documents: {len(documents)}, mismatches: {mismatches}")
     return 0 if mismatches == 0 else 1
 

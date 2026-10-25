@@ -30,6 +30,6 @@ fn main() {
     println!("declarations: {}", decls.len());
     println!("diagnostics: {}", diagnostics.len());
     for item in &diagnostics {
-        println!("  {} {}", item.code, item.message);
+        println!("  {} {}:{} {}", item.code, path, item.line, item.message);
     }
 }
