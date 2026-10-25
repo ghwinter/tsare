@@ -41,6 +41,12 @@ fn lex(src: &str) -> Vec<String> {
                     if n == '"' {
                         break;
                     }
+                    if n == '\\' {
+                        if let Some(next) = chars.next() {
+                            s.push(next);
+                            continue;
+                        }
+                    }
                     s.push(n);
                 }
                 out.push(format!("\x00{}", s));
