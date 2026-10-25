@@ -106,6 +106,27 @@ fn main() {
     if args.get(1).map(|arg| arg == "engine").unwrap_or(false) {
         engine_mode(&args);
     }
+    if args.get(1).map(|arg| arg == "suggest").unwrap_or(false) {
+        let path = args.iter().skip(2).find(|arg| !arg.starts_with("--")).cloned().unwrap_or_default();
+        let decls = collect(Path::new(&path));
+        let items = engine_core::fix::suggestions(&decls);
+        let rendered: Vec<String> = items
+            .iter()
+            .map(|item| {
+                format!(
+                    "{{\"applicability\": \"{}\", \"message\": \"{}\", \"file\": \"{}\", \"line\": {}, \"col\": {}, \"replacement\": \"{}\"}}",
+                    item.applicability,
+                    escape(&item.message),
+                    escape(&item.file),
+                    item.line,
+                    item.col,
+                    escape(&item.replacement)
+                )
+            })
+            .collect();
+        println!("{{\"suggestions\": [{}]}}", rendered.join(", "));
+        std::process::exit(0);
+    }
     let json = args.iter().any(|arg| arg == "--json");
     let path = match args.iter().skip(1).find(|arg| !arg.starts_with("--")) {
         Some(path) => path.clone(),
