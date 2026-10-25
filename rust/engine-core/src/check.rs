@@ -83,14 +83,29 @@ fn check_record(decl: &Decl, out: &mut Vec<Diagnostic>) {
         out.push(diag("E-KIND-UNKNOWN", format!("unknown kind {}", decl.kind), decl));
         return;
     };
-    for (key, value) in &decl.fields {
+    for (index, (key, value)) in decl.fields.iter().enumerate() {
+        let (line, col) = decl
+            .field_pos
+            .get(index)
+            .copied()
+            .unwrap_or((decl.line, decl.col));
         match fields.iter().find(|(name, _, _)| name == key) {
             Some((_, ftype, _)) => {
                 if !type_ok(ftype, value) {
-                    out.push(diag("E-TYPE", format!("{}.{key}: expected {ftype}", decl.name), decl));
+                    out.push(Diagnostic {
+                        code: "E-TYPE",
+                        message: format!("{}.{key}: expected {ftype}", decl.name),
+                        line,
+                        col,
+                    });
                 }
             }
-            None => out.push(diag("E-FIELD", format!("{} has no field {key}", decl.kind), decl)),
+            None => out.push(Diagnostic {
+                code: "E-FIELD",
+                message: format!("{} has no field {key}", decl.kind),
+                line,
+                col,
+            }),
         }
     }
     for &(name, _, required) in fields {
@@ -115,6 +130,9 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
         check_record(decl, &mut out);
     }
 
+    check_cycles(decls, &mut out);
+    check_collapse(decls, &mut out);
+
     let mut seen: HashSet<(String, String)> = HashSet::new();
     for decl in decls {
         for (key, value) in &decl.fields {
@@ -134,4 +152,107 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
         }
     }
     out
+}
+
+
+fn ids(value: &Val) -> Vec<String> {
+    let mut out = Vec::new();
+    refs(value, &mut out);
+    out
+}
+
+fn field_ids(decl: &Decl, key: &str) -> Vec<String> {
+    decl.fields
+        .iter()
+        .filter(|(name, _)| name == key)
+        .flat_map(|(_, value)| ids(value))
+        .collect()
+}
+
+fn check_cycles(decls: &[Decl], out: &mut Vec<Diagnostic>) {
+    let names: Vec<String> = decls.iter().map(|decl| decl.name.clone()).collect();
+    let mut edges: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+    for decl in decls {
+        let mut targets = Vec::new();
+        for (key, value) in &decl.fields {
+            if REF_KEYS.contains(&key.as_str()) {
+                targets.extend(ids(value));
+            }
+        }
+        targets.retain(|target| names.contains(target));
+        edges.insert(decl.name.clone(), targets);
+    }
+
+    fn visit(
+        node: &str,
+        edges: &std::collections::HashMap<String, Vec<String>>,
+        state: &mut std::collections::HashMap<String, u8>,
+    ) -> bool {
+        match state.get(node) {
+            Some(1) => return true,
+            Some(2) => return false,
+            _ => {}
+        }
+        state.insert(node.to_string(), 1);
+        let mut cyclic = false;
+        if let Some(targets) = edges.get(node) {
+            for target in targets.clone() {
+                if visit(&target, edges, state) {
+                    cyclic = true;
+                }
+            }
+        }
+        state.insert(node.to_string(), 2);
+        cyclic
+    }
+
+    let mut cyclic = Vec::new();
+    for decl in decls {
+        let mut state = std::collections::HashMap::new();
+        if visit(&decl.name, &edges, &mut state) {
+            cyclic.push(decl);
+        }
+    }
+    for decl in cyclic {
+        out.push(diag("E-CYCLE", format!("{} is part of a reference cycle", decl.name), decl));
+    }
+}
+
+fn check_collapse(decls: &[Decl], out: &mut Vec<Diagnostic>) {
+    let mut groups: std::collections::HashMap<(Vec<String>, Vec<String>), Vec<&Decl>> =
+        std::collections::HashMap::new();
+    for decl in decls.iter().filter(|decl| decl.kind == "concept") {
+        let mut positives = field_ids(decl, "grounded_by");
+        let mut negatives = field_ids(decl, "against");
+        positives.sort();
+        negatives.sort();
+        groups.entry((positives, negatives)).or_default().push(decl);
+    }
+    for ((positives, negatives), members) in groups {
+        if members.len() < 2 {
+            continue;
+        }
+        for decl in members {
+            let others: Vec<&str> = decls
+                .iter()
+                .filter(|other| {
+                    other.kind == "concept"
+                        && other.name != decl.name
+                        && {
+                            let mut p = field_ids(other, "grounded_by");
+                            let mut n = field_ids(other, "against");
+                            p.sort();
+                            n.sort();
+                            p == positives && n == negatives
+                        }
+                })
+                .map(|other| other.name.as_str())
+                .collect();
+            out.push(diag(
+                "E-COLLAPSE",
+                format!("{} and {} have the same extent", decl.name, others.join(", ")),
+                decl,
+            ));
+        }
+    }
 }

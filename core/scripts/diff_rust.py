@@ -45,8 +45,6 @@ def main() -> int:
     documents = sorted(V1.glob("*.mf"))
     for path in documents:
         left, right = python_pairs(path), rust_pairs(path)
-        left = {code for code, _ in left}
-        right = {code for code, _ in right}
         if left != right:
             mismatches += 1
             print(f"MISMATCH {path.name}: only-python={sorted(left - right)[:2]} only-rust={sorted(right - left)[:2]}")

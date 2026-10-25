@@ -16,6 +16,7 @@ pub struct Decl {
     pub kind: String,
     pub name: String,
     pub fields: Vec<(String, Val)>,
+    pub field_pos: Vec<(usize, usize)>,
     pub line: usize,
     pub col: usize,
 }
@@ -208,16 +209,19 @@ pub fn parse(src: &str) -> Result<Vec<Decl>, String> {
         let name = parser.bump().ok_or("declaration without a name")?.text;
         parser.expect("{")?;
         let mut fields = Vec::new();
+        let mut field_pos = Vec::new();
         while parser.peek() != Some("}") {
+            let (field_line, field_col) = parser.position();
             let key = parser.bump().ok_or("field without a name")?.text;
             parser.expect(":")?;
             fields.push((key, parser.value()?));
+            field_pos.push((field_line, field_col));
             if parser.peek() == Some(",") {
                 parser.bump();
             }
         }
         parser.expect("}")?;
-        out.push(Decl { kind, name, fields, line, col });
+        out.push(Decl { kind, name, fields, field_pos, line, col });
     }
     Ok(out)
 }
