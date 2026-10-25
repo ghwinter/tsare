@@ -11,9 +11,9 @@ in which case it applies to every proposition whose fields match the pattern.
 
 from __future__ import annotations
 
-from argue import conclusions, grounded
+from argue import conclusions
 from check import Program, f_id, f_ids
-from syntax import VId, VList, VNum, VRec, VStr
+from closure import applications, fixpoint, holds, matches
 
 
 def holds(value, item) -> bool:
@@ -58,45 +58,29 @@ def applications(prog: Program) -> list[tuple[str, list[str], str]]:
 
 
 def analyze(prog: Program) -> dict:
-    inside, _, _ = grounded(prog)
-    facts = {d.name for d in prog.kind("fact")}
-    grounded_names = set(facts)
-    used: dict[str, list[str]] = {}
-    applied: set[tuple[str, str]] = set()
-    rules = [rule for rule in applications(prog) if rule[0] in inside]
-    changed = True
-    while changed:
-        changed = False
-        for warrant, premises, target in rules:
-            if (warrant, target) in applied:
-                continue
-            if premises and all(premise in grounded_names for premise in premises):
-                applied.add((warrant, target))
-                used[warrant] = premises
-                if target not in grounded_names:
-                    grounded_names.add(target)
-                    changed = True
-
+    result = fixpoint(prog)
+    facts = result["facts"]
+    held = result["held"]
+    rules = result["rules"]
     statuses = {name: state for name, state, _ in conclusions(prog)}
     supported = {name for name, state in statuses.items() if state == "supported"}
-    derived = sorted(grounded_names - facts)
-    conditional = sorted(supported - grounded_names)
-
+    derived = sorted(held - facts)
+    conditional = sorted(supported - held)
     reasons: dict[str, list[str]] = {}
     for name in conditional:
-        rules_for = [rule for rule in rules if rule[2] == name]
         missing = []
-        for warrant, premises, _ in rules_for:
+        for warrant, premises, target in rules:
+            if target != name:
+                continue
             for premise in premises:
-                if premise not in grounded_names:
+                if premise not in held:
                     missing.append(f"{warrant} needs {premise} ({statuses.get(premise, 'fact')})")
-        reasons[name] = missing or ["no rule reached the facts"]
-
+        reasons[name] = missing or ["no live rule reached a fact"]
     return {
         "facts": sorted(facts),
-        "grounded": sorted(grounded_names - facts),
+        "grounded": derived,
         "derived": derived,
         "conditional": conditional,
         "reasons": reasons,
-        "rules_used": used,
+        "rules_used": result["parent"],
     }

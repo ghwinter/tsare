@@ -14,28 +14,19 @@ is not held, so the rule does not fire, even though the rule itself survived att
 
 from __future__ import annotations
 
-from argue import conclusions, grounded
+from argue import conclusions
 from check import Program
+from closure import fixpoint
 from debt import support_edges, walk
-from derive import applications
 
 
 def run(prog: Program) -> dict:
-    inside, outside, undecided = grounded(prog)
-    facts = {d.name for d in prog.kind("fact")}
-    held = set(facts)
-    parent: dict[str, tuple[str, list[str]]] = {}
-    rules = [rule for rule in applications(prog) if rule[0] in inside]
-    changed = True
-    while changed:
-        changed = False
-        for warrant, premises, target in rules:
-            if target in held:
-                continue
-            if premises and all(premise in held for premise in premises):
-                held.add(target)
-                parent[target] = (warrant, premises)
-                changed = True
+    result = fixpoint(prog)
+    facts = result["facts"]
+    held = result["held"]
+    parent = result["parent"]
+    rules = result["rules"]
+    statuses = {name: state for name, state, _ in conclusions(prog)}
 
     def chain(name: str, depth: int = 0) -> str:
         if name in facts or depth > 12:
@@ -45,7 +36,6 @@ def run(prog: Program) -> dict:
             return name
         return f"{name} <- {warrant} <- " + " & ".join(chain(p, depth + 1) for p in premises)
 
-    statuses = {name: state for name, state, _ in conclusions(prog)}
     supported = {name for name, state in statuses.items() if state == "supported"}
     conditional = sorted(supported - held)
     reasons: dict[str, list[str]] = {}
@@ -81,6 +71,6 @@ def run(prog: Program) -> dict:
         "chains": {name: chain(name) for name in sorted(held - facts)},
         "dead_rules": dead_rules,
         "gates": gates,
-        "outside": sorted(outside),
-        "undecided": sorted(undecided),
+        "outside": sorted(result["outside"]),
+        "undecided": sorted(result["undecided"]),
     }
