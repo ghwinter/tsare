@@ -114,12 +114,14 @@ fn main() {
             .iter()
             .map(|item| {
                 format!(
-                    "{{\"applicability\": \"{}\", \"message\": \"{}\", \"file\": \"{}\", \"line\": {}, \"col\": {}, \"replacement\": \"{}\"}}",
+                    "{{\"applicability\": \"{}\", \"message\": \"{}\", \"file\": \"{}\", \"span\": {{\"line\": {}, \"col\": {}, \"end_line\": {}, \"end_col\": {}}}, \"replacement\": \"{}\"}}",
                     item.applicability,
                     escape(&item.message),
                     escape(&item.file),
                     item.line,
                     item.col,
+                    item.end_line,
+                    item.end_col,
                     escape(&item.replacement)
                 )
             })
