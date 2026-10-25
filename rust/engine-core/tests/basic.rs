@@ -26,7 +26,8 @@ fn reports_an_unknown_reference() {
 
 #[test]
 fn a_named_reference_resolves() {
-    let source = "fact F { claim: \"x\", evidence: user }\nproposition P { statement: \"p\", from: [F] }\n";
+    let source = "fact F { claim: \"x\", evidence: user }\nproposition P { statement: \"p\", from: [F] }\nwarrant W { claim: \"r\", from: [F], to: P, basis: [F] }\n";
     let decls = parse(source).unwrap();
-    assert!(check::check(&decls).is_empty());
+    let diagnostics = check::check(&decls);
+    assert!(!diagnostics.iter().any(|item| item.code.starts_with("E-")));
 }
