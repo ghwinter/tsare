@@ -56,5 +56,32 @@ def classify(decls: list[Decl], trial: list[Decl], improved: bool) -> Applicabil
     return Applicability.MachineApplicable
 
 
+def changed(decls: list[Decl], trial: list[Decl]) -> tuple[list[Decl], list[str]]:
+    """(declarations to replace, names added).  A declaration counts as changed when its
+    rendered text differs; this keeps the suggestion to the smallest span it can name."""
+    before = {d.name: render([d]) for d in decls}
+    replacement = []
+    added = []
+    for decls_item in trial:
+        if decls_item.name not in before:
+            added.append(decls_item.name)
+        elif before[decls_item.name] != render([decls_item]):
+            replacement.append(decls_item)
+    return replacement, added
+
+
 def from_fix(decls: list[Decl], trial: list[Decl], improved: bool, message: str, span=None) -> Suggestion:
-    return Suggestion(message, classify(decls, trial, improved), render(trial), span)
+    replacement, added = changed(decls, trial)
+    import collections
+
+    before = collections.Counter(render([d]) for d in decls)
+    after = collections.Counter(render([d]) for d in trial)
+    removed = [d for d in decls if after[render([d])] < before[render([d])]]
+    if not replacement and len(removed) == 1 and not added:
+        return Suggestion(message, classify(decls, trial, improved), "", removed[0].span)
+    if len(replacement) == 1:
+        span = replacement[0].span
+        text = render(replacement)
+    else:
+        text = render(trial)
+    return Suggestion(message, classify(decls, trial, improved), text, span)

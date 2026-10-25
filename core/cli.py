@@ -122,6 +122,7 @@ def cmd_suggest(args: argparse.Namespace) -> int:
                 "applicability": item.applicability.name,
                 "message": item.message,
                 "file": path.name,
+                "span": None if item.span is None else {"line": item.span.line, "col": item.span.col, "end_line": item.span.end_line, "end_col": item.span.end_col},
                 "replacement": item.replacement,
             }
         )
