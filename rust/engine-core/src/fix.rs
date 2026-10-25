@@ -155,6 +155,51 @@ pub fn from_diagnostics(decls: &[Decl]) -> Vec<Suggestion> {
     out
 }
 
+fn code_counts(decls: &[Decl]) -> std::collections::HashMap<String, usize> {
+    let mut counts = std::collections::HashMap::new();
+    for item in check(decls) {
+        *counts.entry(item.code.to_string()).or_insert(0) += 1;
+    }
+    counts
+}
+
+fn improves(before: (usize, usize), after: (usize, usize), old: &std::collections::HashMap<String, usize>, new: &std::collections::HashMap<String, usize>) -> bool {
+    if after.0 > before.0 {
+        return false;
+    }
+    old.iter().any(|(code, count)| new.get(code).copied().unwrap_or(0) < *count)
+}
+
+fn add_field(decls: &[Decl], owner: &str, key: &str, value: Val) -> Vec<Decl> {
+    let mut out = Vec::new();
+    for decl in decls {
+        let mut copy = decl.clone();
+        if decl.name == owner && !copy.fields.iter().any(|(name, _)| name == key) {
+            copy.fields.push((key.to_string(), value.clone()));
+        }
+        out.push(copy);
+    }
+    out
+}
+
+fn add_warrant(decls: &[Decl], proposition: &Decl) -> Vec<Decl> {
+    let premises = crate::closure::field_ids(proposition, "from");
+    let mut copy = proposition.clone();
+    copy.kind = "warrant".to_string();
+    copy.name = format!("W_AUTO_{}", proposition.name);
+    copy.fields = vec![
+        ("claim".to_string(), Val::Hole),
+        (
+            "from".to_string(),
+            Val::List(premises.into_iter().map(Val::Id).collect()),
+        ),
+        ("to".to_string(), Val::Id(proposition.name.clone())),
+    ];
+    let mut out: Vec<Decl> = decls.to_vec();
+    out.push(copy);
+    out
+}
+
 pub fn suggestions(decls: &[Decl]) -> Vec<Suggestion> {
     let mut out = Vec::new();
     let mut seen: HashSet<&str> = HashSet::new();
@@ -178,6 +223,81 @@ pub fn suggestions(decls: &[Decl]) -> Vec<Suggestion> {
             });
         }
     }
+    let before = score(decls);
+    let old_codes = code_counts(decls);
+    let warranted: std::collections::HashSet<String> = decls
+        .iter()
+        .filter(|decl| decl.kind == "warrant")
+        .flat_map(|decl| crate::closure::field_ids(decl, "to"))
+        .collect();
+
+    for decl in decls {
+        if decl.kind == "proposition".to_string()
+            && !crate::closure::field_ids(decl, "from").is_empty()
+            && !warranted.contains(&decl.name)
+        {
+            let trial = add_warrant(decls, decl);
+            let after = score(&trial);
+            if improves(before, after, &old_codes, &code_counts(&trial)) {
+                out.push(Suggestion {
+                    applicability: "HasPlaceholders",
+                    message: format!("{}: add a warrant over its premises", decl.name),
+                    file: decl.file.clone(),
+                    line: decl.line,
+                    col: decl.col,
+                    end_line: decl.end_line,
+                    end_col: decl.end_col,
+                    replacement: String::new(),
+                });
+            }
+        }
+        if let Some(fields) = crate::specs::spec(&decl.kind) {
+            let missing: Vec<&str> = fields
+                .iter()
+                .filter(|(name, _, required)| {
+                    *required
+                        && !["claim", "evidence", "name", "to"].contains(name)
+                        && !decl.fields.iter().any(|(key, _)| key == name)
+                })
+                .map(|(name, _, _)| *name)
+                .chain(
+                    if decl.kind == "value" {
+                        ["unit", "threshold"]
+                            .into_iter()
+                            .filter(|key| !decl.fields.iter().any(|(name, _)| name == *key))
+                            .collect::<Vec<_>>()
+                    } else {
+                        Vec::new()
+                    },
+                )
+                .collect();
+            if !missing.is_empty() {
+                let mut trial = decls.to_vec();
+                for key in &missing {
+                    trial = add_field(&trial, &decl.name, key, Val::Hole);
+                }
+                let after = score(&trial);
+                if improves(before, after, &old_codes, &code_counts(&trial)) {
+                    let listed = missing
+                        .iter()
+                        .map(|key| format!("`{key}: ?`"))
+                        .collect::<Vec<_>>()
+                        .join(", ");
+                    out.push(Suggestion {
+                        applicability: "HasPlaceholders",
+                        message: format!("{}: add {listed}", decl.name),
+                        file: decl.file.clone(),
+                        line: decl.line,
+                        col: decl.col,
+                        end_line: decl.end_line,
+                        end_col: decl.end_col,
+                        replacement: String::new(),
+                    });
+                }
+            }
+        }
+    }
+
     out.extend(from_diagnostics(decls));
     out
 }

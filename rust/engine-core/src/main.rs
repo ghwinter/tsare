@@ -101,8 +101,23 @@ fn engine_mode(args: &[String]) -> ! {
     std::process::exit(0);
 }
 
+fn usage() -> ! {
+    println!("engine-core — a checker for structured arguments");
+    println!();
+    println!("usage:");
+    println!("  engine-core FILE|DIR [--json]   check, text or JSON");
+    println!("  engine-core check FILE|DIR      same as above");
+    println!("  engine-core engine FILE|DIR     held, conditional, blocked, chains, gates (JSON)");
+    println!("  engine-core suggest FILE        verified repairs with an applicability (JSON)");
+    println!("  engine-core apply FILE [--dry-run]  apply machine repairs and recompile");
+    std::process::exit(0);
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
+    if args.len() < 2 || args.iter().any(|arg| arg == "--help" || arg == "-h") {
+        usage();
+    }
     if args.get(1).map(|arg| arg == "engine").unwrap_or(false) {
         engine_mode(&args);
     }
