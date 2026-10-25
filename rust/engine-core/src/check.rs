@@ -92,6 +92,15 @@ fn check_record(decl: &Decl, out: &mut Vec<Diagnostic>) {
             .unwrap_or((decl.line, decl.col));
         match fields.iter().find(|(name, _, _)| name == key) {
             Some((_, ftype, _)) => {
+                if matches!(value, Val::Hole) {
+                    out.push(Diagnostic {
+                        code: "W-HOLE",
+                        message: format!("{}.{key} is a hole: it compiles, but nothing can check it yet", decl.name),
+                        line,
+                        col,
+                        file: decl.file.clone(),
+                    });
+                }
                 if !type_ok(ftype, value) {
                     out.push(Diagnostic {
                         code: "E-TYPE",
@@ -146,10 +155,23 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
             if !REF_KEYS.contains(&key.as_str()) {
                 continue;
             }
+            let want = expected_kind(decl, key);
             let mut found = Vec::new();
             refs(value, &mut found);
             for name in found {
-                if LITERALS.contains(&name.as_str()) || by_name.contains_key(name.as_str()) {
+                if LITERALS.contains(&name.as_str()) {
+                    continue;
+                }
+                if let Some(target_kind) = by_name.get(name.as_str()) {
+                    if let Some(expected) = want.as_deref() {
+                        if expected != "any" && target_kind != &expected {
+                            out.push(diag(
+                                "E-KIND",
+                                format!("{}.{key} expects {expected}, but {name} is {target_kind}", decl.name),
+                                decl,
+                            ));
+                        }
+                    }
                     continue;
                 }
                 if seen.insert((decl.name.clone(), name.clone())) {
@@ -174,6 +196,13 @@ fn field_ids(decl: &Decl, key: &str) -> Vec<String> {
         .filter(|(name, _)| name == key)
         .flat_map(|(_, value)| ids(value))
         .collect()
+}
+
+fn expected_kind(decl: &Decl, key: &str) -> Option<String> {
+    let fields = spec(&decl.kind)?;
+    let (_, ftype, _) = fields.iter().find(|(name, _, _)| *name == key)?;
+    let kind = ftype.strip_prefix("list:ref:").or_else(|| ftype.strip_prefix("ref:"))?;
+    Some(kind.to_string())
 }
 
 fn check_cycles(decls: &[Decl], out: &mut Vec<Diagnostic>) {

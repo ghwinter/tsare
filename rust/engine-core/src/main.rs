@@ -40,9 +40,25 @@ fn collect(path: &Path) -> Vec<syntax::Decl> {
     decls
 }
 
+fn escape(text: &str) -> String {
+    let mut out = String::new();
+    for ch in text.chars() {
+        match ch {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\t' => out.push_str("\\t"),
+            other => out.push(other),
+        }
+    }
+    out
+}
+
 fn main() {
-    let path = match env::args().nth(1) {
-        Some(path) => path,
+    let args: Vec<String> = env::args().collect();
+    let json = args.iter().any(|arg| arg == "--json");
+    let path = match args.iter().skip(1).find(|arg| !arg.starts_with("--")) {
+        Some(path) => path.clone(),
         None => {
             eprintln!("usage: engine-core FILE|DIR");
             std::process::exit(2);
@@ -50,10 +66,30 @@ fn main() {
     };
     let decls = collect(Path::new(&path));
     let diagnostics = check::check(&decls);
-    println!("declarations: {}", decls.len());
-    println!("diagnostics: {}", diagnostics.len());
     let mut sorted = diagnostics.clone();
     sorted.sort_by_key(|item| (item.file.clone(), item.line, item.col, item.code));
+    if json {
+        let errors = diagnostics.iter().filter(|item| item.code.starts_with("E-")).count();
+        let warnings = diagnostics.len() - errors;
+        println!("{{");
+        println!("  \"diagnostics\": [");
+        for (index, item) in sorted.iter().enumerate() {
+            let file = if item.file.is_empty() { path.clone() } else { item.file.clone() };
+            let severity = if item.code.starts_with("E-") { "error" } else { "warning" };
+            let comma = if index + 1 == sorted.len() { "" } else { "," };
+            println!(
+                "    {{\"code\": \"{}\", \"severity\": \"{}\", \"file\": \"{}\", \"line\": {}, \"col\": {}, \"message\": \"{}\"}}{}",
+                item.code, severity, escape(&file), item.line, item.col, escape(&item.message), comma
+            );
+        }
+        println!("  ],");
+        println!("  \"errors\": {},", errors);
+        println!("  \"warnings\": {}", warnings);
+        println!("}}");
+        return;
+    }
+    println!("declarations: {}", decls.len());
+    println!("diagnostics: {}", diagnostics.len());
     for item in &sorted {
         let file = if item.file.is_empty() { path.clone() } else { item.file.clone() };
         println!("  {} {}:{} {}", item.code, file, item.line, item.message);
