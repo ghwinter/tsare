@@ -35,7 +35,7 @@ def rust_pairs(path: Path):
             continue
         rest = parts[1]
         match = re.search(r":(\d+)$", rest)
-        if match:
+        if match and parts[0] in CODES:
             pairs.add((parts[0], int(match.group(1))))
     return pairs
 
