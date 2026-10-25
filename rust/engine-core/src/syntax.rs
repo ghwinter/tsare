@@ -20,6 +20,7 @@ pub struct Decl {
     pub line: usize,
     pub col: usize,
     pub file: String,
+    pub ref_pos: Vec<(String, usize, usize)>,
 }
 
 #[derive(Debug, Clone)]
@@ -105,9 +106,17 @@ fn lex(src: &str) -> Vec<Token> {
     out
 }
 
+fn position_of(tokens: &[Token], index: usize) -> (usize, usize) {
+    tokens
+        .get(index)
+        .map(|token| (token.line, token.col))
+        .unwrap_or((0, 0))
+}
+
 struct Parser {
     toks: Vec<Token>,
     pos: usize,
+    ref_pos: Vec<(String, usize, usize)>,
 }
 
 impl Parser {
@@ -189,6 +198,8 @@ impl Parser {
                     self.expect(")")?;
                     Ok(Val::Call(name, args))
                 } else {
+                    let (line, col) = position_of(&self.toks, self.pos - 1);
+                    self.ref_pos.push((name.clone(), line, col));
                     Ok(Val::Id(name))
                 }
             }
@@ -198,7 +209,7 @@ impl Parser {
 }
 
 pub fn parse(src: &str) -> Result<Vec<Decl>, String> {
-    let mut parser = Parser { toks: lex(src), pos: 0 };
+    let mut parser = Parser { toks: lex(src), pos: 0, ref_pos: Vec::new() };
     let mut out = Vec::new();
     while let Some(kind) = parser.peek().map(|text| text.to_string()) {
         if kind == "}" || kind == "]" {
@@ -206,6 +217,7 @@ pub fn parse(src: &str) -> Result<Vec<Decl>, String> {
             continue;
         }
         let (line, col) = parser.position();
+        parser.ref_pos.clear();
         parser.bump();
         let name = parser.bump().ok_or("declaration without a name")?.text;
         parser.expect("{")?;
@@ -222,7 +234,7 @@ pub fn parse(src: &str) -> Result<Vec<Decl>, String> {
             }
         }
         parser.expect("}")?;
-        out.push(Decl { kind, name, fields, field_pos, line, col, file: String::new() });
+        out.push(Decl { kind, name, fields, field_pos, line, col, file: String::new(), ref_pos: parser.ref_pos.clone() });
     }
     Ok(out)
 }

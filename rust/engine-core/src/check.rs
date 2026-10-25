@@ -163,12 +163,24 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
                     continue;
                 }
                 if let Some(target_kind) = by_name.get(name.as_str()) {
+                    if *target_kind == "note" {
+                        out.push(diag_ref(
+                            "E-NOTE-REF",
+                            format!("{}.{key} leans on the note {name}, which is not a commitment", decl.name),
+                            decl,
+                            key,
+                            &name,
+                        ));
+                        continue;
+                    }
                     if let Some(expected) = want.as_deref() {
                         if expected != "any" && target_kind != &expected {
-                            out.push(diag(
+                            out.push(diag_ref(
                                 "E-KIND",
                                 format!("{}.{key} expects {expected}, but {name} is {target_kind}", decl.name),
                                 decl,
+                                key,
+                                &name,
                             ));
                         }
                     }
@@ -203,6 +215,16 @@ fn expected_kind(decl: &Decl, key: &str) -> Option<String> {
     let (_, ftype, _) = fields.iter().find(|(name, _, _)| *name == key)?;
     let kind = ftype.strip_prefix("list:ref:").or_else(|| ftype.strip_prefix("ref:"))?;
     Some(kind.to_string())
+}
+
+fn diag_ref(code: &'static str, message: String, decl: &Decl, key: &str, name: &str) -> Diagnostic {
+    let (line, col) = decl
+        .ref_pos
+        .iter()
+        .find(|(item, _, _)| item == name)
+        .map(|(_, line, col)| (*line, *col))
+        .unwrap_or_else(|| field_pos(decl, key));
+    Diagnostic { code, message, line, col, file: decl.file.clone() }
 }
 
 fn check_cycles(decls: &[Decl], out: &mut Vec<Diagnostic>) {
@@ -478,6 +500,22 @@ fn check_semantics(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                         Some("evidence"),
                         out,
                     );
+                }
+                if id_field(decl, "evidence") == Some("model") {
+                    if let Some(confidence) = num_field(decl, "confidence") {
+                        if confidence >= 0.8 {
+                            sem(
+                                decl,
+                                "W-CONFIDENCE-MODEL",
+                                format!(
+                                    "fact {} is model-supplied but claims confidence {}",
+                                    decl.name, confidence
+                                ),
+                                Some("confidence"),
+                                out,
+                            );
+                        }
+                    }
                 }
                 if let Some(confidence) = num_field(decl, "confidence") {
                     if !(0.0..=1.0).contains(&confidence) {
