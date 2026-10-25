@@ -17,6 +17,7 @@ class Diagnostic:
     message: str
     span: Span
     hint: str | None = None
+    file: str | None = None
 
     @property
     def severity(self) -> str:
@@ -41,7 +42,7 @@ def render(path: str, src: str, diags: list[Diagnostic]) -> str:
     lines = src.splitlines()
     out: list[str] = []
     for d in sorted(diags, key=sort_key):
-        where = f"{path}:{d.span.line}:{d.span.col}"
+        where = f"{d.file or path}:{d.span.line}:{d.span.col}"
         out.append(f"{where}: {d.severity}[{d.code}]: {d.message}")
         gutter = " " * len(str(d.span.line))
         if 1 <= d.span.line <= len(lines):
