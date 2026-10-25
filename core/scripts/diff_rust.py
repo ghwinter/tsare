@@ -17,7 +17,7 @@ PY = sys.executable
 CORE = Path(__file__).resolve().parent.parent
 BIN = Path(__file__).resolve().parent.parent.parent / "rust" / "engine-core" / "target" / "release" / "engine-core.exe"
 V1 = Path(r"D:\GitHub\metaform\obligo")
-CODES = {"E-UNDEFINED", "E-DUP-ID", "E-KIND-UNKNOWN", "E-FIELD", "E-MISSING", "E-TYPE", "E-CYCLE", "E-COLLAPSE", "E-TENSION", "E-LAYER-LEAK"}
+CODES = {"E-UNDEFINED", "E-DUP-ID", "E-KIND-UNKNOWN", "E-FIELD", "E-MISSING", "E-TYPE", "E-CYCLE", "E-COLLAPSE", "E-TENSION", "E-LAYER-LEAK", "E-VACUOUS", "W-OPEN", "W-UNWARRANTED", "W-CONFIDENCE-ASSERTED", "E-NO-ASSUMPTION", "E-UNFALSIFIABLE", "E-NO-EVIDENCE", "E-NO-PREMISE", "E-WARRANT-MODE", "W-UNWARRANTED-BASIS", "E-EMPTY", "W-OVERCLAIM", "W-UNCONFIRMED", "E-CONFIDENCE"}
 
 
 def python_pairs(path: Path):
@@ -31,7 +31,7 @@ def rust_pairs(path: Path):
     pairs = set()
     for line in result.stdout.splitlines():
         parts = line.strip().split(" ", 2)
-        if len(parts) < 2 or not parts[0].startswith("E-"):
+        if len(parts) < 2 or len(parts[0]) < 4 or not all(ch.isupper() or ch == "-" for ch in parts[0]):
             continue
         rest = parts[1]
         match = re.search(r":(\d+)$", rest)
