@@ -1,0 +1,31 @@
+# A conclusion that survives attack but is not grounded.
+#
+# W_RENDER survives argumentation, so `argue` calls P_SMOOTH supported.  Its premise
+# P_THRESHOLD is a bare assertion: a concept is used, but no rule puts it on the facts.
+# `derive` therefore calls P_SMOOTH conditional.
+
+fact F_SCROLL { claim: "the list scrolls at 60 fps", evidence: tool("trace") }
+fact F_HEADLESS { claim: "no rendering happens with --headless", evidence: tool("run --headless") }
+
+concept C_RENDERED {
+  name: "the list is rendered",
+  grounded_by: [F_SCROLL],
+  against: [F_HEADLESS],
+}
+
+proposition P_THRESHOLD {
+  statement: "users cannot tell 60 fps from 120 fps",
+  uses: [C_RENDERED],
+}
+
+proposition P_SMOOTH {
+  statement: "scrolling feels smooth to users",
+  from: [P_THRESHOLD],
+}
+
+warrant W_RENDER {
+  claim: "an imperceptible difference is not a smoothness problem",
+  from: [P_THRESHOLD],
+  to: P_SMOOTH,
+  basis: [C_RENDERED],
+}

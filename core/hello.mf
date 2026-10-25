@@ -1,0 +1,28 @@
+# hello.mf -- the smallest document that actually does something.
+#
+# One measurement, one budget, one claim, one rule that connects them.
+
+fact F_SCROLL {
+  claim: "scrolling ten thousand files stays under one frame",
+  evidence: tool("trace: 8 ms p95 over 200 scrolls")
+}
+
+value V_FRAME {
+  metric: "frame_ms",
+  direction: min,
+  unit: "ms",
+  threshold: 16,
+  measured_by: "trace"
+}
+
+proposition P_FAST {
+  statement: "the browser stays under one frame while scrolling",
+  from: [F_SCROLL]
+}
+
+warrant W_FAST {
+  claim: "one frame is the budget for interaction",
+  from: [F_SCROLL],
+  to: P_FAST,
+  basis: [V_FRAME]
+}

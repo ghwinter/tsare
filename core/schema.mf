@@ -1,0 +1,31 @@
+# A rule that concludes a class, not a name.
+#
+# W_RULE does not point at any proposition.  It says: every proposition that uses
+# C_RENDERED is concluded by this rule.  `derive` therefore marks both P_SMOOTH and
+# P_STABLE as grounded, although no warrant names either of them.
+
+fact F_TRACE { claim: "the list renders at 60 fps under trace", evidence: tool("trace") }
+fact F_HEADLESS { claim: "nothing renders with --headless", evidence: tool("run --headless") }
+
+concept C_RENDERED {
+  name: "the list is rendered",
+  grounded_by: [F_TRACE],
+  against: [F_HEADLESS],
+}
+
+proposition P_SMOOTH {
+  statement: "scrolling feels smooth",
+  uses: [C_RENDERED],
+}
+
+proposition P_STABLE {
+  statement: "frame times stay under 16 ms while scrolling",
+  uses: [C_RENDERED],
+}
+
+warrant W_RULE {
+  claim: "a traced render is evidence enough for any rendering claim",
+  from: [F_TRACE],
+  concludes: { uses: [C_RENDERED] },
+  basis: [C_RENDERED],
+}
