@@ -55,6 +55,31 @@ diagnostics) is not allowed.
 Applicability is one of `MachineApplicable`, `MaybeIncorrect`, `HasPlaceholders`,
 `Unspecified` (order is strictness).
 
+A suggestion names a `span` and a `replacement` for exactly that span.  A deletion is an
+empty replacement over the removed declaration.  `span` may be `null` when the repair
+inserts something with no existing declaration to replace.
+
+## Directories
+
+Every command accepts a file or a directory.  A directory is checked as one program:
+
+- names are global; a duplicate is reported with both file names;
+- cross-file references resolve;
+- layer visibility is computed once over the merged program;
+- a diagnostic is attributed by its span, matching a declaration's span exactly.  Attribution
+  never inspects the message text.
+
+## Module tiers
+
+| tier | modules | in the protocol |
+| --- | --- | --- |
+| core | `syntax`, `diag`, `check`, `project`, `cli` | yes |
+| reasoning | `argue`, `closure`, `derive`, `engine`, `debt`, `fix`, `suggestion` | yes |
+| analysis | `cost`, `impact`, `egraph`, `whatif` | no — experiments and tests only |
+
+`check` calls into `derive` for the conditional-conclusion warning, so the core tier depends
+on the reasoning tier in exactly one place.  Keep it that way.
+
 ## What carries over from v1
 
 Semantics, not structure:
@@ -71,4 +96,6 @@ branch of `obligo` and is not part of this contract.
 ## Acceptance
 
 The 64 tests in `obligo/tests` are the acceptance suite. A port is done when it passes
-them, and when `check` on every `obligo/*.mf` produces the same diagnostic set.
+them, and when `check` on every `obligo/*.mf` produces the same diagnostic set.  Line
+numbers are compared only when spans are unchanged; the layer-leak span is a deliberate
+difference.
