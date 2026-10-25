@@ -40,6 +40,26 @@ def rust_pairs(path: Path):
     return pairs
 
 
+
+
+def python_dir_pairs(path: Path):
+    result = subprocess.run([PY, "cli.py", "check", str(path)], cwd=CORE, capture_output=True, text=True)
+    payload = json.loads(result.stdout)
+    return {(d["code"], d["file"], d["line"]) for d in payload["diagnostics"] if d["code"] in CODES}
+
+
+def rust_dir_pairs(path: Path):
+    result = subprocess.run([str(BIN), str(path)], capture_output=True, text=True)
+    pairs = set()
+    for line in result.stdout.splitlines():
+        parts = line.strip().split(" ", 2)
+        if len(parts) < 2 or len(parts[0]) < 4 or not all(ch.isupper() or ch == "-" for ch in parts[0]):
+            continue
+        match = re.match(r"(.+):(\d+)$", parts[1])
+        if match and parts[0] in CODES:
+            pairs.add((parts[0], Path(match.group(1)).name, int(match.group(2))))
+    return pairs
+
 def main() -> int:
     mismatches = 0
     documents = sorted(V1.glob("*.mf"))
@@ -48,6 +68,13 @@ def main() -> int:
         if left != right:
             mismatches += 1
             print(f"MISMATCH {path.name}: only-python={sorted(left - right)[:2]} only-rust={sorted(right - left)[:2]}")
+    for project in sorted((V1 / "projects").glob("*")):
+        left, right = python_dir_pairs(project), rust_dir_pairs(project)
+        if left != right:
+            mismatches += 1
+            print(f"MISMATCH project {project.name}: only-python={sorted(left - right)[:3]} only-rust={sorted(right - left)[:3]}")
+        else:
+            print(f"project {project.name}: {len(left)} diagnostics agree")
     print(f"documents: {len(documents)}, mismatches: {mismatches}")
     return 0 if mismatches == 0 else 1
 

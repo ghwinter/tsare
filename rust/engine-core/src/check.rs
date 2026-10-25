@@ -20,10 +20,11 @@ pub struct Diagnostic {
     pub message: String,
     pub line: usize,
     pub col: usize,
+    pub file: String,
 }
 
 fn diag(code: &'static str, message: String, decl: &Decl) -> Diagnostic {
-    Diagnostic { code, message, line: decl.line, col: decl.col }
+    Diagnostic { code, message, line: decl.line, col: decl.col, file: decl.file.clone() }
 }
 
 pub fn refs(value: &Val, out: &mut Vec<String>) {
@@ -97,6 +98,7 @@ fn check_record(decl: &Decl, out: &mut Vec<Diagnostic>) {
                         message: format!("{}.{key}: expected {ftype}", decl.name),
                         line,
                         col,
+                        file: decl.file.clone(),
                     });
                 }
             }
@@ -105,6 +107,7 @@ fn check_record(decl: &Decl, out: &mut Vec<Diagnostic>) {
                 message: format!("{} has no field {key}", decl.kind),
                 line,
                 col,
+                file: decl.file.clone(),
             }),
         }
     }
@@ -393,7 +396,7 @@ fn sem(decl: &Decl, code: &'static str, message: String, key: Option<&str>, out:
         Some(name) => field_pos(decl, name),
         None => (decl.line, decl.col),
     };
-    out.push(Diagnostic { code, message, line, col });
+    out.push(Diagnostic { code, message, line, col, file: decl.file.clone() });
 }
 
 fn is_incomplete(decl: &Decl) -> bool {

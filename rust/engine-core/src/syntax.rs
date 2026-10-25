@@ -19,6 +19,7 @@ pub struct Decl {
     pub field_pos: Vec<(usize, usize)>,
     pub line: usize,
     pub col: usize,
+    pub file: String,
 }
 
 #[derive(Debug, Clone)]
@@ -221,7 +222,7 @@ pub fn parse(src: &str) -> Result<Vec<Decl>, String> {
             }
         }
         parser.expect("}")?;
-        out.push(Decl { kind, name, fields, field_pos, line, col });
+        out.push(Decl { kind, name, fields, field_pos, line, col, file: String::new() });
     }
     Ok(out)
 }
