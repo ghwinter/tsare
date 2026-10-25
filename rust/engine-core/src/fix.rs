@@ -172,8 +172,8 @@ pub fn suggestions(decls: &[Decl]) -> Vec<Suggestion> {
                 file: decl.file.clone(),
                 line: decl.line,
                 col: decl.col,
-                end_line: decl.line,
-                end_col: decl.col,
+                end_line: decl.end_line,
+                end_col: decl.end_col,
                 replacement: String::new(),
             });
         }

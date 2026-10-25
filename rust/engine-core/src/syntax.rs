@@ -19,6 +19,8 @@ pub struct Decl {
     pub field_pos: Vec<(usize, usize)>,
     pub line: usize,
     pub col: usize,
+    pub end_line: usize,
+    pub end_col: usize,
     pub file: String,
     pub ref_pos: Vec<(String, usize, usize)>,
 }
@@ -233,8 +235,20 @@ pub fn parse(src: &str) -> Result<Vec<Decl>, String> {
                 parser.bump();
             }
         }
+        let (end_line, end_col) = parser.position();
         parser.expect("}")?;
-        out.push(Decl { kind, name, fields, field_pos, line, col, file: String::new(), ref_pos: parser.ref_pos.clone() });
+        out.push(Decl {
+            kind,
+            name,
+            fields,
+            field_pos,
+            line,
+            col,
+            end_line,
+            end_col: end_col + 1,
+            file: String::new(),
+            ref_pos: parser.ref_pos.clone(),
+        });
     }
     Ok(out)
 }

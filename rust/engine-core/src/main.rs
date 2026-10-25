@@ -106,6 +106,20 @@ fn main() {
     if args.get(1).map(|arg| arg == "engine").unwrap_or(false) {
         engine_mode(&args);
     }
+    if args.get(1).map(|arg| arg == "apply").unwrap_or(false) {
+        let dry = args.iter().any(|arg| arg == "--dry-run");
+        let path = args.iter().skip(2).find(|arg| !arg.starts_with("--")).cloned().unwrap_or_default();
+        let text = std::fs::read_to_string(&path).expect("read file");
+        let decls = syntax::parse(&text).expect("parse");
+        let items = engine_core::fix::suggestions(&decls);
+        let (updated, applied) = engine_core::apply::apply_best(&text, &items);
+        if !dry {
+            std::fs::write(&path, &updated).expect("write file");
+        }
+        let list: Vec<String> = applied.iter().map(|item| format!("\"{}\"", escape(item))).collect();
+        println!("{{\"applied\": [{}]}}", list.join(", "));
+        std::process::exit(0);
+    }
     if args.get(1).map(|arg| arg == "suggest").unwrap_or(false) {
         let path = args.iter().skip(2).find(|arg| !arg.starts_with("--")).cloned().unwrap_or_default();
         let decls = collect(Path::new(&path));
@@ -130,7 +144,8 @@ fn main() {
         std::process::exit(0);
     }
     let json = args.iter().any(|arg| arg == "--json");
-    let path = match args.iter().skip(1).find(|arg| !arg.starts_with("--")) {
+    let skip = if args.get(1).map(|arg| arg == "check").unwrap_or(false) { 2 } else { 1 };
+    let path = match args.iter().skip(skip).find(|arg| !arg.starts_with("--")) {
         Some(path) => path.clone(),
         None => {
             eprintln!("usage: engine-core FILE|DIR");
