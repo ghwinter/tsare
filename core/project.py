@@ -74,3 +74,10 @@ def check_project(directory: Path) -> tuple[dict[Path, list], int]:
 
     errors = sum(1 for diags in results.values() for d in diags if d.severity == "error")
     return results, errors
+
+
+def load_program(directory: Path):
+    files, per_file, merged, _ = load_dir(directory)
+    names = {name: decl for name, (_, decl) in merged.items()}
+    decls = [decl for _, (items, _, _) in per_file.items() for decl in items]
+    return Program(decls, names, directory)

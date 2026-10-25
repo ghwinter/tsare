@@ -27,7 +27,7 @@ def v1_codes(path: Path) -> set[tuple[str, int, str]]:
     for line in result.stdout.splitlines():
         match = LINE.match(line)
         if match:
-            out.add((match.group("code"), int(match.group(2)), match.group("msg")))
+            out.add((match.group("code"), match.group("msg")))
     return out
 
 
@@ -36,10 +36,34 @@ def core_codes(path: Path) -> set[tuple[str, int, str]]:
         [PY, "cli.py", "check", str(path)], cwd=CORE, capture_output=True, text=True
     )
     payload = json.loads(result.stdout)
-    return {(d["code"], d["line"], d["message"]) for d in payload["diagnostics"]}
+    return {(d["code"], d["message"]) for d in payload["diagnostics"]}
+
+
+def v1_dir(path: Path):
+    result = subprocess.run([PY, "cli.py", "project", str(path)], cwd=V1, capture_output=True, text=True)
+    out = set()
+    for line in result.stdout.splitlines():
+        m = LINE.match(line)
+        if m:
+            out.add((Path(m.group("file")).name, m.group("code"), m.group("msg")))
+    return out
+
+
+def core_dir(path: Path):
+    result = subprocess.run([PY, "cli.py", "check", str(path)], cwd=CORE, capture_output=True, text=True)
+    payload = json.loads(result.stdout)
+    return {(d["file"], d["code"], d["message"]) for d in payload["diagnostics"]}
 
 
 def main() -> int:
+    projects = sorted((V1 / "projects").glob("*"))
+    for path in projects:
+        left, right = v1_dir(path), core_dir(path)
+        label = "OK" if left == right else "MISMATCH"
+        print(f"project {path.name}: {label} v1={len(left)} core={len(right)}")
+        if left != right:
+            print(f"  only v1:   {sorted(left - right)[:3]}")
+            print(f"  only core: {sorted(right - left)[:3]}")
     documents = sorted(V1.glob("*.mf"))
     mismatches = 0
     for path in documents:

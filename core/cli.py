@@ -68,11 +68,14 @@ def cmd_check(args: argparse.Namespace) -> int:
 
 def cmd_engine(args: argparse.Namespace) -> int:
     path = Path(args.file)
-    decls, parse_errors, _ = load(path)
-    if parse_errors:
-        print(json.dumps({"error": "syntax errors"}, ensure_ascii=False))
-        return 1
-    prog, _ = check(decls, path.parent)
+    if path.is_dir():
+        prog = projectmod.load_program(path)
+    else:
+        decls, parse_errors, _ = load(path)
+        if parse_errors:
+            print(json.dumps({"error": "syntax errors"}, ensure_ascii=False))
+            return 1
+        prog, _ = check(decls, path.parent)
     result = enginemod.run(prog)
     print(
         json.dumps(
