@@ -54,8 +54,58 @@ fn escape(text: &str) -> String {
     out
 }
 
+fn engine_mode(args: &[String]) -> ! {
+    let path = args
+        .iter()
+        .skip(2)
+        .find(|arg| !arg.starts_with("--"))
+        .cloned()
+        .unwrap_or_else(|| {
+            eprintln!("usage: engine-core engine FILE|DIR");
+            std::process::exit(2);
+        });
+    let decls = collect(Path::new(&path));
+    let result = engine_core::closure::engine(&decls);
+    let quoted = |items: &[String]| {
+        items.iter().map(|item| format!("\"{}\"", escape(item))).collect::<Vec<_>>().join(", ")
+    };
+    println!("{{");
+    println!("  \"held\": [{}],", quoted(&result.held));
+    let conditional: Vec<String> = result
+        .conditional
+        .iter()
+        .map(|(name, _)| format!("\"{}\"", escape(name)))
+        .collect();
+    println!("  \"conditional\": [{}],", conditional.join(", "));
+    let blocked: Vec<String> = result
+        .blocked
+        .iter()
+        .map(|(warrant, missing)| {
+            format!("{{\"warrant\": \"{}\", \"missing\": [{}]}}", escape(warrant), quoted(missing))
+        })
+        .collect();
+    println!("  \"blocked\": [{}],", blocked.join(", "));
+    let chains: Vec<String> = result
+        .chains
+        .iter()
+        .map(|(name, chain)| format!("\"{}\": \"{}\"", escape(name), escape(chain)))
+        .collect();
+    println!("  \"chains\": {{{}}},", chains.join(", "));
+    let gates: Vec<String> = result
+        .gates
+        .iter()
+        .map(|(name, weak)| format!("\"{}\": [{}]", escape(name), quoted(weak)))
+        .collect();
+    println!("  \"gates\": {{{}}}", gates.join(", "));
+    println!("}}");
+    std::process::exit(0);
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
+    if args.get(1).map(|arg| arg == "engine").unwrap_or(false) {
+        engine_mode(&args);
+    }
     let json = args.iter().any(|arg| arg == "--json");
     let path = match args.iter().skip(1).find(|arg| !arg.starts_with("--")) {
         Some(path) => path.clone(),
