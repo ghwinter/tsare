@@ -2,6 +2,7 @@
 
 use std::collections::{HashMap, HashSet};
 
+use crate::closure;
 use crate::specs::spec;
 use crate::syntax::{Decl, Val};
 
@@ -148,6 +149,17 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
     check_remaining(decls, &mut out);
     check_tension(decls, &mut out);
     check_layer(decls, &mut out);
+    let result = closure::closure(decls);
+    for (name, reason) in &result.conditional {
+        let decl = decls.iter().find(|item| &item.name == name);
+        if let Some(decl) = decl {
+            out.push(diag(
+                "W-CONDITIONAL",
+                format!("{name} is supported only through an ungrounded premise: {reason}"),
+                decl,
+            ));
+        }
+    }
 
     let mut seen: HashSet<(String, String)> = HashSet::new();
     for decl in decls {
