@@ -29,9 +29,9 @@ def clone(decls: list[Decl]) -> list[Decl]:
     return out
 
 
-def score(decls: list[Decl], base: Path | None) -> tuple[int, int]:
+def score(decls: list[Decl], base: Path | None, names: dict | None = None) -> tuple[int, int]:
     """Warnings that a fix should reduce. Holes are progress markers, not noise."""
-    _, diags = check(decls, base)
+    _, diags = check(decls, base, names)
     errors = sum(1 for d in diags if d.severity == "error")
     warnings = sum(1 for d in diags if d.severity == "warning" and d.code != "W-HOLE")
     return errors, warnings
@@ -187,23 +187,23 @@ def render(decls: list[Decl]) -> str:
     return "\n\n".join(chunks) + "\n"
 
 
-def repairs(decls: list[Decl], base: Path | None):
+def repairs(decls: list[Decl], base: Path | None, names: dict | None = None):
     """Candidates that fix a diagnostic without adding errors, even if the score is flat.
 
     A repair may trade one warning for another (add a warrant, gain a missing basis).  The
     strict erified filter drops those, which is why no MaybeIncorrect suggestion could be
     produced; this keeps them, and the caller decides what may be applied.
     """
-    before_e, before_w = score(decls, base)
-    _, before_diags = check(decls, base)
+    before_e, before_w = score(decls, base, names)
+    _, before_diags = check(decls, base, names)
     import collections
     before_codes = collections.Counter(d.code for d in before_diags)
     accepted = []
     for description, trial in candidates(decls, base):
-        after_e, after_w = score(trial, base)
+        after_e, after_w = score(trial, base, names)
         if after_e > before_e:
             continue
-        _, after_diags = check(trial, base)
+        _, after_diags = check(trial, base, names)
         after_codes = collections.Counter(d.code for d in after_diags)
         if any(after_codes[c] < n for c, n in before_codes.items()):
             accepted.append((description, trial, (after_e - before_e, after_w - before_w)))
@@ -230,10 +230,10 @@ def drop_ref(decls: list[Decl], owner: str, key: str, ref: str):
     return None
 
 
-def from_diagnostics(decls: list[Decl], base: Path | None):
+def from_diagnostics(decls: list[Decl], base: Path | None, names: dict | None = None):
     """Repairs read off a diagnostic: drop the reference that does not belong."""
-    before_e, _ = score(decls, base)
-    _, diags = check(decls, base)
+    before_e, _ = score(decls, base, names)
+    _, diags = check(decls, base, names)
     out = []
     seen = set()
     for d in diags:
@@ -253,7 +253,7 @@ def from_diagnostics(decls: list[Decl], base: Path | None):
         seen.add((owner, key, ref))
         if trial is None:
             continue
-        after_e, _ = score(trial, base)
+        after_e, _ = score(trial, base, names)
         if after_e < before_e:
             out.append((f"{owner}: replace {ref} in {key}", trial, (after_e - before_e, 0)))
     return out

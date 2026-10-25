@@ -250,7 +250,7 @@ def type_errors(spec: str, val: Val) -> list[str]:
 # ------------------------------------------------------------------------ checker
 
 
-def check(decls: list[Decl], base: Path | None = None) -> tuple[Program, list[Diagnostic]]:
+def check(decls: list[Decl], base: Path | None = None, names: dict | None = None) -> tuple[Program, list[Diagnostic]]:
     diags: list[Diagnostic] = []
     if not decls:
         # an empty document is not a quiet success: it says nothing and can be checked
@@ -264,7 +264,7 @@ def check(decls: list[Decl], base: Path | None = None) -> tuple[Program, list[Di
                 "an empty answer is not a passing answer",
             )
         )
-    prog, local = check_local(decls, base)
+    prog, local = check_local(decls, base, names)
     return prog, diags + local + check_global(prog) + check_conditional(prog)
 
 

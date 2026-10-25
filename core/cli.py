@@ -95,6 +95,21 @@ def cmd_engine(args: argparse.Namespace) -> int:
 
 def cmd_suggest(args: argparse.Namespace) -> int:
     path = Path(args.file)
+    if path.is_dir():
+        files, per_file, merged, _ = projectmod.load_dir(path)
+        names = {name: decl for name, (_, decl) in merged.items()}
+        suggestions = []
+        for source in files:
+            decls, parse_errors, _ = per_file[source][0], per_file[source][1], None
+            if parse_errors:
+                continue
+            for description, trial, _ in fix.repairs(decls, source.parent, names):
+                item = suggestion.from_fix(decls, trial, True, description)
+                suggestions.append({"applicability": item.applicability.name, "message": item.message, "file": source.name, "replacement": item.replacement})
+            for description, trial, _ in fix.from_diagnostics(decls, source.parent, names):
+                suggestions.append({"applicability": "MaybeIncorrect", "message": description, "file": source.name, "replacement": fix.render(trial)})
+        print(json.dumps({"suggestions": suggestions}, ensure_ascii=False, indent=2))
+        return 0
     decls, parse_errors, _ = load(path)
     if parse_errors:
         print(json.dumps({"suggestions": []}, ensure_ascii=False))
