@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 import diag
+import project as projectmod
 import engine as enginemod
 import fix
 import suggestion
@@ -21,6 +22,20 @@ from syntax import load
 
 
 def check_file(path: Path) -> dict:
+    if path.is_dir():
+        results, errors = projectmod.check_project(path)
+        diagnostics = [d for diags in results.values() for d in diags]
+        return {
+            "diagnostics": [
+                {
+                    "code": d.code, "severity": d.severity, "file": d.file or path.name,
+                    "line": d.span.line, "col": d.span.col, "message": d.message, "hint": d.hint,
+                }
+                for d in diagnostics
+            ],
+            "errors": errors,
+            "warnings": sum(1 for d in diagnostics if d.severity == "warning"),
+        }
     decls, parse_errors, _ = load(path)
     diagnostics = [diag.error("E-SYNTAX", msg, span) for msg, span in parse_errors]
     prog, more = check(decls, path.parent)

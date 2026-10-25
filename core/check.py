@@ -922,7 +922,7 @@ def check_layer_visibility(prog: Program) -> list[Diagnostic]:
                         error(
                             "E-LAYER-LEAK",
                             f"{d.name} in {source} reaches {ref.name}, which {target_layer} does not expose",
-                            ref.span,
+                            d.span,
                             f"expose {ref.name} from {target_layer}, or move this declaration",
                         )
                     )
