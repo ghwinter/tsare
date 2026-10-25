@@ -238,7 +238,6 @@ fn evidence_status(decl: &Decl) -> String {
                             "unconfirmed".to_string()
                         }
                     }
-                    "model" => "unconfirmed".to_string(),
                     _ => "asserted".to_string(),
                 }
             }

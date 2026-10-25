@@ -106,6 +106,7 @@ def cmd_apply(args: argparse.Namespace) -> int:
         items.append(suggestion.from_fix(decls, trial, True, description))
     for description, trial, _ in fix.from_diagnostics(decls, path.parent):
         items.append(suggestion.Suggestion(description, suggestion.Applicability.MaybeIncorrect, fix.render(trial)))
+    items = [item for item in items if item.applicability == suggestion.Applicability.MachineApplicable]
     before = applymod.score(text, path.parent)
     updated, applied = applymod.apply_best(text, path.parent, items)
     after = applymod.score(updated, path.parent)

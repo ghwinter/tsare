@@ -107,14 +107,9 @@ fn clone_with_list(decls: &[Decl], owner: &str, key: &str, old: &str, new: &str)
     if touched { Some(out) } else { None }
 }
 
-fn kind_map(decls: &[Decl]) -> std::collections::HashMap<&str, &str> {
-    decls.iter().map(|decl| (decl.name.as_str(), decl.kind.as_str())).collect()
-}
-
 pub fn from_diagnostics(decls: &[Decl]) -> Vec<Suggestion> {
     let before = score(decls);
     let diagnostics = check(decls);
-    let kinds = kind_map(decls);
     let mut out = Vec::new();
     for item in &diagnostics {
         if item.code != "E-KIND" {
