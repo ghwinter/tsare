@@ -17,7 +17,7 @@ PY = sys.executable
 CORE = Path(__file__).resolve().parent.parent
 BIN = Path(__file__).resolve().parent.parent.parent / "rust" / "engine-core" / "target" / "release" / "engine-core.exe"
 V1 = Path(r"D:\GitHub\metaform\obligo")
-CODES = {"E-UNDEFINED", "E-DUP-ID", "E-KIND-UNKNOWN", "E-FIELD", "E-MISSING", "E-TYPE"}
+CODES = {"E-UNDEFINED", "E-DUP-ID", "E-KIND-UNKNOWN", "E-FIELD", "E-MISSING", "E-TYPE", "E-CYCLE", "E-COLLAPSE"}
 
 
 def python_pairs(path: Path):

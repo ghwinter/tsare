@@ -171,6 +171,10 @@ fn field_ids(decl: &Decl, key: &str) -> Vec<String> {
 
 fn check_cycles(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     let names: Vec<String> = decls.iter().map(|decl| decl.name.clone()).collect();
+    let mut by_name: std::collections::HashMap<&str, &Decl> = std::collections::HashMap::new();
+    for decl in decls {
+        by_name.insert(decl.name.as_str(), decl);
+    }
     let mut edges: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
     for decl in decls {
         let mut targets = Vec::new();
@@ -186,73 +190,66 @@ fn check_cycles(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     fn visit(
         node: &str,
         edges: &std::collections::HashMap<String, Vec<String>>,
-        state: &mut std::collections::HashMap<String, u8>,
-    ) -> bool {
-        match state.get(node) {
-            Some(1) => return true,
-            Some(2) => return false,
-            _ => {}
-        }
-        state.insert(node.to_string(), 1);
-        let mut cyclic = false;
+        by_name: &std::collections::HashMap<&str, &Decl>,
+        color: &mut std::collections::HashMap<String, u8>,
+        stack: &mut Vec<String>,
+        out: &mut Vec<Diagnostic>,
+    ) {
+        color.insert(node.to_string(), 1);
+        stack.push(node.to_string());
         if let Some(targets) = edges.get(node) {
             for target in targets.clone() {
-                if visit(&target, edges, state) {
-                    cyclic = true;
+                match color.get(&target).copied().unwrap_or(0) {
+                    0 => visit(&target, edges, by_name, color, stack, out),
+                    1 => {
+                        let position = stack.iter().position(|item| item == &target).unwrap_or(0);
+                        let mut cycle = stack[position..].to_vec();
+                        cycle.push(target.clone());
+                        if let Some(decl) = by_name.get(node) {
+                            out.push(diag(
+                                "E-CYCLE",
+                                format!("dependency cycle: {}", cycle.join(" -> ")),
+                                decl,
+                            ));
+                        }
+                    }
+                    _ => {}
                 }
             }
         }
-        state.insert(node.to_string(), 2);
-        cyclic
+        stack.pop();
+        color.insert(node.to_string(), 2);
     }
 
-    let mut cyclic = Vec::new();
+    let mut color = std::collections::HashMap::new();
     for decl in decls {
-        let mut state = std::collections::HashMap::new();
-        if visit(&decl.name, &edges, &mut state) {
-            cyclic.push(decl);
+        if color.get(&decl.name).copied().unwrap_or(0) == 0 {
+            let mut stack = Vec::new();
+            visit(&decl.name, &edges, &by_name, &mut color, &mut stack, out);
         }
-    }
-    for decl in cyclic {
-        out.push(diag("E-CYCLE", format!("{} is part of a reference cycle", decl.name), decl));
     }
 }
 
 fn check_collapse(decls: &[Decl], out: &mut Vec<Diagnostic>) {
-    let mut groups: std::collections::HashMap<(Vec<String>, Vec<String>), Vec<&Decl>> =
+    let mut seen: std::collections::HashMap<(Vec<String>, Vec<String>), String> =
         std::collections::HashMap::new();
     for decl in decls.iter().filter(|decl| decl.kind == "concept") {
         let mut positives = field_ids(decl, "grounded_by");
         let mut negatives = field_ids(decl, "against");
         positives.sort();
         negatives.sort();
-        groups.entry((positives, negatives)).or_default().push(decl);
-    }
-    for ((positives, negatives), members) in groups {
-        if members.len() < 2 {
-            continue;
-        }
-        for decl in members {
-            let others: Vec<&str> = decls
-                .iter()
-                .filter(|other| {
-                    other.kind == "concept"
-                        && other.name != decl.name
-                        && {
-                            let mut p = field_ids(other, "grounded_by");
-                            let mut n = field_ids(other, "against");
-                            p.sort();
-                            n.sort();
-                            p == positives && n == negatives
-                        }
-                })
-                .map(|other| other.name.as_str())
-                .collect();
-            out.push(diag(
+        match seen.get(&(positives.clone(), negatives.clone())) {
+            Some(first) => out.push(diag(
                 "E-COLLAPSE",
-                format!("{} and {} have the same extent", decl.name, others.join(", ")),
+                format!(
+                    "concepts {first} and {} have the same extent, so they are one concept with two names",
+                    decl.name
+                ),
                 decl,
-            ));
+            )),
+            None => {
+                seen.insert((positives, negatives), decl.name.clone());
+            }
         }
     }
 }
