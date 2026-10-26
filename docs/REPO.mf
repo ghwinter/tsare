@@ -1,0 +1,135 @@
+# docs/REPO.mf -- the repository describing what it promises, and what checks it.
+#
+# The code is one kind of claim.  Everything else in the repository also claims something
+# about the code, and each of those claims has a checker or it does not.
+#
+#     engine-core check docs/REPO.mf
+
+layer L_REPO {
+  name: "the repository itself",
+  exposes: [P_EVERY_CLAIM_HAS_A_CHECKER]
+}
+
+# --- what the repository claims ------------------------------------------------------------
+
+fact F_PROTOCOL {
+  claim: "PROTOCOL.md fixes every command, its options and its JSON",
+  evidence: doc("docs/PROTOCOL.md"),
+  scope: "every command engine-core implements",
+  attrs: { checker: automated }
+}
+
+fact F_GOLDENS {
+  claim: "tests/golden.rs pins the exact text of every command on six documents",
+  evidence: code("tests/golden.rs"),
+  scope: "the six fixture documents",
+  attrs: { checker: automated }
+}
+
+fact F_EXPLAIN {
+  claim: "every diagnostic code has an explanation, and a test fails when one is missing",
+  evidence: code("src/explain.rs"),
+  scope: "every code the compiler can print",
+  attrs: { checker: automated }
+}
+
+fact F_CI {
+  claim: "continuous integration runs formatting, clippy as errors, the tests, and compiles the examples and SELF.mf on three platforms",
+  evidence: code(".github/workflows/ci.yml"),
+  attrs: { checker: automated }
+}
+
+fact F_SELF {
+  claim: "SELF.mf compiles with no error and its concept learns a clause, or the test fails",
+  evidence: code("tests/semantics.rs"),
+  attrs: { checker: automated }
+}
+
+fact F_ZERO_DEPENDENCIES {
+  claim: "the crate has no dependencies, so the binary needs no runtime beyond the OS",
+  evidence: code("Cargo.toml"),
+  attrs: { checker: automated }
+}
+
+fact F_EXAMPLES {
+  claim: "the examples compile with no diagnostic at all",
+  evidence: doc("examples/hello.mf")
+}
+
+concept C_PROOF_CARRIER {
+  name: "an artifact that carries a checkable claim about the code",
+  grounded_by: [F_PROTOCOL, F_GOLDENS, F_EXPLAIN, F_CI, F_SELF, F_ZERO_DEPENDENCIES],
+  against: [F_README_IS_PROSE]
+}
+
+partition E_CLAIMS {
+  dimension: C_PROOF_CARRIER,
+  elements: [F_PROTOCOL, F_GOLDENS, F_EXPLAIN, F_CI, F_SELF, F_ZERO_DEPENDENCIES],
+  closure: closed,
+  basis: [F_EXAMPLES]
+}
+
+proposition P_EVERY_CLAIM_HAS_A_CHECKER {
+  statement: "each artifact that claims something about the code is accompanied by the thing that would fail if the claim were false",
+  from: [E_CLAIMS]
+}
+
+warrant W_EVERY_CLAIM_HAS_A_CHECKER {
+  claim: "the list is closed over the artifacts the repository ships, and every element names its checker",
+  from: [F_PROTOCOL, F_GOLDENS, F_EXPLAIN, F_CI, F_SELF, F_ZERO_DEPENDENCIES],
+  to: P_EVERY_CLAIM_HAS_A_CHECKER,
+  basis: [F_EXAMPLES]
+}
+
+law L_REPO_HONEST {
+  statement: "a document, a test or a workflow is part of this repository only when something fails as soon as it stops being true",
+  holds_in: L_REPO,
+  checked_by: [P_EVERY_CLAIM_HAS_A_CHECKER]
+}
+
+value V_CODES_EXPLAINED {
+  metric: "diagnostic_codes_with_an_explanation",
+  direction: min,
+  unit: "fraction",
+  threshold: 1,
+  measured_by: "cargo test --release"
+}
+
+# --- what is not checked ------------------------------------------------------------------
+
+fact F_README_IS_PROSE {
+  claim: "the README's prose is not compiled; only the transcript in it is real output",
+  evidence: doc("README.md"),
+  attrs: { checker: none }
+}
+
+fact F_COMMITS_ARE_PROSE {
+  claim: "commit messages are not checked against the diff",
+  evidence: code("CONTRIBUTING.md")
+}
+
+blindspot B_PROSE_UNCHECKED {
+  cannot_express: "a sentence in the README that is no longer true, when no diagnostic points at it",
+  witness: [F_README_IS_PROSE, F_COMMITS_ARE_PROSE],
+  signature: [C_PROOF_CARRIER],
+  closes_with: [Q_READ_ME]
+}
+
+question Q_READ_ME {
+  asks: "should the README be a compiled document too, or stay prose?",
+  answers: ["compile the parts that make claims", "keep it prose and accept the drift"],
+  separates: [H_COMPILE_README, H_KEEP_PROSE]
+}
+
+hypothesis H_COMPILE_README {
+  assumes: [F_README_IS_PROSE],
+  predicts: "the claims in the README can be written as declarations and checked like the rest",
+  test: "write docs/README.mf, compile it, and compare with the prose"
+}
+
+hypothesis H_KEEP_PROSE {
+  assumes: [F_README_IS_PROSE, F_COMMITS_ARE_PROSE],
+  predicts: "prose that nobody checks still earns its place by being read, and compiling it would cost more than it pays",
+  rival: H_COMPILE_README
+}
+

@@ -715,6 +715,25 @@ fn a_document_can_arrive_on_standard_input() {
 }
 
 #[test]
+fn the_repository_document_compiles_and_learns() {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("docs").join("REPO.mf");
+    let text = std::fs::read_to_string(&path).unwrap_or_else(|_| panic!("{} is missing", path.display()));
+    let declared = parse(&text).expect("docs/REPO.mf parses");
+    let errors: Vec<&str> = check(&declared)
+        .iter()
+        .filter(|item| item.code.starts_with("E-"))
+        .map(|item| item.code)
+        .collect();
+    assert!(errors.is_empty(), "docs/REPO.mf reports {errors:?}");
+    let program = Program::new(&declared);
+    let learnings = learnings_of(&program);
+    assert!(
+        learnings.iter().any(|item| item.concept == "C_PROOF_CARRIER" && item.clause.is_some()),
+        "the repository document concept has no learnable clause"
+    );
+}
+
+#[test]
 fn every_code_the_compiler_prints_has_an_explanation() {
     let golden = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests")
@@ -817,3 +836,4 @@ fn names_resolve_once_per_program() {
     assert!(program.get("P1").is_some());
     assert!(program.get("P2").is_none());
 }
+
