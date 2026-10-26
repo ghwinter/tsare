@@ -764,6 +764,18 @@ fn cmd_map(left: &Path, right: &Path, top: usize) -> i32 {
     0
 }
 
+/// Codes whose repair needs a value only the author can choose.  Naming them is the honest
+/// alternative to printing nothing and letting the reader assume no repair was needed.
+const NO_REPAIR: &[(&str, &str)] = &[
+    ("W-EXAMPLE-SHAPE", "needs an attribute the examples share; only the author knows one"),
+    ("E-CYCLE", "a cycle can be cut at any edge; which edge is a judgement"),
+    ("W-UNCONFIRMED", "needs a person or a tool to confirm the evidence"),
+    ("E-UNFALSIFIABLE", "needs a test or a rival, which is content"),
+    ("E-VACUOUS", "needs premises or concepts, which is content"),
+    ("W-PARTITION-UNKNOWN", "needs a dimension, which is the thing being asked for"),
+    ("W-PARTITION-UNLEARNED", "needs an attribute that separates the examples"),
+];
+
 fn cmd_fix(path: &Path, apply: Option<&str>) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
@@ -779,6 +791,38 @@ fn cmd_fix(path: &Path, apply: Option<&str>) -> i32 {
             "  + {}  ({:+} errors, {:+} warnings)",
             item.description, item.delta.0, item.delta.1
         );
+    }
+    let diagnostics = crate::check::check(&loaded.decls);
+    let accepted_names: std::collections::HashSet<&str> =
+        accepted.iter().map(|item| item.description.as_str()).collect();
+    let mut flat = 0;
+    for (description, trial) in crate::fix::candidates(&loaded.decls) {
+        if accepted_names.contains(description.as_str()) {
+            continue;
+        }
+        if flat == 4 {
+            break;
+        }
+        if flat == 0 {
+            println!("candidates that do not pay:");
+        }
+        let (after_e, after_w) = crate::fix::score_without_holes(&trial);
+        println!(
+            "  - {description}  (no gain: {:+} errors, {:+} warnings)",
+            after_e as isize - before_e as isize,
+            after_w as isize - before_w as isize
+        );
+        flat += 1;
+    }
+    let blocked: Vec<&(&str, &str)> = NO_REPAIR
+        .iter()
+        .filter(|(code, _)| diagnostics.iter().any(|item| item.code == *code))
+        .collect();
+    if !blocked.is_empty() {
+        println!("no machine repair for:");
+        for (code, why) in blocked {
+            println!("  {code}  {why}");
+        }
     }
     if let Some(out) = apply {
         let mut current = loaded.decls.clone();

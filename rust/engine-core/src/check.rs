@@ -546,8 +546,11 @@ fn check_semantics(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                     if claim.trim().is_empty() {
                         sem(decl, "E-EMPTY", format!("fact {} has an empty claim", decl.name), Some("claim"), out);
                     }
+                    // "at all" is an idiom, not a universal claim: drop it before looking for
+                    // the words that do claim universality
+                    let lowered = claim.replace("at all", "").replace("after all", "");
                     let universal = ["所有", "都", "全部", "always", "every", "all "];
-                    if universal.iter().any(|word| claim.contains(word)) && string_field(decl, "scope").is_none() {
+                    if universal.iter().any(|word| lowered.contains(word)) && string_field(decl, "scope").is_none() {
                         sem(
                             decl,
                             "W-OVERCLAIM",
