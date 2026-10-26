@@ -1643,7 +1643,7 @@ fn usage() {
     println!("  debt PATH [--all]            which facts transitively gate a conclusion");
     println!("  impact PATH                  dead facts, single support, load-bearing nodes");
     println!("  next PATH                    open decisions, ranked by what they touch");
-    println!("  ask PATH                     the attribute that would decide an open list");
+    println!("  ask PATH [--json] [--one]   the next question, ranked by what one answer settles");
     println!("  novel PATH --attribute N [--holds IDS]");
     println!(
         "                               is a proposed attribute new, redundant, or a recombination"
