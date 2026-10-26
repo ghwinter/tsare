@@ -265,6 +265,7 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
     collide::check_collide(decls, &mut out);
     check_tension(decls, &mut out);
     check_layer(decls, &mut out);
+    check_refinements(decls, &mut out);
     let result = closure::closure(decls);
     for (name, reason) in &result.conditional {
         let decl = decls.iter().find(|item| &item.name == name);
@@ -542,6 +543,45 @@ fn check_tension(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                 ));
             }
         }
+    }
+}
+
+/// A law justifies an abstraction only when something at another layer claims to implement it.
+/// `layer` names what is hidden and `law` names what is preserved; `refines` is the third
+/// condition, and without it the abstraction is a promise nobody signed.
+fn check_refinements(decls: &[Decl], out: &mut Vec<Diagnostic>) {
+    let refiners: Vec<&Decl> = decls
+        .iter()
+        .filter(|decl| decl.kind == "law" && id_field(decl, "refines").is_some())
+        .collect();
+    for decl in decls.iter().filter(|decl| decl.kind == "law") {
+        // a law that refines another layer is itself the grounding act: it is anchored to the
+        // layer it implements, so it does not need a refiner of its own
+        if id_field(decl, "refines").is_some() {
+            continue;
+        }
+        let Some(layer) = id_field(decl, "holds_in") else {
+            continue;
+        };
+        let backed = refiners.iter().any(|other| {
+            !std::ptr::eq(*other, decl)
+                && id_field(other, "refines") == Some(layer)
+                && id_field(other, "holds_in") != Some(layer)
+        });
+        if backed {
+            continue;
+        }
+        sem(
+            decl,
+            "W-UNREFINED",
+            format!(
+                "law {} holds in {layer}, but no law at another layer refines {layer}: the detail \
+                 the layer hides is not claimed to be implemented",
+                decl.name
+            ),
+            Some("holds_in"),
+            out,
+        );
     }
 }
 

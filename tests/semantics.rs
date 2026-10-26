@@ -558,6 +558,28 @@ fn a_document_declares_a_format_only_when_it_must() {
 }
 
 #[test]
+fn a_law_with_nothing_refining_its_layer_is_unbacked() {
+    let source = r#"
+layer L_UP { name: "the interface", exposes: [F_A] }
+layer L_DOWN { name: "the implementation", exposes: [F_B] }
+fact F_A { claim: "a", evidence: tool("t") }
+fact F_B { claim: "b", evidence: tool("t") }
+law L_A { statement: "a holds", holds_in: L_UP, checked_by: [F_A] }
+"#;
+    assert!(codes(source).contains(&"W-UNREFINED"));
+
+    let backed = r#"
+layer L_UP { name: "the interface", exposes: [F_A] }
+layer L_DOWN { name: "the implementation", exposes: [F_B] }
+fact F_A { claim: "a", evidence: tool("t") }
+fact F_B { claim: "b", evidence: tool("t") }
+law L_A { statement: "a holds", holds_in: L_UP, checked_by: [F_A] }
+law L_B { statement: "b implements a", holds_in: L_DOWN, checked_by: [F_B], refines: L_UP }
+"#;
+    assert!(!codes(backed).contains(&"W-UNREFINED"));
+}
+
+#[test]
 fn the_self_document_compiles_without_errors() {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("SELF.mf");
     let text =

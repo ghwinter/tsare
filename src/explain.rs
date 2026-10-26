@@ -63,6 +63,7 @@ pub const CODES: &[&str] = &[
     "W-PARTITION-UNKNOWN",
     "W-PARTITION-UNLEARNED",
     "W-UNCONFIRMED",
+    "W-UNREFINED",
     "W-UNTESTED",
     "W-UNWARRANTED",
     "W-UNWARRANTED-BASIS",
@@ -195,6 +196,12 @@ pub fn explain(code: &str) -> Option<&'static str> {
             Fix: record the attribute that distinguishes them.",
         "W-UNCONFIRMED" => "A fact was supplied by a model and nobody confirmed it.\n\
             Fix: add confirmed_by, or change the evidence to a person or a tool.",
+        "W-UNREFINED" => "A law holds in a layer, but no law at another layer declares that it \
+            refines that layer.\n\
+            The layer hides detail and the law says what is preserved; nothing says the hidden \
+            detail still implements it, so the abstraction is a promise nobody signed.\n\
+            Fix: add a law at the lower layer with `refines: <layer>`, or state in this law that \
+            it is an assumption rather than a refinement.",
         "W-UNTESTED" => "A concept is never contrasted with a counterexample.\n\
             Fix: add `against:` with a fact the concept should reject.",
         "W-UNWARRANTED" => "A proposition cites premises, but no rule connects them to it.\n\

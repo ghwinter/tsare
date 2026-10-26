@@ -32,6 +32,10 @@ which observation would decide an open list, and what the attribute table alread
 - `ask`, `novel` and `imply` are MCP tools, so a model can ask for a judgement without a shell.
   The command line and the server print the same text: both call one renderer per command, and
   a test walks `tools/list` to check every listed tool is dispatched.
+- `law.refines: LAYER`: the third condition of an abstraction. A `layer` hides detail and a
+  `law` says what is preserved; `refines` states that a law at another layer implements it. A
+  law with no signatory anywhere is reported as `W-UNREFINED` -- a warning, because an unsigned
+  promise is a state of the document, not a mistake in it.
 
 ### Changed
 

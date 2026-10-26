@@ -220,7 +220,12 @@ These are decisions, not drift:
    separate them. A fact with no attributes never collides, since the attribute table then says
    nothing about it.
 
-## What a partition does and does not check
+10. **An abstraction needs a signatory.** A `layer` hides detail and a `law` says what is
+    preserved, but neither says the hidden detail implements the law. `refines: layer` on a law
+    is the third condition: it states that this law, holding in its own layer, implements the
+    named one. A law with no such signatory anywhere is reported as `W-UNREFINED` -- the layer's
+    promise is unsigned. It is a warning because "nobody has written the signatory yet" is a
+    state, not a mistake; the bottom layer of a real system usually has none either.
 
 ```
 partition E_REFUSE_NOW {
