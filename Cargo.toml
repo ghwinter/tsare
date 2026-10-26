@@ -1,5 +1,5 @@
 [package]
-name = "cogent"
+name = "cogent-lang"
 version = "0.2.0"
 edition = "2021"
 rust-version = "1.85"
@@ -8,6 +8,24 @@ license = "MIT"
 readme = "README.md"
 keywords = ["compiler", "logic", "argument", "verification", "reasoning"]
 categories = ["development-tools", "text-processing"]
+
+[lib]
+# the library keeps the short name, so `cogent::check` reads as it should
+name = "cogent"
+
+[[bin]]
+name = "cogent"
+path = "src/main.rs"
+
+include = [
+    "src/**",
+    "tests/**",
+    "examples/**",
+    "Cargo.toml",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+]
 
 [workspace]
 
@@ -23,6 +41,7 @@ codegen-units = 1
 strip = true
 
 [dependencies]
+
 
 
 
