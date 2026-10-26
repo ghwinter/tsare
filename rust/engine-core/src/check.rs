@@ -1023,6 +1023,31 @@ fn check_confidence_flow(decls: &[Decl], out: &mut Vec<Diagnostic>) {
             }
         }
     }
+    // a rule's number is bounded by the numbers it consumes: weigh already takes the minimum,
+    // so a higher declared number is a claim its own premises cannot carry
+    for decl in decls.iter().filter(|decl| decl.kind == "warrant") {
+        let Some(declared) = crate::program::f_num(decl, "confidence") else { continue };
+        let mut floor: Option<f64> = None;
+        for name in crate::program::f_ids(decl, "from") {
+            let Some(premise) = program.get(&name) else { continue };
+            let value = crate::program::f_num(premise, "confidence").unwrap_or(1.0);
+            floor = Some(floor.map_or(value, |low: f64| low.min(value)));
+        }
+        if let Some(floor) = floor {
+            if declared > floor + 1e-9 {
+                sem(
+                    decl,
+                    "W-CONFIDENCE-INFLATED",
+                    format!(
+                        "warrant {} declares confidence {declared}, above its weakest premise {floor}",
+                        decl.name
+                    ),
+                    Some("confidence"),
+                    out,
+                );
+            }
+        }
+    }
 }
 
 fn check_remaining(decls: &[Decl], out: &mut Vec<Diagnostic>) {
