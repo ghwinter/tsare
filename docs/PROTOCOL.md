@@ -42,7 +42,7 @@ answers `--json`.
 
 | command | what it answers | JSON |
 | --- | --- | --- |
-| `check FILE\|DIR` | which declarations are well formed; `--goals`, `--sugar`, `--cache` | yes |
+| `check FILE\|DIR` | which declarations are well formed; `--goals`, `--sugar`, `--cache`, `--against KERNEL` | yes |
 | `engine FILE\|DIR` | held, conditional, blocked, chains, gates | yes |
 | `argue FILE` | which conclusions survive attack | |
 | `derive FILE` | which conclusions are grounded in facts | |
@@ -70,6 +70,7 @@ answers `--json`.
 | `suggest FILE` | repairs with an applicability | yes |
 | `apply FILE [--dry-run]` | machine repairs spliced and recompiled | |
 | `build FILE\|DIR [--out] [--goals]` | obligations, learned clauses, open items, notes, predicates | |
+| `outline FILE` | the document read as prose: each field quoted, its ground and its diagnostics in the margin | |
 | `mem [--recall CODE...] [--k N]` | the case store: audit it, or recall similar situations | |
 | `propose FILE --proposals FILE.json [--policy ...]` | gate values an outside model wants to fill into holes | |
 | `fca FILE` | what a concept's positives share, and which facts the attributes imply | |
@@ -155,12 +156,17 @@ One crate, grouped by what a module needs:
 | check | `check`, `coverage`, `project` (via `cli`) |
 | reasoning | `closure`, `argue`, `derive`, `debt`, `engine`, `fix`, `apply` |
 | analysis | `impact`, `cost`, `weigh`, `cat`, `moves`, `assumptions`, `egraph`, `whatif`, `audit`, `map` (`mapping`), `graph`, `induce`, `paths`, `patterns` |
-| emit | `build` |
+| emit | `build`, `outline` |
 | stores | `cache`, `cases`, `json`, `hash` |
 | front | `cli`, `program` |
 
 `check` calls `closure` for the conditional-conclusion warning, so the check tier depends on
 the reasoning tier in exactly one place. Keep it that way.
+
+`outline` renders a document as prose. It may not break one rule: it quotes a field instead of
+paraphrasing it, and it puts every ground in the margin, because a ground is not part of the
+sentence. A projection that reads smoothly while hiding what the sentence stands on is the
+failure this engine exists to refuse — produced by the engine.
 
 ## Checks added after v1
 

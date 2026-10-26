@@ -1,0 +1,59 @@
+# Projection
+
+`<fixtures>/hier.v2.mf`
+
+Quoted text is a field, copied verbatim: a paraphrase of a claim is a new claim.
+The indented note under each quote is the projection's own -- what the sentence
+stands on, who checks it, and what is still owed.
+
+### F_SCROLL -- fact
+
+> 滚动时一帧 8ms
+
+  evidence: tool("trace") | attrs: frame_ms: 8 | obligation: check (ready)
+
+### F_RESIZE -- fact
+
+> 拉伸窗口时一帧 10ms
+
+  evidence: tool("trace") | attrs: frame_ms: 10 | obligation: check (ready)
+
+### F_LAUNCH -- fact
+
+> 冷启动首帧 900ms
+
+  evidence: tool("trace") | attrs: frame_ms: 900 | obligation: check (ready)
+
+### F_IDLE -- fact
+
+> 空闲时不渲染任何一帧
+
+  evidence: tool("trace") | attrs: frame_ms: 0 | obligation: check (ready)
+
+### C_TIMED -- concept
+
+> 有帧时间记录的操作
+
+  grounded_by: F_SCROLL, F_RESIZE, F_LAUNCH | against: F_IDLE | obligation: induce (ready)
+
+### C_FAST -- concept
+
+> 一帧之内
+
+  grounded_by: F_SCROLL, F_RESIZE | against: F_LAUNCH | parent: C_TIMED | obligation: induce (ready)
+
+### C_VERY_FAST -- concept
+
+> 半帧之内
+
+  grounded_by: F_SCROLL | against: F_RESIZE | parent: C_FAST | obligation: induce (ready)
+
+### C_SLOW -- concept
+
+> 明显卡顿
+
+  grounded_by: F_LAUNCH | against: F_SCROLL | parent: C_TIMED | obligation: induce (ready)
+
+---
+
+8 obligation(s), 8 ready.

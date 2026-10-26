@@ -8,6 +8,13 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `outline PATH`: the document read as prose. Each kind's spoken field is quoted verbatim and
+  everything that makes it checkable -- a ground, an evidence kind, a closure, a diagnostic --
+  goes in the margin beside it, because those are not part of the sentence. Declarations are
+  grouped by the layer that admits them; a ready obligation owes nothing and says only that;
+  the counted tail (`N obligation(s), M ready`) is part of the document. The projection never
+  paraphrases: a paraphrase of a claim is a new claim.
+
 - `check FILE --against KERNEL`: a kernel is a prelude. Its names may be used, not redefined
   (`E-KERNEL-SHADOW`), and a claim that puts itself in one of the kernel's layers must cite one
   of that layer's laws (`W-UNPRINCIPLED`). The kernel is checked alone first and must compile,

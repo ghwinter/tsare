@@ -1,0 +1,35 @@
+# Projection
+
+`<fixtures>/hello.mf`
+
+Quoted text is a field, copied verbatim: a paraphrase of a claim is a new claim.
+The indented note under each quote is the projection's own -- what the sentence
+stands on, who checks it, and what is still owed.
+
+### F_SCROLL -- fact
+
+> scrolling ten thousand files stays under one frame
+
+  evidence: tool("trace: 8 ms p95 over 200 scrolls") | obligation: check (ready)
+
+### V_FRAME -- value
+
+> frame_ms
+
+  direction: min | unit: "ms" | threshold: 16 | measured_by: "trace" | obligation: measure (ready)
+
+### P_FAST -- proposition
+
+> the browser stays under one frame while scrolling
+
+  from: F_SCROLL | obligation: prove (ready)
+
+### W_FAST -- warrant
+
+> one frame is the budget for interaction
+
+  from: F_SCROLL | to: P_FAST | basis: V_FRAME | obligation: justify (ready)
+
+---
+
+4 obligation(s), 4 ready.

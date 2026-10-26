@@ -1513,6 +1513,20 @@ fn cmd_project(path: &Path) -> i32 {
     }
 }
 
+fn cmd_outline(path: &Path) -> i32 {
+    let loaded = match load(path) {
+        Ok(loaded) => loaded,
+        Err(error) => return fail(error),
+    };
+    let program = Program::new(&loaded.decls);
+    let diagnostics = crate::check::check(&loaded.decls);
+    print!(
+        "{}",
+        crate::outline::markdown(&program, &diagnostics, &path.display().to_string())
+    );
+    0
+}
+
 fn cmd_mem(recall: Option<&[String]>, k: usize) -> i32 {
     if let Some(codes) = recall {
         let entries = crate::cases::recall(codes, k);
@@ -1755,6 +1769,9 @@ fn usage() {
     println!("                                  policies: harmless (default), strict, improve");
     println!();
     println!("emitting");
+    println!(
+        "  outline PATH                        the document read as prose, grounds in the margin"
+    );
     println!("  build PATH [--out DIR] [--goals F]   obligations, clauses, open items, predicates");
     println!("  graph PATH [--out FILE]             the relation net as Mermaid");
     println!("  map LEFT RIGHT [--top N]            structure mapping between two documents");
@@ -1806,6 +1823,7 @@ fn is_command(name: &str) -> bool {
             | "mem"
             | "pattern"
             | "project"
+            | "outline"
             | "build"
             | "whatif"
             | "propose"
@@ -2022,6 +2040,7 @@ pub fn run() -> i32 {
             args.option("--goals"),
         ),
         "project" => cmd_project(&path),
+        "outline" => cmd_outline(&path),
         _ => {
             println!("unknown command {command}");
             2

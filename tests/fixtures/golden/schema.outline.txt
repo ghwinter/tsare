@@ -1,0 +1,47 @@
+# Projection
+
+`<fixtures>/schema.mf`
+
+Quoted text is a field, copied verbatim: a paraphrase of a claim is a new claim.
+The indented note under each quote is the projection's own -- what the sentence
+stands on, who checks it, and what is still owed.
+
+### F_TRACE -- fact
+
+> the list renders at 60 fps under trace
+
+  evidence: tool("trace") | obligation: check (ready)
+
+### F_HEADLESS -- fact
+
+> nothing renders with --headless
+
+  evidence: tool("run --headless") | obligation: check (ready)
+
+### C_RENDERED -- concept
+
+> the list is rendered
+
+  grounded_by: F_TRACE | against: F_HEADLESS | obligation: induce (blocked), no clause found; see OPEN.md
+
+### P_SMOOTH -- proposition
+
+> scrolling feels smooth
+
+  uses: C_RENDERED | obligation: prove (assumed), no premises; treated as an assumption
+
+### P_STABLE -- proposition
+
+> frame times stay under 16 ms while scrolling
+
+  uses: C_RENDERED | obligation: prove (assumed), no premises; treated as an assumption
+
+### W_RULE -- warrant
+
+> a traced render is evidence enough for any rendering claim
+
+  from: F_TRACE | concludes: uses: C_RENDERED | basis: C_RENDERED | obligation: justify (ready)
+
+---
+
+6 obligation(s), 3 ready.

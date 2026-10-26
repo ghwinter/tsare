@@ -1,0 +1,48 @@
+# Projection
+
+`<fixtures>/ungrounded.mf`
+
+Quoted text is a field, copied verbatim: a paraphrase of a claim is a new claim.
+The indented note under each quote is the projection's own -- what the sentence
+stands on, who checks it, and what is still owed.
+
+### F_SCROLL -- fact
+
+> the list scrolls at 60 fps
+
+  evidence: tool("trace") | obligation: check (ready)
+
+### F_HEADLESS -- fact
+
+> no rendering happens with --headless
+
+  evidence: tool("run --headless") | obligation: check (ready)
+
+### C_RENDERED -- concept
+
+> the list is rendered
+
+  grounded_by: F_SCROLL | against: F_HEADLESS | obligation: induce (blocked), no clause found; see OPEN.md
+
+### P_THRESHOLD -- proposition
+
+> users cannot tell 60 fps from 120 fps
+
+  uses: C_RENDERED | obligation: prove (assumed), no premises; treated as an assumption
+
+### P_SMOOTH -- proposition
+
+> scrolling feels smooth to users
+
+  from: P_THRESHOLD | obligation: prove (ready)
+  ! W-CONDITIONAL: P_SMOOTH is supported only through an ungrounded premise: W_RENDER needs P_THRESHOLD (asserted)
+
+### W_RENDER -- warrant
+
+> an imperceptible difference is not a smoothness problem
+
+  from: P_THRESHOLD | to: P_SMOOTH | basis: C_RENDERED | obligation: justify (ready)
+
+---
+
+6 obligation(s), 4 ready.

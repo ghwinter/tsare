@@ -922,3 +922,26 @@ fn names_resolve_once_per_program() {
     assert!(program.get("P1").is_some());
     assert!(program.get("P2").is_none());
 }
+
+/// The projection quotes the sentence and keeps everything that makes it checkable beside it.
+/// A ready obligation owes nothing, so its note is not repeated; the blocked one carries the
+/// reason, which is what the margin is for.
+#[test]
+fn a_projection_quotes_the_sentence_and_keeps_its_ground_in_the_margin() {
+    let declared = decls(
+        "layer L_X { name: \"shipping\", exposes: [P_A] }\nfact F_A { claim: \"the build is green\", evidence: model }\nproposition P_A { statement: \"it is ready\", from: [F_A], layer: L_X }\n",
+    );
+    let program = Program::new(&declared);
+    let text = tsare::outline::markdown(&program, &check(program.decls), "t.mf");
+    assert!(text.contains("> the build is green"), "{text}");
+    assert!(text.contains("## L_X"), "{text}");
+    assert!(text.contains("evidence: model"), "{text}");
+    assert!(
+        text.contains("obligation: check (blocked), model-supplied, not confirmed"),
+        "{text}"
+    );
+    assert!(text.contains("! W-UNCONFIRMED"), "{text}");
+    // a field is never paraphrased, and the counted tail is part of the document
+    assert!(text.contains("> it is ready"), "{text}");
+    assert!(text.contains("obligation(s),"), "{text}");
+}

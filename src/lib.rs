@@ -29,6 +29,7 @@ pub mod mapping;
 pub mod mcp;
 pub mod moves;
 pub mod novel;
+pub mod outline;
 pub mod paths;
 pub mod patterns;
 pub mod program;
