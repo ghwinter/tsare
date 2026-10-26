@@ -321,6 +321,62 @@ proposition P_ONE { statement: "s", from: [E_ONE] }
     );
 }
 
+const PILE_CONTEXT: &str = r#"
+fact F_A { claim: "a", evidence: user }
+fact F_B { claim: "b", evidence: user }
+hypothesis H_A { assumes: [F_A], predicts: "p", test: "t" }
+hypothesis H_B { assumes: [F_A], predicts: "q", rival: H_A }
+question Q_X { asks: "which?", answers: ["a", "b"], separates: [H_A, H_B] }
+"#;
+
+#[test]
+fn a_pile_without_a_type_may_be_written_but_not_used() {
+    let named = format!(
+        "{PILE_CONTEXT}\npartition E_PILE {{ elements: [F_A, F_B], closure: unknown, closes_with: [Q_X] }}"
+    );
+    assert!(codes(&named).contains(&"W-PARTITION-UNKNOWN"));
+    assert!(!codes(&named).iter().any(|code| code.starts_with("E-PARTITION")));
+
+    let used = format!(
+        "{PILE_CONTEXT}\npartition E_PILE {{ elements: [F_A, F_B], closure: unknown, closes_with: [Q_X] }}\n\
+         proposition P_USE {{ statement: \"s\", from: [E_PILE] }}"
+    );
+    assert!(codes(&used).contains(&"E-PARTITION-UNKNOWN-USED"));
+
+    let no_exit = format!("{PILE_CONTEXT}\npartition E_PILE {{ elements: [F_A, F_B], closure: unknown }}");
+    assert!(codes(&no_exit).contains(&"E-PARTITION-UNKNOWN-NO-EXIT"));
+}
+
+#[test]
+fn closure_must_agree_with_having_a_dimension() {
+    let source = r#"
+fact F_A { claim: "a", evidence: user }
+concept C_ONE { name: "one", grounded_by: [F_A] }
+partition E_ONE { dimension: C_ONE, elements: [F_A], closure: unknown }
+"#;
+    assert!(codes(source).contains(&"E-PARTITION-CLOSURE"));
+
+    let silent = r#"
+fact F_A { claim: "a", evidence: user }
+partition E_ONE { elements: [F_A], closure: closed }
+"#;
+    assert!(codes(silent).contains(&"E-PARTITION-CLOSURE"));
+}
+
+#[test]
+fn a_partition_cannot_lean_on_a_dimension_whose_examples_collide() {
+    let source = r#"
+fact F_A { claim: "a", evidence: user }
+fact F_B { claim: "b", evidence: user }
+concept C_COLLIDE { name: "one", grounded_by: [F_A], against: [F_B] }
+partition E_ONE { dimension: C_COLLIDE, elements: [F_A], closure: open }
+"#;
+    assert!(
+        codes(source).contains(&"W-PARTITION-UNLEARNED"),
+        "a type whose own examples no attribute separates is a name, not a type"
+    );
+}
+
 #[test]
 fn every_kind_owes_an_action() {
     use engine_core::program::TABLE;

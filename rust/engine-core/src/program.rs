@@ -209,8 +209,8 @@ pub const TABLE: &[(&str, &str, &str)] = &[
     ("layer", "an interface that hides its internals", "expose exactly what others may use"),
     (
         "partition",
-        "a dimension whose extent is closed, or a stated blind spot",
-        "name the concept the elements share, then say whether the list is complete",
+        "a dimension, or a stated lack of one",
+        "name the concept the elements share, or the question that would",
     ),
     ("note", "nothing; it is not a commitment", "promote it to a typed declaration to make it count"),
 ];
@@ -269,7 +269,10 @@ pub fn obligations(prog: &Program, decl: &Decl) -> Vec<String> {
             }
         }
         "partition" => {
-            if f_id(decl, "closure") == Some("closed") && f_ids(decl, "basis").is_empty() {
+            let closure = f_id(decl, "closure").unwrap_or("open");
+            if closure == "unknown" {
+                out.push("no dimension yet: the pile has no type".to_string());
+            } else if closure == "closed" && f_ids(decl, "basis").is_empty() {
                 out.push("closed with no basis".to_string());
             }
         }

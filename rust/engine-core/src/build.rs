@@ -161,15 +161,21 @@ pub fn obligation(decl: &Decl, _prog: &Program, learnings: &HashMap<String, Lear
             }
         }
         "partition" => {
-            let closed = f_id(decl, "closure") == Some("closed");
+            let closure = f_id(decl, "closure").unwrap_or("open");
             let basis = f_ids(decl, "basis");
-            if closed && !basis.is_empty() {
+            if closure == "unknown" {
+                Obligation {
+                    action,
+                    state: "blocked",
+                    note: "no dimension yet, so the list is a pile and cannot be used".to_string(),
+                }
+            } else if closure == "closed" && !basis.is_empty() {
                 Obligation {
                     action,
                     state: "ready",
                     note: format!("closed by {}", basis.join(", ")),
                 }
-            } else if closed {
+            } else if closure == "closed" {
                 Obligation {
                     action,
                     state: "blocked",

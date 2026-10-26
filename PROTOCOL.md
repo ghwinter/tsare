@@ -156,12 +156,32 @@ partition E_REFUSE_NOW {
 
 Checked: every element is an instance of the dimension (a concept records its extent, so this
 is a set membership test); a closed list covers that extent; "closed" names a reason; an open
-list is not silently used as a premise.
+list is not silently used as a premise; a named dimension whose own examples no attribute
+separates is reported, because a type whose examples collide is a name, not a type.
 
 Not checked: whether the dimension is the right one, and whether the world contains a fourth
 element. Those stay where they were — in the concept's counterexample and in the `basis`
 declaration. The list's completeness is now a stated claim with a named reason instead of a
 rhetorical effect, which is the whole of the improvement.
+
+### A pile is not a partition
+
+`closure` has three values, and exactly one of them may be true:
+
+| closure | dimension | means | consequence |
+| --- | --- | --- | --- |
+| `closed` | required | these are all of them, and here is why | checked against the extent |
+| `open` | required | these are some of them | cannot carry a conclusion without `W-PARTITION-OPEN-USED` |
+| `unknown` | forbidden | I cannot name what they have in common yet | compiles, warns, and **cannot discharge anything** |
+
+The third state is the error path: a list whose common property is not yet known can be
+written down, and it must name the question that would type it (`closes_with`). Using it as a
+premise is an error, not a warning — a hole cannot discharge anything. Naming a dimension and
+admitting you have none at the same time is `E-PARTITION-CLOSURE`.
+
+This is deliberate: refusing to compile the pile would teach the author to invent a dimension,
+which is the failure the language exists to prevent. A declared hole is visible, unusable, and
+attached to its own question.
 
 A partition is not yet a premise in the fixpoint: `argue` and `derive` do not use one to
 discharge anything. `SELF.mf` records that as a blind spot rather than guessing either way.

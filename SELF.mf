@@ -92,6 +92,54 @@ question Q_STAGE {
   separates: [H_CHEAP, H_CAPABLE]
 }
 
+# A pile, not a partition: I can list how the goal has been described and I cannot name the
+# property that would make the list a division of one thing.  The compiler lets this be
+# written, refuses to let it discharge anything, and asks the question that would type it.
+fact F_READ_COMPILER {
+  claim: "the goal is a compiler for statements about thinking",
+  evidence: model
+}
+
+fact F_READ_ILP {
+  claim: "the goal is induction over recorded attributes",
+  evidence: model
+}
+
+fact F_READ_TYPE {
+  claim: "the goal is a generalised type system for claims",
+  evidence: model
+}
+
+fact F_READ_EXCEED {
+  claim: "the goal is to go past what a compiler can do",
+  evidence: model
+}
+
+partition E_GOAL_READINGS {
+  of: Q_GOAL,
+  elements: [F_READ_COMPILER, F_READ_ILP, F_READ_TYPE, F_READ_EXCEED],
+  closure: unknown,
+  closes_with: [Q_GOAL]
+}
+
+question Q_GOAL {
+  asks: "are these four descriptions one goal seen at four resolutions, or four goals?",
+  answers: ["one goal, four resolutions", "four goals, and the project must pick", "none of them is the goal"],
+  separates: [H_ONE_GOAL, H_MANY_GOALS]
+}
+
+hypothesis H_ONE_GOAL {
+  assumes: [F_READ_COMPILER, F_READ_TYPE],
+  predicts: "each description is the same obligation stated at a different height",
+  test: "state the obligation once, then show each description is an instance of it"
+}
+
+hypothesis H_MANY_GOALS {
+  assumes: [F_READ_ILP, F_READ_EXCEED],
+  predicts: "the descriptions pull in different directions and cannot hold at once",
+  rival: H_ONE_GOAL
+}
+
 hypothesis H_CHEAP {
   assumes: [F_DECIDABILITY_BILL, F_EDGE_CLASSES],
   predicts: "a checkable addition costs no decidability",
