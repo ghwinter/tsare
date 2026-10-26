@@ -182,6 +182,7 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
     check_collapse(decls, &mut out);
     check_semantics(decls, &mut out);
     check_remaining(decls, &mut out);
+    check_confidence_flow(decls, &mut out);
     check_tension(decls, &mut out);
     check_layer(decls, &mut out);
     let result = closure::closure(decls);
@@ -973,6 +974,57 @@ fn check_partition(
     }
 }
 
+/// A declared number is a claim about support, so it can exceed what the document supports.
+/// The weakest link is computed with the same rule `weigh` uses; this only compares.
+fn check_confidence_flow(decls: &[Decl], out: &mut Vec<Diagnostic>) {
+    let program = crate::program::Program::new(decls);
+    let weights = crate::weigh::weights(&program);
+    for decl in decls.iter().filter(|decl| decl.kind == "proposition") {
+        let Some(declared) = crate::program::f_num(decl, "confidence") else { continue };
+        if let Some(row) = weights.iter().find(|row| row.name == decl.name) {
+            if row.status == "derived" {
+                if let Some(value) = row.value {
+                    if declared > value + 1e-9 {
+                        sem(
+                            decl,
+                            "W-CONFIDENCE-INFLATED",
+                            format!(
+                                "proposition {} declares confidence {declared}, but its weakest link supports {value}",
+                                decl.name
+                            ),
+                            Some("confidence"),
+                            out,
+                        );
+                    }
+                }
+                continue;
+            }
+        }
+        // no rule concludes it, so the number has no derivation and must not exceed the
+        // weakest premise it cites
+        let mut floor: Option<f64> = None;
+        for name in crate::program::f_ids(decl, "from") {
+            let Some(fact) = program.get(&name) else { continue };
+            let Some(value) = crate::program::f_num(fact, "confidence") else { continue };
+            floor = Some(floor.map_or(value, |low: f64| low.min(value)));
+        }
+        if let Some(floor) = floor {
+            if declared > floor + 1e-9 {
+                sem(
+                    decl,
+                    "W-CONFIDENCE-INFLATED",
+                    format!(
+                        "proposition {} declares confidence {declared} with no rule, above its weakest premise {floor}",
+                        decl.name
+                    ),
+                    Some("confidence"),
+                    out,
+                );
+            }
+        }
+    }
+}
+
 fn check_remaining(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     let by_name: std::collections::HashMap<&str, &Decl> =
         decls.iter().map(|decl| (decl.name.as_str(), decl)).collect();
@@ -1231,3 +1283,4 @@ fn check_remaining(decls: &[Decl], out: &mut Vec<Diagnostic>) {
         }
     }
 }
+
