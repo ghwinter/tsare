@@ -25,6 +25,7 @@ pub mod moves;
 pub mod paths;
 pub mod patterns;
 pub mod program;
+pub mod propose;
 pub mod specs;
 pub mod sugar;
 pub mod syntax;

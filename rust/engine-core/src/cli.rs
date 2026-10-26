@@ -1069,6 +1069,68 @@ fn cmd_mem(recall: Option<&[String]>, k: usize) -> i32 {
     0
 }
 
+fn cmd_propose(path: &Path, proposals_path: &str, apply: bool) -> i32 {
+    let loaded = match load(path) {
+        Ok(loaded) => loaded,
+        Err(error) => return fail(error),
+    };
+    let text = match fs::read_to_string(proposals_path) {
+        Ok(text) => text,
+        Err(error) => return fail(format!("{proposals_path}: {error}")),
+    };
+    let payload = match crate::json::parse(&text) {
+        Ok(payload) => payload,
+        Err(error) => return fail(format!("{proposals_path}: {error}")),
+    };
+    let items: Vec<crate::json::Json> = match &payload {
+        crate::json::Json::Arr(items) => items.clone(),
+        other => other
+            .get("proposals")
+            .and_then(|value| value.as_arr())
+            .map(|items| items.to_vec())
+            .unwrap_or_default(),
+    };
+    if items.is_empty() {
+        println!("no proposals in {proposals_path}");
+        return 2;
+    }
+
+    let mut current = loaded.text.clone();
+    let mut admitted = 0;
+    for item in &items {
+        let decl = item.get("decl").and_then(|value| value.as_str()).unwrap_or("");
+        let field = item.get("field").and_then(|value| value.as_str()).unwrap_or("");
+        let value = item.get("value").and_then(|value| value.as_str()).unwrap_or("");
+        let proposal = crate::propose::Proposal {
+            decl: decl.to_string(),
+            field: field.to_string(),
+            value: value.to_string(),
+        };
+        let decls = match syntax::parse(&current) {
+            Ok(decls) => decls,
+            Err(error) => return fail(format!("the document stopped parsing: {error}")),
+        };
+        match crate::propose::verify(&current, &decls, &proposal) {
+            crate::propose::Verdict::Admitted { errors, warnings, text } => {
+                admitted += 1;
+                println!(
+                    "{} admitted  ({errors:+} errors, {warnings:+} warnings)",
+                    pad(&format!("{decl}.{field}"), 34)
+                );
+                current = text;
+            }
+            crate::propose::Verdict::Rejected { reason } => {
+                println!("{} rejected  {reason}", pad(&format!("{decl}.{field}"), 34));
+            }
+        }
+    }
+    if apply {
+        fs::write(path, &current).expect("write file");
+    }
+    println!("{admitted}/{} proposal(s) admitted", items.len());
+    0
+}
+
 fn cmd_kinds() -> i32 {
     println!("{} {} discharge", pad("kind", 12), pad("obligation", 52));
     for (kind, obligation, discharge) in program::TABLE {
@@ -1121,6 +1183,7 @@ fn is_command(name: &str) -> bool {
             | "project"
             | "build"
             | "whatif"
+            | "propose"
     )
 }
 
@@ -1131,7 +1194,7 @@ struct Args {
     options: std::collections::HashMap<String, String>,
 }
 
-const VALUE_FLAGS: &[&str] = &["--top", "--threshold", "--out", "--goals", "--k", "--apply"];
+const VALUE_FLAGS: &[&str] = &["--top", "--threshold", "--out", "--goals", "--k", "--apply", "--proposals"];
 
 impl Args {
     fn parse(raw: &[String]) -> Self {
@@ -1248,7 +1311,13 @@ pub fn run() -> i32 {
             cmd_map(&path, Path::new(right), args.count("--top", 8))
         }
         "induce" => cmd_induce(&path),
-        "pattern" => {
+        "propose" => {
+            let Some(proposals) = args.option("--proposals") else {
+                println!("usage: engine-core propose FILE --proposals FILE.json [--apply]");
+                return 2;
+            };
+            cmd_propose(&path, proposals, args.has("--apply"))
+        }        "pattern" => {
             let Some(name) = args.at(1) else {
                 println!("usage: engine-core pattern FILE CONCEPT");
                 return 2;
