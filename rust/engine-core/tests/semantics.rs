@@ -378,6 +378,71 @@ partition E_ONE { dimension: C_COLLIDE, elements: [F_A], closure: open }
 }
 
 #[test]
+fn a_list_checks_its_elements() {
+    let source = r#"
+hypothesis H_A { assumes: [F], predicts: "a", test: "t" }
+hypothesis H_B { assumes: [F], predicts: "b", rival: H_A }
+question Q { asks: "q", answers: [H_A, H_B], separates: [H_A, H_B] }
+fact F { claim: "x", evidence: user }
+"#;
+    assert!(
+        codes(source).contains(&"E-TYPE"),
+        "answers is list:str, so hypotheses are not answers"
+    );
+}
+
+#[test]
+fn an_example_that_shares_no_attribute_cannot_be_compared() {
+    let source = r#"
+fact F_A { claim: "a", evidence: user, attrs: { contrast: 7.2 } }
+fact F_B { claim: "b", evidence: user, attrs: { contrast: 2.8 } }
+fact F_C { claim: "c", evidence: user, attrs: { theme_ms: 40 } }
+concept C_X { name: "x", grounded_by: [F_A], against: [F_B, F_C] }
+"#;
+    assert!(codes(source).contains(&"W-EXAMPLE-SHAPE"));
+    assert!(!codes(source).is_empty());
+}
+
+#[test]
+fn the_declared_inference_type_must_match_the_structure() {
+    let deductive_without_rule = r#"
+fact F { claim: "x", evidence: user }
+concept C { name: "c", grounded_by: [F] }
+proposition P { statement: "s", from: [F], uses: [C], by: deductive }
+"#;
+    assert!(codes(deductive_without_rule).contains(&"W-BY-MISMATCH"));
+
+    let inductive_with_rule = r#"
+fact F { claim: "x", evidence: user }
+proposition P { statement: "s", from: [F], by: inductive }
+warrant W { claim: "r", from: [F], to: P, basis: [F] }
+"#;
+    assert!(codes(inductive_with_rule).contains(&"W-BY-MISMATCH"));
+}
+
+#[test]
+fn a_number_cannot_exceed_its_support() {
+    let proposition = r#"
+fact F { claim: "x", evidence: tool("t"), confidence: 0.9 }
+proposition P { statement: "s", from: [F], confidence: 0.99 }
+"#;
+    assert!(codes(proposition).contains(&"W-CONFIDENCE-INFLATED"));
+
+    let warrant = r#"
+fact F { claim: "x", evidence: tool("t"), confidence: 0.5 }
+proposition P { statement: "s", from: [F] }
+warrant W { claim: "r", from: [F], to: P, basis: [F], confidence: 0.9 }
+"#;
+    assert!(codes(warrant).contains(&"W-CONFIDENCE-INFLATED"));
+
+    let honest = r#"
+fact F { claim: "x", evidence: tool("t"), confidence: 0.9 }
+proposition P { statement: "s", from: [F], confidence: 0.8 }
+"#;
+    assert!(!codes(honest).contains(&"W-CONFIDENCE-INFLATED"));
+}
+
+#[test]
 fn every_kind_owes_an_action() {
     use engine_core::program::TABLE;
     assert_eq!(TABLE.len(), 12, "one row per kind");
