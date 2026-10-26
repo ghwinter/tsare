@@ -49,7 +49,7 @@ answers `--json`.
 | `debt FILE [--all]` | which facts transitively gate a conclusion | |
 | `impact FILE` | dead facts, single support, load-bearing nodes | |
 | `next FILE` | open decisions ranked by what they touch | |
-| `ask FILE` | the recorded attribute that would decide an open list's missing elements | |
+| `ask FILE [--json] [--one]` | the next question the document needs: a gap in a list, two facts nothing tells apart, or a concept whose examples look alike; `--one` gives the question that settles the most | yes |
 | `novel FILE --attribute N [--holds IDS]` | new, redundant, or a recombination: whether a proposed attribute is a distinction the recorded vocabulary already contains | |
 | `cost FILE` | external confirmations the document demands, and its longest chain | |
 | `weigh FILE` | confidence propagated by min/max, with no probability | |

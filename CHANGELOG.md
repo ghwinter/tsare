@@ -8,9 +8,11 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
-- `ask`: for an open list, the recorded attribute that would decide the elements its dimension
-  covers and it does not. When no attribute separates a missing element from the listed ones,
-  it says so and names them -- that is the answer that tells you to record something new.
+- `ask`: the next question the document needs, from three families that are one defect in three
+  places -- a list that does not cover its dimension, two facts that record the same evidence and
+  the same attributes, and a concept whose positive and negative examples look alike. Each
+  question names the attribute that would decide it, or says that none can. `--one` gives the
+  single question that settles the most; `--json` is the shape a loop consumes.
 - A test that walks the `--help` screen and fails when a command is listed there but missing
   from the dispatcher. Without it the command word is taken as a path and the error is
   `cannot find the file ask`, which says nothing about what is actually wrong.
