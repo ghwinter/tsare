@@ -1,7 +1,8 @@
-# engine — one implementation, one contract
+# tsare — one implementation, one contract
 
-This repository is the compiler. `rust/tsare` is a single, dependency-free binary: no
-interpreter, no runtime beyond the OS, no Python, no second code path to keep in step.
+This repository is the compiler. The crate at the root builds a single, dependency-free
+binary: no interpreter, no runtime beyond the OS, no Python, no second code path to keep in
+step.
 
 `obligo` (tag `v1`) is the frozen reference: it holds the original Python implementation and
 every experiment behind it. It is no longer the live compiler. `scripts/diff_text.py` can still
@@ -218,7 +219,7 @@ discharge anything. `SELF.mf` records that as a blind spot rather than guessing 
 ## Acceptance
 
 ```powershell
-cd rust/tsare
+cd D:\GitHub\tsare   # or the checkout root
 cargo test            # semantics + golden snapshots for every command
 cargo build --release # the binary
 ```

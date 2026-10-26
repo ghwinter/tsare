@@ -1,19 +1,17 @@
 # tsare
 
-**An external reasoning engine and language checker for large language models.** A claim is
-written as a small typed language and compiled, so *can this be checked* has a deterministic
-answer -- and the compiler prints the smallest edit that would make it so.
+**An external reasoning engine and language checker for LLMs: claims compile, and checkability
+has a deterministic answer.** A claim is written as a small typed language, and the compiler
+prints the smallest edit that would make it checkable.
 
-It does not make a model smarter, and it does not make a claim true. It makes a claim
-checkable, or says precisely why it is not.
+It does not make a model smarter, and it does not make a claim true.
 
-A `.mf` document is a set of typed declarations — facts,
-concepts, propositions, hypotheses, questions, blind spots, values, warrants, laws, layers,
-partitions, notes — and the compiler decides whether each one can be checked at all, what it
-still owes, and what follows from it.
+A `.mf` document is a set of typed declarations — facts, concepts, propositions,
+hypotheses, questions, blind spots, values, warrants, laws, layers, partitions, notes — and the
+compiler decides whether each one can be checked at all, what it still owes, and what follows
+from it.
 
-It does not judge truth. It judges whether a claim is checkable, and prints the smallest edit
-that would make it so.
+It does not judge truth. It judges whether a claim is checkable.
 
 ```powershell
 $ tsare check SELF.mf
