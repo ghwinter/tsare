@@ -36,7 +36,10 @@ const TOOLS: &str = r#"{"tools":[
 {"name":"derive","description":"Which conclusions are grounded in facts.","inputSchema":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"]}},
 {"name":"fix","description":"Verified repair candidates, with what each would cost.","inputSchema":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"]}},
 {"name":"explain","description":"What a diagnostic code means and the smallest fix.","inputSchema":{"type":"object","properties":{"code":{"type":"string"}},"required":["code"]}},
-{"name":"kinds","description":"The obligation table: what each declaration kind owes.","inputSchema":{"type":"object","properties":{}}}
+{"name":"kinds","description":"The obligation table: what each declaration kind owes.","inputSchema":{"type":"object","properties":{}}},
+{"name":"ask","description":"The next question the document needs: a gap in a list, two facts nothing tells apart, or a concept whose examples look alike. Set one=true for the single question that settles the most.","inputSchema":{"type":"object","properties":{"path":{"type":"string"},"one":{"type":"boolean"}},"required":["path"]}},
+{"name":"novel","description":"Whether a proposed attribute is a new distinction, a column already recorded, or a recombination of what is recorded.","inputSchema":{"type":"object","properties":{"path":{"type":"string"},"attribute":{"type":"string"},"holds":{"type":"array","items":{"type":"string"}}},"required":["path","attribute"]}},
+{"name":"imply","description":"The laws the attribute table already holds, each with its support and a fact that makes the converse fail.","inputSchema":{"type":"object","properties":{"path":{"type":"string"},"max_antecedent":{"type":"number"},"min_support":{"type":"number"}},"required":["path"]}}
 ]}"#;
 
 fn argument<'a>(params: &'a Json, key: &str) -> Option<&'a str> {
@@ -44,6 +47,30 @@ fn argument<'a>(params: &'a Json, key: &str) -> Option<&'a str> {
         .get("arguments")
         .and_then(|arguments| arguments.get(key))
         .and_then(|value| value.as_str())
+}
+
+fn flag(params: &Json, key: &str) -> bool {
+    params
+        .get("arguments")
+        .and_then(|arguments| arguments.get(key))
+        .map(|value| matches!(value, Json::Bool(true)))
+        .unwrap_or(false)
+}
+
+fn number(params: &Json, key: &str) -> Option<usize> {
+    params
+        .get("arguments")
+        .and_then(|arguments| arguments.get(key))
+        .and_then(|value| value.as_f64())
+        .map(|value| value as usize)
+}
+
+fn words(params: &Json, key: &str) -> Vec<String> {
+    params
+        .get("arguments")
+        .and_then(|arguments| arguments.get(key))
+        .map(|value| value.strings())
+        .unwrap_or_default()
 }
 
 fn call(name: &str, params: &Json) -> Result<String, (String, bool)> {
@@ -123,6 +150,22 @@ fn call(name: &str, params: &Json) -> Result<String, (String, bool)> {
                         ));
                     }
                     Ok(out)
+                }
+                "ask" => Ok(crate::ask::text(&program, flag(params, "one"))),
+                "novel" => {
+                    let attribute = argument(params, "attribute").unwrap_or("");
+                    if attribute.is_empty() {
+                        return Err(("novel needs an attribute".to_string(), true));
+                    }
+                    let holds = words(params, "holds");
+                    let verdict = crate::novel::decide(&program, &holds);
+                    Ok(crate::novel::text(&verdict, attribute))
+                }
+                "imply" => {
+                    let max = number(params, "max_antecedent").unwrap_or(2);
+                    let support = number(params, "min_support").unwrap_or(3);
+                    let (found, search) = crate::imply::implications(&program, max, support);
+                    Ok(crate::imply::text(&found, &search))
                 }
                 unknown => Err((format!("unknown tool {unknown}"), true)),
             }

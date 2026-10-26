@@ -309,6 +309,28 @@ pub fn and_list(names: &[String]) -> String {
     }
 }
 
+/// The text form, shared by the command line and the MCP server so they cannot drift.
+pub fn text(program: &Program, one: bool) -> String {
+    let asked = questions(program);
+    if asked.is_empty() {
+        return "nothing to ask: every list covers its extent and nothing collides\n".to_string();
+    }
+    if one {
+        return format!("{}\n", asked[0].question);
+    }
+    let mut out = format!(
+        "{} question(s), ranked by what one answer would settle\n",
+        asked.len()
+    );
+    for item in &asked {
+        out.push_str(&format!(
+            "  {:>2}  {:9}  {}\n",
+            item.decides, item.kind, item.question
+        ));
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -145,6 +145,34 @@ pub fn decide(program: &Program, holds: &[String]) -> Verdict {
     }
 }
 
+/// The text form, shared by the command line and the MCP server so they cannot drift.
+pub fn text(verdict: &Verdict, attribute: &str) -> String {
+    match verdict {
+        Verdict::Empty => "nothing to decide: no fact records an attribute\n".to_string(),
+        Verdict::Redundant { key, value, on } => format!(
+            "redundant: `{attribute}` is exactly {key} = {value}; it is a column, not a new predicate\n  true of {}\n",
+            crate::ask::and_list(on)
+        ),
+        Verdict::Novel { witness } => format!(
+            "novel: {} and {} record the same attributes and differ on `{attribute}`\n",
+            witness.0, witness.1
+        ),
+        Verdict::Definable { blocks, objects } => {
+            if *blocks == 0 {
+                "definable: the proposal is constant over these facts, so it splits nothing\n"
+                    .to_string()
+            } else if blocks == objects {
+                "definable here, and vacuously: every fact already has its own record, so any proposal fits\n"
+                    .to_string()
+            } else {
+                format!(
+                    "definable: `{attribute}` is a function of the recorded attributes ({blocks} block(s) over {objects} facts); it is a recombination, not a new distinction\n"
+                )
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

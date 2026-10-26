@@ -178,6 +178,38 @@ pub fn by_size(found: &[Implication]) -> BTreeMap<usize, Vec<&Implication>> {
     out
 }
 
+/// The text form, shared by the command line and the MCP server so they cannot drift.
+pub fn text(found: &[Implication], search: &Search) -> String {
+    if found.is_empty() {
+        return format!(
+            "no implication holds: {} fact(s), {} attribute(s), antecedents up to {}, support at least {}\n",
+            search.objects, search.attributes, search.max_antecedent, search.min_support
+        );
+    }
+    let mut out = format!(
+        "{} implication(s) over {} fact(s) and {} attribute(s); antecedents up to {}, support at least {}\n",
+        found.len(),
+        search.objects,
+        search.attributes,
+        search.max_antecedent,
+        search.min_support
+    );
+    for item in found {
+        let converse = match &item.converse_witness {
+            Some(name) => format!("converse fails: {name}"),
+            None => "converse also holds".to_string(),
+        };
+        out.push_str(&format!(
+            "  {} -> {}   ({}/{} facts; {converse})\n",
+            item.antecedent.join(" & "),
+            item.consequent,
+            item.support,
+            item.objects
+        ));
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

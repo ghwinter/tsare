@@ -24,6 +24,14 @@ All notable changes are recorded here. The format follows
   holds -- `items=1 -> urgent=0`, with the number of facts behind it and a fact that makes the
   converse fail. The search is bounded on purpose (antecedents up to N attributes, at least M
   facts) and says so in its own output instead of claiming to be the canonical basis.
+- `ask`, `novel` and `imply` are MCP tools, so a model can ask for a judgement without a shell.
+  The command line and the server print the same text: both call one renderer per command, and
+  a test walks `tools/list` to check every listed tool is dispatched.
+
+### Changed
+
+- The text of `ask`, `novel` and `imply` is produced by one function each, used by both the
+  command line and the MCP server, so the two cannot drift.
 
 ### Fixed
 

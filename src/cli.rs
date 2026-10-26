@@ -589,22 +589,7 @@ fn cmd_ask(path: &Path, args: &Args) -> i32 {
         );
         return 0;
     }
-    if asked.is_empty() {
-        println!("nothing to ask: every list covers its extent and nothing collides");
-        return 0;
-    }
-    if one {
-        let top = &asked[0];
-        println!("{}", top.question);
-        return 0;
-    }
-    println!(
-        "{} question(s), ranked by what one answer would settle",
-        asked.len()
-    );
-    for item in &asked {
-        println!("  {:>2}  {:9}  {}", item.decides, item.kind, item.question);
-    }
+    print!("{}", crate::ask::text(&program, one));
     0
 }
 
@@ -633,36 +618,8 @@ fn cmd_novel(path: &Path, args: &Args) -> i32 {
             return 1;
         }
     }
-    match crate::novel::decide(&program, &holds) {
-        crate::novel::Verdict::Empty => {
-            println!("nothing to decide: no fact records an attribute");
-        }
-        crate::novel::Verdict::Redundant { key, value, on } => {
-            println!("redundant: `{attribute}` is exactly {key} = {value}; it is a column, not a new predicate");
-            println!("  true of {}", crate::ask::and_list(&on));
-        }
-        crate::novel::Verdict::Novel { witness } => {
-            let (yes, no) = witness;
-            println!(
-                "novel: {yes} and {no} record the same attributes and differ on `{attribute}`"
-            );
-        }
-        crate::novel::Verdict::Definable { blocks, objects } => {
-            if blocks == 0 {
-                println!(
-                    "definable: the proposal is constant over these facts, so it splits nothing"
-                );
-            } else if blocks == objects {
-                println!(
-                    "definable here, and vacuously: every fact already has its own record, so any proposal fits"
-                );
-            } else {
-                println!(
-                    "definable: `{attribute}` is a function of the recorded attributes ({blocks} block(s) over {objects} facts); it is a recombination, not a new distinction"
-                );
-            }
-        }
-    }
+    let verdict = crate::novel::decide(&program, &holds);
+    print!("{}", crate::novel::text(&verdict, attribute));
     0
 }
 
@@ -720,32 +677,7 @@ fn cmd_imply(path: &Path, args: &Args) -> i32 {
         );
         return 0;
     }
-    if found.is_empty() {
-        println!(
-            "no implication holds: {} fact(s), {} attribute(s), antecedents up to {}, support at least {}",
-            search.objects, search.attributes, search.max_antecedent, search.min_support
-        );
-        return 0;
-    }
-    println!(
-        "{} implication(s) over {} fact(s) and {} attribute(s); antecedents up to {}, support at least {}",
-        found.len(),
-        search.objects,
-        search.attributes,
-        search.max_antecedent,
-        search.min_support
-    );
-    for item in &found {
-        let lhs = item.antecedent.join(" & ");
-        let converse = match &item.converse_witness {
-            Some(name) => format!("converse fails: {name}"),
-            None => "converse also holds".to_string(),
-        };
-        println!(
-            "  {lhs} -> {}   ({}/{} facts; {converse})",
-            item.consequent, item.support, item.objects
-        );
-    }
+    print!("{}", crate::imply::text(&found, &search));
     0
 }
 
