@@ -18,7 +18,7 @@ def main() -> int:
     documents = sorted(V1.glob("*.mf"))
     for path in documents:
         left = json.loads(subprocess.run([PY, "cli.py", "engine", str(path)], cwd=CORE, capture_output=True, text=True).stdout)
-        right = json.loads(subprocess.run([str(BIN), "engine", str(path)], capture_output=True, text=True).stdout)
+        right = json.loads(subprocess.run([str(BIN), "engine", str(path), "--json"], capture_output=True, text=True).stdout)
         if left != right:
             mismatches += 1
             print(f"MISMATCH {path.name}")

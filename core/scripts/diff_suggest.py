@@ -24,7 +24,7 @@ def python_suggestions(path: Path) -> set:
 
 
 def rust_suggestions(path: Path) -> set:
-    result = subprocess.run([str(BIN), "suggest", str(path)], capture_output=True, text=True)
+    result = subprocess.run([str(BIN), "suggest", str(path), "--json"], capture_output=True, text=True)
     payload = json.loads(result.stdout)
     return {(item["applicability"], item["message"]) for item in payload["suggestions"]}
 

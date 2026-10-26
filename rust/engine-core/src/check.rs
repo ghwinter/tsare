@@ -130,6 +130,18 @@ fn check_record(decl: &Decl, out: &mut Vec<Diagnostic>) {
 
 pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
     let mut out = Vec::new();
+    if decls.is_empty() {
+        // an empty document is not a quiet success: it says nothing and can be checked
+        // for nothing. Whoever produced it (a person, a model, a truncated stream) the
+        // verdict is the same.
+        out.push(Diagnostic {
+            code: "E-EMPTY-DOCUMENT",
+            message: "the document declares nothing, so there is nothing to check".to_string(),
+            line: 1,
+            col: 1,
+            file: String::new(),
+        });
+    }
     let mut by_name: HashMap<&str, &str> = HashMap::new();
     for decl in decls {
         if by_name.contains_key(decl.name.as_str()) {
@@ -307,7 +319,13 @@ fn check_collapse(decls: &[Decl], out: &mut Vec<Diagnostic>) {
         let mut positives = field_ids(decl, "grounded_by");
         let mut negatives = field_ids(decl, "against");
         positives.sort();
+        positives.dedup();
         negatives.sort();
+        negatives.dedup();
+        // a concept with no positive example asserts nothing, so it cannot collide
+        if positives.is_empty() {
+            continue;
+        }
         match seen.get(&(positives.clone(), negatives.clone())) {
             Some(first) => out.push(diag(
                 "E-COLLAPSE",

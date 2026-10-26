@@ -32,12 +32,13 @@ pub fn render_decl(decl: &Decl) -> String {
     for (key, value) in &decl.fields {
         out.push_str(&format!("  {key}: {},\n", render_value(value)));
     }
-    out.push_str("}\n");
+    out.push('}');
     out
 }
 
 pub fn render(decls: &[Decl]) -> String {
-    decls.iter().map(render_decl).collect()
+    let chunks: Vec<String> = decls.iter().map(render_decl).collect();
+    format!("{}\n", chunks.join("\n\n"))
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -175,6 +176,128 @@ fn add_field(decls: &[Decl], owner: &str, key: &str, value: Val) -> Vec<Decl> {
         out.push(copy);
     }
     out
+}
+
+/// Warnings a candidate should reduce.  A hole is a progress marker, not noise.
+pub fn score_without_holes(decls: &[Decl]) -> (usize, usize) {
+    let diagnostics = check(decls);
+    let errors = diagnostics.iter().filter(|item| item.code.starts_with("E-")).count();
+    let warnings = diagnostics
+        .iter()
+        .filter(|item| item.code.starts_with("W-") && item.code != "W-HOLE")
+        .count();
+    (errors, warnings)
+}
+
+/// Every repair candidate: a description and the declaration list it would produce.
+pub fn candidates(decls: &[Decl]) -> Vec<(String, Vec<Decl>)> {
+    let mut out: Vec<(String, Vec<Decl>)> = Vec::new();
+    let warranted: HashSet<String> = decls
+        .iter()
+        .filter(|decl| decl.kind == "warrant")
+        .flat_map(|decl| crate::closure::field_ids(decl, "to"))
+        .collect();
+
+    // a duplicate name is the one repair a machine can make without guessing meaning:
+    // keep the first declaration, drop the later one; references still resolve
+    let mut seen_names: HashSet<&str> = HashSet::new();
+    for (index, decl) in decls.iter().enumerate() {
+        if !seen_names.insert(decl.name.as_str()) {
+            let trial: Vec<Decl> =
+                decls.iter().enumerate().filter(|(position, _)| *position != index).map(|(_, item)| item.clone()).collect();
+            out.push((format!("{}: drop the duplicate at line {}", decl.name, decl.line), trial));
+        }
+    }
+
+    for decl in decls {
+        let missing: Vec<String> = crate::specs::spec(&decl.kind)
+            .map(|fields| {
+                fields
+                    .iter()
+                    .filter(|(name, _, required)| {
+                        *required
+                            && !["claim", "evidence", "name", "to"].contains(name)
+                            && !decl.fields.iter().any(|(key, _)| key == *name)
+                    })
+                    .map(|(name, _, _)| name.to_string())
+                    .collect()
+            })
+            .unwrap_or_default();
+        if !missing.is_empty() {
+            let mut trial = decls.to_vec();
+            for key in &missing {
+                trial = add_field(&trial, &decl.name, key, Val::Hole);
+            }
+            let listed =
+                missing.iter().map(|key| format!("`{key}: ?`")).collect::<Vec<_>>().join(", ");
+            out.push((format!("{}: add {listed}", decl.name), trial));
+        }
+        if decl.kind == "value" {
+            let absent: Vec<&str> = ["unit", "threshold"]
+                .into_iter()
+                .filter(|key| !decl.fields.iter().any(|(name, _)| name == key))
+                .collect();
+            if !absent.is_empty() {
+                let mut trial = decls.to_vec();
+                for key in &absent {
+                    trial = add_field(&trial, &decl.name, key, Val::Hole);
+                }
+                let listed =
+                    absent.iter().map(|key| format!("`{key}: ?`")).collect::<Vec<_>>().join(", ");
+                out.push((format!("{}: add {listed}", decl.name), trial));
+            }
+        }
+        if decl.kind == "proposition"
+            && !crate::closure::field_ids(decl, "from").is_empty()
+            && !warranted.contains(&decl.name)
+        {
+            out.push((
+                format!("{}: add a warrant over its premises", decl.name),
+                add_warrant(decls, decl),
+            ));
+        }
+        if decl.kind == "fact" {
+            let claim = crate::program::f_str(decl, "claim").unwrap_or("");
+            let universal = ["所有", "都", "全部", "always", "every", "all "];
+            if universal.iter().any(|word| claim.contains(word))
+                && !decl.fields.iter().any(|(key, _)| key == "scope")
+            {
+                out.push((
+                    format!("{}: add `scope: ?`", decl.name),
+                    add_field(decls, &decl.name, "scope", Val::Hole),
+                ));
+            }
+        }
+    }
+    out
+}
+
+pub struct Verified {
+    pub description: String,
+    pub trial: Vec<Decl>,
+    pub delta: (isize, isize),
+}
+
+/// Candidates that a full re-check accepts: fewer errors, or fewer warnings without new ones.
+pub fn verified(decls: &[Decl]) -> (Vec<Verified>, (usize, usize)) {
+    let (before_e, before_w) = score_without_holes(decls);
+    let mut accepted = Vec::new();
+    let mut seen: HashSet<String> = HashSet::new();
+    for (description, trial) in candidates(decls) {
+        if !seen.insert(description.clone()) {
+            continue;
+        }
+        let (after_e, after_w) = score_without_holes(&trial);
+        let better = after_e < before_e || (after_e == before_e && after_w < before_w);
+        if better {
+            accepted.push(Verified {
+                description,
+                trial,
+                delta: (after_e as isize - before_e as isize, after_w as isize - before_w as isize),
+            });
+        }
+    }
+    (accepted, (before_e, before_w))
 }
 
 fn add_warrant(decls: &[Decl], proposition: &Decl) -> Vec<Decl> {
