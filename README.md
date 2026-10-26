@@ -8,10 +8,12 @@ still owes, and what follows from it.
 It does not judge truth. It judges whether a claim is checkable, and prints the smallest edit
 that would make it so.
 
-```
-examples\inquiry.mf:13:1: warning[W-UNTESTED]: concept C_CONTRAST_FIRST is never contrasted with a counterexample
- 13 | concept C_CONTRAST_FIRST {
-    | ^
+```powershell
+$ engine-core check SELF.mf
+
+SELF.mf:13:13: warning[W-UNCONFIRMED]: fact F_ENUM_FORM was supplied by a model, not by the user or a tool
+ 13 |   evidence: model
+    |             ^^^^^
 ```
 
 ## Install
@@ -114,3 +116,4 @@ SELF.mf         the repository, written as declarations
 ## License
 
 MIT.
+
