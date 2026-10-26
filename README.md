@@ -1,8 +1,11 @@
-# engine
+# tsare
 
-**An external reasoning engine for AI agents.** It turns a claim into a small program and
-answers two questions a model cannot answer about itself: *can this be checked at all*, and
-*what is the smallest edit that would make it so*.
+**An external reasoning engine and language checker for large language models.** A claim is
+written as a small typed language and compiled, so *can this be checked* has a deterministic
+answer -- and the compiler prints the smallest edit that would make it so.
+
+It does not make a model smarter, and it does not make a claim true. It makes a claim
+checkable, or says precisely why it is not.
 
 A `.mf` document is a set of typed declarations — facts,
 concepts, propositions, hypotheses, questions, blind spots, values, warrants, laws, layers,
