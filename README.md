@@ -53,6 +53,20 @@ closure.
 spots), `NOTES.md`, and `predicates.py` (the learned clauses as runnable functions, verified
 against every example).
 
+## What it is not
+
+Not classical inductive logic programming. The learner searches attribute literals and edge
+label paths and stops at a three-literal conjunction, so a rule like
+`grandparent(X,Z) :- parent(X,Y), parent(Y,Z)` cannot be written: there are no variables to
+unify and no Horn clauses to resolve. What it does have is ILP's control loop — background,
+positive and negative examples, a biased search, coverage, then a program — and the schema
+plays the part of the mode and type declarations an ILP system must be given. If that layer
+is ever added, it needs a rule language, and a rule language needs a decidability argument of
+its own.
+
+Not a theorem prover, and not a judge of truth. It decides whether a claim is checkable and
+what would be needed to check it.
+
 ## It checks itself
 
 `SELF.mf` is the repository describing itself: the argument for the partition kind, written as

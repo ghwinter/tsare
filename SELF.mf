@@ -129,7 +129,7 @@ question Q_GOAL {
 }
 
 hypothesis H_ONE_GOAL {
-  assumes: [F_READ_COMPILER, F_READ_TYPE],
+  assumes: [F_READ_COMPILER, F_READ_TYPE, F_BIAS_DIMENSIONS],
   predicts: "each description is the same obligation stated at a different height",
   test: "state the obligation once, then show each description is an instance of it"
 }
@@ -199,6 +199,46 @@ warrant W_PARTITION_DECIDABLE {
   from: [F_CLOSED_WORLD, F_CONCEPT_COST],
   to: P_PARTITION_DECIDABLE,
   basis: [F_CONCEPT_COST]
+}
+
+# What an ILP primer settles about this engine, and what it does not.
+fact F_ILP_CONTROL {
+  claim: "ILP is a control loop: background plus examples, a biased search, coverage, then a program",
+  evidence: model
+}
+
+fact F_BIAS_DIMENSIONS {
+  claim: "the five bias dimensions of ILP are present here: predicate bias in specs, types in kinds, complexity in the literal and depth caps, coverage in the consistency test",
+  evidence: code("rust/engine-core/src/specs.rs")
+}
+
+fact F_ILP_REPRESENTATION {
+  claim: "classical ILP needs variables, unification and Horn clauses; this learner has none of them",
+  evidence: code("rust/engine-core/src/induce.rs")
+}
+
+proposition P_NOT_CLASSIC_ILP {
+  statement: "the learner is not classical ILP: it searches attribute literals, so a rule like grandparent(X,Z) :- parent(X,Y), parent(Y,Z) cannot be written",
+  from: [F_ILP_REPRESENTATION]
+}
+
+warrant W_NOT_CLASSIC_ILP {
+  claim: "coverage over recorded attributes is a smaller hypothesis space than Horn-clause induction",
+  from: [F_ILP_REPRESENTATION, F_ILP_CONTROL],
+  to: P_NOT_CLASSIC_ILP,
+  basis: [F_ILP_CONTROL]
+}
+
+proposition P_TYPE_IS_BIAS {
+  statement: "the type system and the ILP bias are one mechanism: what the schema forbids, the learner cannot hypothesise",
+  from: [F_BIAS_DIMENSIONS, F_ILP_CONTROL]
+}
+
+warrant W_TYPE_IS_BIAS {
+  claim: "mode declarations are an add-on in Progol and a well-formedness rule here, so the two readings name the same constraint",
+  from: [F_BIAS_DIMENSIONS, F_ILP_CONTROL],
+  to: P_TYPE_IS_BIAS,
+  basis: [F_BIAS_DIMENSIONS]
 }
 
 # What this document cannot say, and where the next question comes from.
