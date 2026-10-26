@@ -152,12 +152,15 @@ fn gaps(program: &Program) -> Vec<Question> {
         .map(|draft| {
             let decides = *missing.get(&draft.fact).unwrap_or(&1);
             let question = match draft.separates.first() {
+                // the fact lacks something every listed element records: that is a measurement
                 Some((key, value)) if value == "(not recorded)" => format!(
                     "{} does not list {}; does it record {key}? every listed element does",
                     draft.partition, draft.fact
                 ),
+                // the fact already records a pair no listed element has: the measurement is done,
+                // and what is left is a membership decision
                 Some((key, value)) => format!(
-                    "{} does not list {}; does it record {key} = {value}? no listed element does",
+                    "{} does not list {}; it records {key} = {value}, which no listed element does -- is it an element?",
                     draft.partition, draft.fact
                 ),
                 None => format!(
@@ -360,8 +363,8 @@ partition P_SOME { dimension: C_THINGS, elements: [F_A, F_B], closure: open }
         assert_eq!(gap.key.as_deref(), Some("kind"));
         assert_eq!(gap.value.as_deref(), Some("second"));
         assert!(
-            gap.question.contains("no listed element does"),
-            "{}",
+            gap.question.contains("is it an element?"),
+            "a recorded pair is a membership decision, not a measurement: {}",
             gap.question
         );
     }
