@@ -1141,6 +1141,39 @@ fn cmd_propose(path: &Path, proposals_path: &str, apply: bool) -> i32 {
     0
 }
 
+fn cmd_fca(path: &Path) -> i32 {
+    let loaded = match load(path) {
+        Ok(loaded) => loaded,
+        Err(error) => return fail(error),
+    };
+    let program = Program::new(&loaded.decls);
+    let mut printed = 0;
+    for concept in crate::fca::concepts(&program) {
+        printed += 1;
+        println!("{}", concept.name);
+        println!("  listed        {} positive(s)", concept.listed);
+        println!("  intent        {}", crate::fca::render_pairs(&concept.intent));
+        if concept.implied.is_empty() {
+            println!("  implied       -");
+        } else {
+            println!("  implied       {}", concept.implied.join(", "));
+        }
+    }
+    for pile in crate::fca::piles(&program) {
+        printed += 1;
+        println!("{}", pile.name);
+        println!("  elements      {}", pile.elements);
+        println!("  shared        {}", crate::fca::render_pairs(&pile.shared));
+        if pile.shared.is_empty() {
+            println!("  verdict       the pile has no recorded common property, so nothing separates it yet");
+        }
+    }
+    if printed == 0 {
+        println!("no concept or pile to analyse");
+    }
+    0
+}
+
 fn cmd_kinds() -> i32 {
     println!("{} {} discharge", pad("kind", 12), pad("obligation", 52));
     for (kind, obligation, discharge) in program::TABLE {
@@ -1194,6 +1227,7 @@ fn is_command(name: &str) -> bool {
             | "build"
             | "whatif"
             | "propose"
+            | "fca"
     )
 }
 
@@ -1327,7 +1361,8 @@ pub fn run() -> i32 {
                 return 2;
             };
             cmd_propose(&path, proposals, args.has("--apply"))
-        }        "pattern" => {
+        }
+        "fca" => cmd_fca(&path),        "pattern" => {
             let Some(name) = args.at(1) else {
                 println!("usage: engine-core pattern FILE CONCEPT");
                 return 2;

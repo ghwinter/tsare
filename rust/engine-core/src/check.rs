@@ -649,7 +649,11 @@ fn check_semantics(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                 }
                 let test = string_field(decl, "test").map(|text| text.trim().to_string()).unwrap_or_default();
                 let rival = id_field(decl, "rival");
-                if test.is_empty() && rival.is_none() {
+                // a hypothesis already settled by a fact does not need a test: the evidence
+                // that refuted it is the observation.
+                let decided = matches!(id_field(decl, "verdict"), Some("supported") | Some("refuted"))
+                    && id_field(decl, "verdict_by").is_some();
+                if test.is_empty() && rival.is_none() && !decided {
                     sem(
                         decl,
                         "E-UNFALSIFIABLE",
@@ -885,6 +889,32 @@ fn check_partition(
                     Some("elements"),
                     out,
                 );
+            }
+        }
+        // the attributes imply more instances than the concept lists; a closed list that
+        // omits one is contradicted by its own recorded evidence, not only by the author
+        if let Some(target) = target.filter(|target| target.kind == "concept") {
+            let program = crate::program::Program::new(decls);
+            let positives: Vec<&Decl> = crate::program::pos(target)
+                .iter()
+                .filter_map(|name| program.get(name))
+                .collect();
+            let pairs = crate::fca::intent(&positives);
+            if !pairs.is_empty() {
+                for fact in crate::fca::extent(&program, &pairs) {
+                    if !elements.contains(&fact.name) && !extent.contains(&fact.name) {
+                        sem(
+                            decl,
+                            "E-PARTITION-CLOSED-CONTRADICTED",
+                            format!(
+                                "the recorded attributes also imply {}, which the closed list omits",
+                                fact.name
+                            ),
+                            Some("elements"),
+                            out,
+                        );
+                    }
+                }
             }
         }
     } else if closure == "open" && referenced {

@@ -14,6 +14,7 @@ pub mod coverage;
 pub mod debt;
 pub mod derive;
 pub mod egraph;
+pub mod fca;
 pub mod fix;
 pub mod graph;
 pub mod hash;
