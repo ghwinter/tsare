@@ -1,106 +1,116 @@
 # engine
 
-A compiler for structured thinking. A `.mf` document is a set of typed declarations — facts,
+A compiler for checkable claims. A `.mf` document is a set of typed declarations — facts,
 concepts, propositions, hypotheses, questions, blind spots, values, warrants, laws, layers,
-notes — and the compiler decides whether each one can be checked at all, what it still owes,
-and what follows from it.
+partitions, notes — and the compiler decides whether each one can be checked at all, what it
+still owes, and what follows from it.
 
-It does not judge truth. It judges whether a claim is checkable, and it prints the smallest
-edit that would make it so.
+It does not judge truth. It judges whether a claim is checkable, and prints the smallest edit
+that would make it so.
 
-## Run it
+```
+examples\inquiry.mf:13:1: warning[W-UNTESTED]: concept C_CONTRAST_FIRST is never contrasted with a counterexample
+ 13 | concept C_CONTRAST_FIRST {
+    | ^
+```
+
+## Install
 
 ```powershell
-cd rust/engine-core
-cargo build --release
-.\target\release\engine-core.exe check ..\..\..\metaform\obligo\hello.mf
+cargo install --path .
+engine-core --help
 ```
 
-The binary is 0.6 MB, links no runtime beyond the OS, and needs no interpreter:
+One binary, no dependencies, no runtime beyond the OS. `engine-core --version` reports the
+release; `--explain CODE` explains any diagnostic it prints.
+
+## First document
+
+```mf
+fact F_TRACE {
+  claim: "the trace shows 14ms frames",
+  evidence: tool("trace")
+}
+
+value V_BUDGET {
+  metric: "frame_ms", direction: max, unit: "ms", threshold: 16, measured_by: "trace"
+}
+
+proposition P_FAST {
+  statement: "frames land inside the budget",
+  from: [F_TRACE]
+}
+
+warrant W_FAST {
+  claim: "14ms is inside the 16ms budget",
+  from: [F_TRACE],
+  to: P_FAST,
+  basis: [V_BUDGET]
+}
+```
 
 ```powershell
-.\target\release\engine-core.exe --help
+engine-core check examples\hello.mf      # 0 error(s), 0 warning(s)
+engine-core engine examples\inquiry.mf   # held, conditional, blocked
+Get-Content SELF.mf | engine-core check -   # a document may arrive on stdin
 ```
 
-`check`, `engine`, `suggest` answer `--json` for machines; every other command prints text.
-A path may be `-`: the document arrives on standard input, which is what an editor or a CI
-step passes.
+`check`, `engine` and `suggest` answer `--json` for machines; every other command prints text.
+Exit codes: `0` no errors, `1` errors found or a proposal refused, `2` a usage or file problem.
 
-Exit codes: `0` no errors (warnings are allowed), `1` errors found or a proposal refused,
-`2` a usage problem or a file that could not be read. `--help` lists every command.
+## What it can answer
 
-## Explain a diagnostic
-
-Every code the compiler prints has a two-line explanation, and a test keeps the table complete:
-
-```powershell
-.\target\release\engine-core.exe --explain W-BY-MISMATCH
-```
-
-## Test it
-
-```powershell
-cargo test
-```
-
-Two suites: `tests/semantics.rs` states the properties (an attack defeats its target, an
-ungrounded premise makes a conclusion conditional), and `tests/golden.rs` pins the exact text
-of every command against six fixture documents. `UPDATE_GOLDEN=1 cargo test` rewrites the
-snapshots; read the diff before committing.
-
-## The documents
-
-```
-fact F_TRACE { claim: "the trace shows 14ms frames", evidence: tool("trace") }
-concept C_FAST { name: "fast", grounded_by: [F_TRACE], against: [F_SLOW] }
-warrant W_FAST { claim: "14ms is fast", from: [F_TRACE], to: P_FAST, basis: [V_BUDGET] }
-```
+| question | command |
+| --- | --- |
+| is every declaration well formed, and does every reference resolve? | `check` |
+| which conclusions survive attack, and which reach a fact? | `argue`, `derive`, `engine` |
+| which facts gate a conclusion, and how much external work does the document demand? | `debt`, `cost` |
+| what does a concept's examples share, and what do the attributes imply? | `fca` |
+| which diagnostics have a machine repair, and which need a value only the author can choose? | `fix` |
+| are two documents the same argument? | `map` |
+| what does the checked document oblige, and what did it learn? | `build` |
 
 Twelve kinds, each with a decidable obligation: a fact owes evidence someone else can check, a
-concept owes a counterexample, a proposition owes a rule, a hypothesis owes a test or a rival, a
-value owes an instrument, a warrant owes a basis, a partition owes a dimension and a stated
+concept owes a counterexample, a proposition owes a rule, a hypothesis owes a test or a rival,
+a value owes an instrument, a warrant owes a basis, a partition owes a dimension and a stated
 closure.
-
-`engine-core build` turns a checked document into `OBLIGATIONS.md` (what is still owed),
-`LEARNED.md` (the clause each concept's examples support), `OPEN.md` (holes, questions, blind
-spots), `NOTES.md`, and `predicates.py` (the learned clauses as runnable functions, verified
-against every example).
 
 ## What it is not
 
 Not classical inductive logic programming. The learner searches attribute literals and edge
-label paths and stops at a three-literal conjunction, so a rule like
+paths and stops at a three-literal conjunction, so a rule like
 `grandparent(X,Z) :- parent(X,Y), parent(Y,Z)` cannot be written: there are no variables to
 unify and no Horn clauses to resolve. What it does have is ILP's control loop — background,
-positive and negative examples, a biased search, coverage, then a program — and the schema
-plays the part of the mode and type declarations an ILP system must be given. If that layer
-is ever added, it needs a rule language, and a rule language needs a decidability argument of
-its own.
+positive and negative examples, a biased search, coverage — with the schema playing the part of
+the mode and type declarations an ILP system must be given.
 
 Not a theorem prover, and not a judge of truth. It decides whether a claim is checkable and
 what would be needed to check it.
 
-## It checks itself
-
-`SELF.mf` is the repository describing itself: the argument for the partition kind, written as
-declarations, compiled by the compiler it argues about. `cargo test` fails if that document
-stops compiling cleanly or if its concept stops being learnable, so the description and the
-implementation cannot drift apart.
+## Tests
 
 ```powershell
-.\target\release\engine-core.exe check ..\..\SELF.mf
-.\target\release\engine-core.exe induce ..\..\SELF.mf
+cargo test --release
 ```
+
+`tests/semantics.rs` states the properties (an attack defeats its target, a number cannot
+exceed its support, a closed list is contradicted by its own attributes). `tests/golden.rs`
+pins the exact text of every command against six fixture documents; `UPDATE_GOLDEN=1` rewrites
+them, and the diff is the review. `SELF.mf` is the repository describing itself, compiled by
+the compiler it argues about; a test fails if it stops compiling cleanly.
 
 ## Layout
 
 ```
-rust/engine-core/src     the compiler: one module per question it answers
-rust/engine-core/tests   properties and golden snapshots
-scripts/diff_text.py     the record of the port, against obligo v1
-PROTOCOL.md              the contract: commands, JSON, directories, deliberate differences
+src/            the compiler: syntax, checks, reasons, analyses, repairs, output
+tests/          properties and golden snapshots
+docs/           PROTOCOL.md (the contract) and the ten rounds that built it
+examples/       documents to run first
+experiments/    the hole-filling harness and its recorded results
+scripts/        the differential against the frozen reference implementation
+SELF.mf         the repository, written as declarations
 ```
 
-`obligo` (tag `v1`) holds the frozen Python implementation and the research behind it. It is
-history, not a dependency.
+## License
 
+MIT.
