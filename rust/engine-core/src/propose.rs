@@ -17,12 +17,34 @@ pub struct Proposal {
     pub value: String,
 }
 
+/// How much a proposal must earn before it counts as admitted.
+#[derive(Clone, Copy, PartialEq)]
+pub enum Policy {
+    /// No new diagnostic. A hole removed is progress by itself.
+    Harmless,
+    /// No new diagnostic, and an introduced one is a refusal rather than a question.
+    Strict,
+    /// No new diagnostic, and something apart from the hole must get better.
+    Improve,
+}
+
+impl Policy {
+    pub fn parse(text: &str) -> Policy {
+        match text {
+            "strict" => Policy::Strict,
+            "improve" => Policy::Improve,
+            _ => Policy::Harmless,
+        }
+    }
+}
+
 pub enum Verdict {
     /// Nothing got worse and the hole is gone. `errors` below zero means an error went too.
     Admitted { errors: isize, warnings: isize, text: String },
-    /// No error was added, but the fill introduced a diagnostic that was not there before.
-    /// A human should look: the compiler can say "new problem", not "which of the two is right".
-    NeedsReview { codes: Vec<&'static str>, text: String },
+    /// No error was added, but the fill introduced a diagnostic that was not there before,
+    /// or (under `Improve`) it changed nothing except the hole.  A human should look: the
+    /// compiler can say "this needs attention", not "which of the two is right".
+    NeedsReview { reason: String, text: String },
     Rejected { reason: String },
 }
 
@@ -34,7 +56,7 @@ fn code_counts(decls: &[Decl]) -> std::collections::HashMap<&'static str, usize>
     counts
 }
 
-pub fn verify(text: &str, decls: &[Decl], proposal: &Proposal) -> Verdict {
+pub fn verify(text: &str, decls: &[Decl], proposal: &Proposal, policy: Policy) -> Verdict {
     let Some(decl) = decls.iter().find(|decl| decl.name == proposal.decl) else {
         return Verdict::Rejected { reason: "no such declaration".to_string() };
     };
@@ -84,7 +106,21 @@ pub fn verify(text: &str, decls: &[Decl], proposal: &Proposal) -> Verdict {
         .map(|(code, _)| *code)
         .collect();
     if !introduced.is_empty() {
-        return Verdict::NeedsReview { codes: introduced, text: candidate };
+        return match policy {
+            Policy::Strict => {
+                Verdict::Rejected { reason: format!("introduces {}", introduced.join(", ")) }
+            }
+            _ => Verdict::NeedsReview { reason: format!("introduced {}", introduced.join(", ")), text: candidate },
+        };
+    }
+    if policy == Policy::Improve {
+        // something other than the hole has to get better: W-HOLE leaving is not progress
+        let better = new
+            .iter()
+            .any(|(code, count)| *code != "W-HOLE" && *count < old.get(*code).copied().unwrap_or(0));
+        if !better {
+            return Verdict::NeedsReview { reason: "removes only the hole; nothing else improved".to_string(), text: candidate };
+        }
     }
     Verdict::Admitted { errors, warnings, text: candidate }
 }
@@ -104,11 +140,11 @@ mod tests {
     fn a_well_typed_value_is_admitted_and_a_type_error_is_not() {
         let decls = parse(DOC).unwrap();
         assert!(matches!(
-            verify(DOC, &decls, &proposal("evidence", "tool(\"t\")")),
+            verify(DOC, &decls, &proposal("evidence", "tool(\"t\")"), Policy::Harmless),
             Verdict::Admitted { .. }
         ));
         assert!(matches!(
-            verify(DOC, &decls, &proposal("evidence", "nonsense")),
+            verify(DOC, &decls, &proposal("evidence", "nonsense"), Policy::Harmless),
             Verdict::Rejected { .. }
         ));
     }
@@ -117,14 +153,17 @@ mod tests {
     fn a_field_that_is_not_a_hole_is_refused() {
         let text = "fact F { claim: \"x\", evidence: user }\n";
         let decls = parse(text).unwrap();
-        let verdict = verify(text, &decls, &proposal("evidence", "model"));
+        let verdict = verify(text, &decls, &proposal("evidence", "model"), Policy::Harmless);
         assert!(matches!(verdict, Verdict::Rejected { reason } if reason.contains("not a hole")));
     }
 
     #[test]
     fn a_value_that_leaves_the_document_unchanged_is_refused() {
         let decls = parse(DOC).unwrap();
-        let verdict = verify(DOC, &decls, &proposal("evidence", "?"));
+        let verdict = verify(DOC, &decls, &proposal("evidence", "?"), Policy::Harmless);
         assert!(matches!(verdict, Verdict::Rejected { reason } if reason.contains("changes nothing")));
     }
 }
+
+
+

@@ -1113,7 +1113,7 @@ fn cmd_mem(recall: Option<&[String]>, k: usize) -> i32 {
     0
 }
 
-fn cmd_propose(path: &Path, proposals_path: &str, apply: bool) -> i32 {
+fn cmd_propose(path: &Path, proposals_path: &str, apply: bool, policy: &str) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -1155,7 +1155,7 @@ fn cmd_propose(path: &Path, proposals_path: &str, apply: bool) -> i32 {
             Ok(decls) => decls,
             Err(error) => return fail(format!("the document stopped parsing: {error}")),
         };
-        match crate::propose::verify(&current, &decls, &proposal) {
+        match crate::propose::verify(&current, &decls, &proposal, crate::propose::Policy::parse(policy)) {
             crate::propose::Verdict::Admitted { errors, warnings, text } => {
                 admitted += 1;
                 println!(
@@ -1164,13 +1164,9 @@ fn cmd_propose(path: &Path, proposals_path: &str, apply: bool) -> i32 {
                 );
                 current = text;
             }
-            crate::propose::Verdict::NeedsReview { codes, text } => {
+            crate::propose::Verdict::NeedsReview { reason, text } => {
                 needs_review += 1;
-                println!(
-                    "{} review    introduced {}",
-                    pad(&format!("{decl}.{field}"), 34),
-                    codes.join(", ")
-                );
+                println!("{} review    {reason}", pad(&format!("{decl}.{field}"), 34));
                 current = text;
             }
             crate::propose::Verdict::Rejected { reason } => {
@@ -1282,7 +1278,7 @@ struct Args {
     options: std::collections::HashMap<String, String>,
 }
 
-const VALUE_FLAGS: &[&str] = &["--top", "--threshold", "--out", "--goals", "--k", "--apply", "--proposals"];
+const VALUE_FLAGS: &[&str] = &["--top", "--threshold", "--out", "--goals", "--k", "--apply", "--proposals", "--policy"];
 
 impl Args {
     fn parse(raw: &[String]) -> Self {
@@ -1404,7 +1400,7 @@ pub fn run() -> i32 {
                 println!("usage: engine-core propose FILE --proposals FILE.json [--apply]");
                 return 2;
             };
-            cmd_propose(&path, proposals, args.has("--apply"))
+            cmd_propose(&path, proposals, args.has("--apply"), args.option("--policy").unwrap_or("harmless"))
         }
         "fca" => cmd_fca(&path),        "pattern" => {
             let Some(name) = args.at(1) else {
@@ -1421,3 +1417,8 @@ pub fn run() -> i32 {
         }
     }
 }
+
+
+
+
+
