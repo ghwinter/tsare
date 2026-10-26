@@ -9,13 +9,15 @@ readme = "README.md"
 keywords = ["compiler", "logic", "argument", "verification", "reasoning"]
 categories = ["development-tools", "text-processing"]
 include = [
-    "src/**",
-    "tests/**",
-    "examples/**",
-    "Cargo.toml",
-    "README.md",
-    "LICENSE",
-    "CHANGELOG.md",
+    "/src/**",
+    "/tests/**",
+    "/SELF.mf",
+    "/docs/PROTOCOL.md",
+    "/docs/REPO.mf",
+    "/Cargo.toml",
+    "/README.md",
+    "/LICENSE",
+    "/CHANGELOG.md",
 ]
 
 [lib]

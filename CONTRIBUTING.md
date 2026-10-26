@@ -3,7 +3,7 @@
 ## What this is
 
 A deterministic checker: same input, same output, no model inside. Anything that needs a model
-stays outside the binary, in `experiments/`.
+stays outside the binary.
 
 ## Before a pull request
 
@@ -11,7 +11,7 @@ stays outside the binary, in `experiments/`.
 cargo fmt --all --check
 cargo clippy --all-targets -- -D warnings
 cargo test --release
-cargo run --release --quiet -- check examples SELF.mf
+cargo run --release --quiet -- check SELF.mf docs/REPO.mf
 ```
 
 ## Rules the code keeps

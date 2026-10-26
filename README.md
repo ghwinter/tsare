@@ -27,9 +27,8 @@ The point is not that a human types `.mf` files. It is that an agent, before it 
 something, can write the claim as code and have a deterministic checker say whether the claim
 is anchored, whether a rule connects it to its support, and what is missing.
 
-`agent/AGENTS.snippet.md` is a block to paste into your agent instructions. The loop it
-installs is one line long: write the claim, compile it, report only what compiles, and report
-the refusals with the corrected version.
+The loop to install in an agent is one line long: write the claim, compile it, report only
+what compiles, and report the refusals with the corrected version.
 
 ```powershell
 tsare check claim.mf        # what is wrong with it
@@ -77,9 +76,9 @@ warrant W_FAST {
 ```
 
 ```powershell
-tsare check examples\hello.mf      # 0 error(s), 0 warning(s)
-tsare engine examples\inquiry.mf   # held, conditional, blocked
-Get-Content SELF.mf | tsare check -   # a document may arrive on stdin
+tsare check docs\REPO.mf             # 0 error(s), 0 warning(s)
+tsare engine docs\REPO.mf            # held, conditional, blocked
+Get-Content SELF.mf | tsare check -  # a document may arrive on stdin
 ```
 
 `check`, `engine` and `suggest` answer `--json` for machines; every other command prints text.
@@ -130,13 +129,14 @@ the compiler it argues about; a test fails if it stops compiling cleanly.
 
 ```
 src/            the compiler: syntax, checks, reasons, analyses, repairs, output
-tests/          properties and golden snapshots
-docs/           PROTOCOL.md (the contract) and the ten rounds that built it
-examples/       documents to run first
-experiments/    the hole-filling harness and its recorded results
-scripts/        the differential against the frozen reference implementation
-SELF.mf         the repository, written as declarations
+tests/          properties, golden snapshots, fixtures
+docs/           PROTOCOL.md (the machine contract) and REPO.mf (the repository as declarations)
+SELF.mf         the same project described again, from a different angle; a test compiles it
 ```
+
+Only what the build, the tests or the published package need is tracked. The rounds of
+documents that built the language, the experiment harness and its recorded results, and the
+agent integration notes are kept in the working copies, not in git.
 
 ## License
 

@@ -22,9 +22,8 @@ jobs:
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test --release
 
-      # The documents the README promises are there, and they compile.
+      # The two documents the tests read are there, and they compile.
       - run: cargo run --release --quiet -- check SELF.mf
-      - run: cargo run --release --quiet -- check examples
       - run: cargo run --release --quiet -- check docs/REPO.mf
 
       # Default-deny .gitignore hides new files instead of reporting them.  This is the alarm.

@@ -1,43 +1,37 @@
-# Default deny: a file is tracked only if a line below names it, so adding a top-level
-# directory means adding a line here.  git will not remind you -- .github/workflows/ci.yml
-# runs `git status --porcelain` and fails on anything that is neither committed nor ignored.
+# Default deny: a file is tracked only if a line below names it.
+#
+# The rule is one sentence: **tracked iff the build, the tests or the published package need
+# it.** Prose, rounds of documents, experiment harnesses and their results stay on disk and in
+# history, not in the tree.  git will not remind you -- .github/workflows/ci.yml runs
+# `git status --porcelain` and fails on anything that is neither committed nor ignored.
+#
+# Every allowlist line is anchored with a leading slash: an unanchored `!README.md` would also
+# un-ignore `docs/rounds/README.md`.
 *
 !*/
 
-!.gitattributes
-!.gitignore
-!.editorconfig
-!rustfmt.toml
+/.gitattributes
+/.gitignore
+/.editorconfig
+/rustfmt.toml
 
-!LICENSE
-!README.md
-!CHANGELOG.md
-!CONTRIBUTING.md
-!Cargo.toml
-!Cargo.lock
-!SELF.mf
+/.cargo/
+/.github/
 
-!.cargo/
-!.cargo/**
-!.github/
-!.github/**
+/Cargo.toml
+/Cargo.lock
 
-!src/
-!src/**
-!tests/
-!tests/**
-!docs/
-!docs/**
-!examples/
-!examples/**
-!agent/
-!agent/**
-!dsh/
-!dsh/**
-!experiments/
-!experiments/**
-!scripts/
-!scripts/**
+/src/
+/tests/
+
+# The package front page and its licence, plus the documents code or tests read.
+/LICENSE
+/README.md
+/CHANGELOG.md
+/CONTRIBUTING.md
+/SELF.mf
+/docs/PROTOCOL.md
+/docs/REPO.mf
 
 # What the allowlist above would otherwise let through.
 __pycache__/
