@@ -1,0 +1,33 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - run: cargo fmt --all --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test --release
+
+      # The documents the README promises are there, and they compile.
+      - run: cargo run --release --quiet -- check SELF.mf
+      - run: cargo run --release --quiet -- check examples
+      - run: cargo run --release --quiet -- check docs/REPO.mf
+
+      # Default-deny .gitignore hides new files instead of reporting them.  This is the alarm.
+      - name: nothing is untracked
+        if: matrix.os == 'ubuntu-latest'
+        run: test -z "$(git status --porcelain)"

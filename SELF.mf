@@ -2,8 +2,8 @@
 #
 # This file exists so the reply can be checked by the thing it describes.  Compile it:
 #
-#     engine-core check SELF.mf
-#     engine-core derive SELF.mf
+#     tsare check SELF.mf
+#     tsare derive SELF.mf
 #
 # Every fact below is model-supplied.  The checker is expected to say so; only the user can
 # discharge that, and the document says which claims are waiting.
@@ -20,12 +20,12 @@ fact F_CLOSED_WORLD {
 
 fact F_CONCEPT_COST {
   claim: "naming a dimension as a concept costs a positive example and a counterexample",
-  evidence: code("rust/engine-core/src/check.rs")
+  evidence: code("src/check/mod.rs")
 }
 
 fact F_NO_ENUM_OBLIGATION {
   claim: "before this file, the checker had no obligation attached to an enumeration",
-  evidence: code("rust/engine-core/src/specs.rs")
+  evidence: code("src/specs.rs")
 }
 
 fact F_EDGE_CLASSES {
@@ -63,7 +63,7 @@ fact F_ADVICE_PROSE {
 
 fact F_PARTITION_IS_ADDITION {
   claim: "adding the partition kind is itself an addition, and it is wanted now",
-  evidence: code("rust/engine-core/src/specs.rs"),
+  evidence: code("src/specs.rs"),
   attrs: { checker_can_verify: true, adds: classification }
 }
 
@@ -209,12 +209,12 @@ fact F_ILP_CONTROL {
 
 fact F_BIAS_DIMENSIONS {
   claim: "the five bias dimensions of ILP are present here: predicate bias in specs, types in kinds, complexity in the literal and depth caps, coverage in the consistency test",
-  evidence: code("rust/engine-core/src/specs.rs")
+  evidence: code("src/specs.rs")
 }
 
 fact F_ILP_REPRESENTATION {
   claim: "classical ILP needs variables, unification and Horn clauses; this learner has none of them",
-  evidence: code("rust/engine-core/src/induce.rs")
+  evidence: code("src/induce.rs")
 }
 
 proposition P_NOT_CLASSIC_ILP {
