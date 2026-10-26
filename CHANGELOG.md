@@ -6,6 +6,14 @@ All notable changes are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `check FILE --against KERNEL`: a kernel is a prelude. Its names may be used, not redefined
+  (`E-KERNEL-SHADOW`), and a claim that puts itself in one of the kernel's layers must cite one
+  of that layer's laws (`W-UNPRINCIPLED`). The kernel is checked alone first and must compile,
+  or nothing is checked against it. It cannot refute what a claim says -- only refuse to admit
+  it as grounded.
+
 ## [0.4.0] - 2026-10-26
 
 The version where the engine starts judging its own vocabulary: whether a predicate is new,

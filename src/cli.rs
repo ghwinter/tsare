@@ -188,6 +188,7 @@ fn cmd_check(
     sugar: bool,
     goals_path: Option<&str>,
     use_cache: bool,
+    against: Option<&str>,
 ) -> i32 {
     let loaded = if sugar {
         let raw = match fs::read_to_string(path) {
@@ -211,6 +212,9 @@ fn cmd_check(
             Err(error) => return fail(error),
         }
     };
+    if let Some(kernel_path) = against {
+        return check_against(path, &loaded, Path::new(kernel_path), json);
+    }
     let display = path.display().to_string();
     let mut session = crate::session::Session::new(display)
         .with_source(&loaded.text)
@@ -275,6 +279,75 @@ fn cmd_check(
             "holes: {} unknown value(s), listed in OPEN.md after a build",
             holes.len()
         );
+    }
+    println!("{}", session.summary());
+    session.exit_code()
+}
+
+/// `check FILE --against KERNEL`: the kernel is a prelude. Its names may be used, not
+/// redefined, and a claim inside one of its layers must stand on one of that layer's laws.
+fn check_against(path: &Path, loaded: &Loaded, kernel_path: &Path, json: bool) -> i32 {
+    let kernel = match load_for_check(kernel_path) {
+        Ok(kernel) => kernel,
+        Err(error) => return fail(error),
+    };
+    let kernel_name = kernel_path.display().to_string();
+    let target_name = path.display().to_string();
+
+    let mut kernel_decls = kernel.decls.clone();
+    for decl in &mut kernel_decls {
+        decl.file = kernel_name.clone();
+    }
+    let mut target_decls = loaded.decls.clone();
+    for decl in &mut target_decls {
+        decl.file = target_name.clone();
+    }
+    let kernel_own = crate::check::check(&kernel_decls);
+    if kernel_own.iter().any(|item| item.code.starts_with('E')) {
+        let mut session =
+            crate::session::Session::new(kernel_name.clone()).with_source(&kernel.text);
+        session.extend(kernel_own);
+        print!("{}", session.text());
+        println!("{}", session.summary());
+        println!("the kernel does not compile; fix it before checking anything against it");
+        return 1;
+    }
+
+    let mut merged = kernel_decls.clone();
+    merged.extend(target_decls.clone());
+    let shadows = crate::kernel::check(&kernel_decls, &target_decls);
+    let shadowed: std::collections::HashSet<(String, usize)> = shadows
+        .iter()
+        .map(|item| (item.file.clone(), item.line))
+        .collect();
+    // the merge makes a shadowed name a plain duplicate; the kernel code says it better
+    let mut diagnostics: Vec<crate::check::Diagnostic> = crate::check::check(&merged)
+        .into_iter()
+        .filter(|item| item.file == target_name)
+        .filter(|item| {
+            !(item.code == "E-DUP-ID" && shadowed.contains(&(item.file.clone(), item.line)))
+        })
+        .collect();
+    diagnostics.extend(shadows);
+
+    let mut session = crate::session::Session::new(target_name.clone())
+        .with_source(&loaded.text)
+        .with_sources(&[
+            (kernel_name.clone(), kernel.text.clone()),
+            (target_name.clone(), loaded.text.clone()),
+        ]);
+    session.extend(diagnostics);
+    if json {
+        println!("{}", session.json());
+        return session.exit_code();
+    }
+    print!("{}", session.text());
+    let kernel_warnings = kernel_own
+        .iter()
+        .filter(|item| !item.code.starts_with('E'))
+        .count();
+    if kernel_warnings > 0 {
+        println!("kernel: {kernel_warnings} warning(s) of its own");
     }
     println!("{}", session.summary());
     session.exit_code()
@@ -1759,6 +1832,7 @@ const VALUE_FLAGS: &[&str] = &[
     "--policy",
     "--attribute",
     "--holds",
+    "--against",
     "--max-antecedent",
     "--min-support",
 ];
@@ -1885,6 +1959,7 @@ pub fn run() -> i32 {
             args.has("--sugar"),
             args.option("--goals"),
             args.has("--cache"),
+            args.option("--against"),
         ),
         "engine" => cmd_engine(&path, args.has("--json")),
         "suggest" => cmd_suggest(&path, args.has("--json")),

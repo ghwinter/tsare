@@ -24,6 +24,7 @@ pub mod impact;
 pub mod imply;
 pub mod induce;
 pub mod json;
+pub mod kernel;
 pub mod mapping;
 pub mod mcp;
 pub mod moves;

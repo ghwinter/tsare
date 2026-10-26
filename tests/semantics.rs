@@ -580,6 +580,46 @@ law L_B { statement: "b implements a", holds_in: L_DOWN, checked_by: [F_B], refi
 }
 
 #[test]
+fn a_kernel_refuses_a_claim_that_stands_on_none_of_its_laws() {
+    let kernel = decls(
+        r#"
+layer L { name: "governed", exposes: [F_A] }
+fact F_A { claim: "a", evidence: tool("t") }
+law K { statement: "a claim needs a ground", holds_in: L, checked_by: [F_A] }
+"#,
+    );
+    let governed = decls(
+        r#"
+proposition P { statement: "a claim with no principle behind it", from: [F_A], layer: L }
+"#,
+    );
+    let found = tsare::kernel::check(&kernel, &governed);
+    assert!(
+        found.iter().any(|item| item.code == "W-UNPRINCIPLED"),
+        "{found:?}"
+    );
+
+    let standing = decls(
+        r#"
+proposition P { statement: "a claim on a principle", from: [K], layer: L }
+"#,
+    );
+    let found = tsare::kernel::check(&kernel, &standing);
+    assert!(
+        !found.iter().any(|item| item.code == "W-UNPRINCIPLED"),
+        "{found:?}"
+    );
+
+    let shadow =
+        decls(r#"law K { statement: "a different rule", holds_in: L, checked_by: [F_A] }"#);
+    let found = tsare::kernel::check(&kernel, &shadow);
+    assert!(
+        found.iter().any(|item| item.code == "E-KERNEL-SHADOW"),
+        "{found:?}"
+    );
+}
+
+#[test]
 fn the_self_document_compiles_without_errors() {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("SELF.mf");
     let text =

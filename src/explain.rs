@@ -16,6 +16,7 @@ pub const CODES: &[&str] = &[
     "E-HIERARCHY",
     "E-INCOMMENSURABLE",
     "E-KIND",
+    "E-KERNEL-SHADOW",
     "E-KIND-UNKNOWN",
     "E-LAYER-LEAK",
     "E-MISSING",
@@ -63,6 +64,7 @@ pub const CODES: &[&str] = &[
     "W-PARTITION-UNKNOWN",
     "W-PARTITION-UNLEARNED",
     "W-UNCONFIRMED",
+    "W-UNPRINCIPLED",
     "W-UNREFINED",
     "W-UNTESTED",
     "W-UNWARRANTED",
@@ -98,6 +100,9 @@ pub fn explain(code: &str) -> Option<&'static str> {
             Fix: name the unit and the bound, or leave it as a hole on purpose.",
         "E-KIND" => "A reference points at a declaration of the wrong kind.\n\
             Fix: point it at the kind the field expects, or change the field's target.",
+        "E-KERNEL-SHADOW" => "A document checked against a kernel redefines a name the kernel declares.\n\
+            The kernel is a prelude: its names may be used, never renegotiated.\n\
+            Fix: use the name, or give this declaration a different one.",
         "E-KIND-UNKNOWN" => "The declaration kind is not one the language has.\n\
             Fix: use one of the twelve kinds, or add the kind to the schema.",
         "E-LAYER-LEAK" => "A declaration reaches across layers into a name the target layer does not expose.\n\
@@ -196,6 +201,9 @@ pub fn explain(code: &str) -> Option<&'static str> {
             Fix: record the attribute that distinguishes them.",
         "W-UNCONFIRMED" => "A fact was supplied by a model and nobody confirmed it.\n\
             Fix: add confirmed_by, or change the evidence to a person or a tool.",
+        "W-UNPRINCIPLED" => "A declaration sits in a layer the kernel governs, but cites none of that\n\
+            layer's laws. It may be right; it is not standing on the principle it claims to be inside.\n\
+            Fix: cite the law in rom: or asis:, or move the declaration out of that layer.",
         "W-UNREFINED" => "A law holds in a layer, but no law at another layer declares that it \
             refines that layer.\n\
             The layer hides detail and the law says what is preserved; nothing says the hidden \
