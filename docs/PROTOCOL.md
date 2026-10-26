@@ -180,6 +180,7 @@ checked against what was declared.
 | `W-BY-MISMATCH` | an inference type is derived from structure — a warrant makes deduction, concepts without a rule make induction — and a declaration that disagrees is contradicted |
 | `W-CONFIDENCE-INFLATED` | a declared number is bounded by the weakest link: the rule's premises, or the premises a rule-less proposition cites |
 | `E-PARTITION-*` | a closed list is contradicted by the dimension's extent and by any fact the attributes imply |
+| `W-UNSATISFIED` | a citation is compared with the fields the cited law declares it requires under `requires:` |
 | `W-PARTITION-UNKNOWN` | a pile with no dimension may be written and may not discharge anything |
 
 ## Gatekeeping values from outside

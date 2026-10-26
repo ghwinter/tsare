@@ -8,6 +8,16 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `law requires: ["field", ...]`: a law may name what citing it costs. A declaration that cites
+  the law through `from`, `basis` or `checked_by` without carrying a named field gets
+  `W-UNSATISFIED`. Before this, citing a principle was free: a reference was resolved for
+  existence alone, so a claim about button colour could stand on a law about instruments and
+  nothing noticed. The requirement does not decide whether the value is the right one -- it
+  makes the claim pay for the name it used, which is the difference between a citation and a
+  label. Where no kind that can cite a law even has the field (nothing but a `value` has
+  `measured_by`), the principle cannot be cited past at all: it has to be satisfied by writing
+  the thing down.
+
 - `outline PATH`: the document read as prose. Each kind's spoken field is quoted verbatim and
   everything that makes it checkable -- a ground, an evidence kind, a closure, a diagnostic --
   goes in the margin beside it, because those are not part of the sentence. Declarations are

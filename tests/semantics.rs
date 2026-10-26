@@ -945,3 +945,30 @@ fn a_projection_quotes_the_sentence_and_keeps_its_ground_in_the_margin() {
     assert!(text.contains("> it is ready"), "{text}");
     assert!(text.contains("obligation(s),"), "{text}");
 }
+
+/// A law may name what a citation costs.  K_NUMBER requires an instrument, and no kind that can
+/// cite a law even has `measured_by`, so the citation is refused rather than trusted: a principle
+/// that cannot be satisfied by pointing at it has to be satisfied by writing the thing down.
+/// K_CONF requires a field a warrant does carry, and the warrant that carries it pays nothing.
+#[test]
+fn a_law_that_names_a_requirement_charges_for_being_cited() {
+    let declared = decls(concat!(
+        "layer L { name: \"l\", exposes: [P_A] }\n",
+        "fact F_A { claim: \"a\", evidence: tool(\"t\") }\n",
+        "proposition P_A { statement: \"s\", from: [F_A], layer: L }\n",
+        "proposition P_BARE { statement: \"the button is blue\", from: [K_NUMBER] }\n",
+        "law K_NUMBER { statement: \"a number needs an instrument\", holds_in: L, checked_by: [F_A], requires: [\"measured_by\"] }\n",
+        "law K_CONF { statement: \"a rule carries its confidence\", holds_in: L, checked_by: [F_A], requires: [\"confidence\"] }\n",
+        "warrant W_PAID { claim: \"r\", from: [F_A], to: P_A, basis: [K_CONF], confidence: 0.5 }\n",
+    ));
+    let found = check(&declared);
+    let unpaid: Vec<&str> = found
+        .iter()
+        .filter(|item| item.code == "W-UNSATISFIED")
+        .map(|item| item.message.as_str())
+        .collect();
+    assert_eq!(unpaid.len(), 1, "{unpaid:#?}");
+    assert!(unpaid[0].contains("P_BARE") && unpaid[0].contains("measured_by"));
+    let text = tsare::explain::explain("W-UNSATISFIED").unwrap_or_default();
+    assert!(text.contains("requirement"), "{text}");
+}

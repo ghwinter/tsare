@@ -69,6 +69,7 @@ pub fn spec(kind: &str) -> Option<&'static [Field]> {
             ("holds_in", "ref:layer", true),
             ("checked_by", "list:ref:any", false),
             ("refines", "ref:layer", false),
+            ("requires", "list:str", false),
             ("layer", "ref:layer", false),
         ],
         "value" => &[

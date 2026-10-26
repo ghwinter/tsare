@@ -266,6 +266,7 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
     check_tension(decls, &mut out);
     check_layer(decls, &mut out);
     check_refinements(decls, &mut out);
+    check_requirements(decls, &mut out);
     let result = closure::closure(decls);
     for (name, reason) in &result.conditional {
         let decl = decls.iter().find(|item| &item.name == name);
@@ -583,6 +584,79 @@ fn check_refinements(decls: &[Decl], out: &mut Vec<Diagnostic>) {
             out,
         );
     }
+}
+
+/// A law may name the fields a declaration must carry in order to cite it (`requires`).  Without
+/// that, citing a principle is free: a reference is resolved for existence only, so a claim
+/// about button colour can stand on a law about instruments and nothing notices.  A requirement
+/// makes the citation cost the field the law is about.  It still cannot tell whether the value
+/// is the right one -- only that the claim paid for the name it used.
+fn check_requirements(decls: &[Decl], out: &mut Vec<Diagnostic>) {
+    let laws: std::collections::HashMap<&str, &Decl> = decls
+        .iter()
+        .filter(|decl| decl.kind == "law")
+        .map(|decl| (decl.name.as_str(), decl))
+        .collect();
+    for decl in decls.iter().filter(|decl| decl.kind != "law") {
+        for key in ["from", "basis", "checked_by"] {
+            for cited in field_ids(decl, key) {
+                let Some(law) = laws.get(cited.as_str()) else {
+                    continue;
+                };
+                for needed in string_items(law, "requires") {
+                    if carries(decl, &needed) {
+                        continue;
+                    }
+                    sem(
+                        decl,
+                        "W-UNSATISFIED",
+                        format!(
+                            "{} cites law {cited}, which requires {needed}, and declares no {needed}",
+                            decl.name
+                        ),
+                        Some(key),
+                        out,
+                    );
+                }
+            }
+        }
+    }
+}
+
+fn string_items(decl: &Decl, key: &str) -> Vec<String> {
+    let Some(value) = decl
+        .fields
+        .iter()
+        .find(|(name, _)| name == key)
+        .map(|(_, value)| value)
+    else {
+        return Vec::new();
+    };
+    match value {
+        Val::List(items) => items
+            .iter()
+            .filter_map(|item| match item {
+                Val::Str(text) => Some(text.clone()),
+                Val::Id(name) => Some(name.clone()),
+                _ => None,
+            })
+            .collect(),
+        Val::Str(text) => vec![text.clone()],
+        _ => Vec::new(),
+    }
+}
+
+/// A field is carried when it is present, is not a hole, and is not the empty list.
+fn carries(decl: &Decl, key: &str) -> bool {
+    let Some(value) = decl
+        .fields
+        .iter()
+        .find(|(name, _)| name == key)
+        .map(|(_, value)| value)
+    else {
+        return false;
+    };
+    !matches!(value, Val::Hole) && !matches!(value, Val::List(items) if items.is_empty())
 }
 
 fn check_layer(decls: &[Decl], out: &mut Vec<Diagnostic>) {

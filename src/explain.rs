@@ -66,6 +66,7 @@ pub const CODES: &[&str] = &[
     "W-UNCONFIRMED",
     "W-UNPRINCIPLED",
     "W-UNREFINED",
+    "W-UNSATISFIED",
     "W-UNTESTED",
     "W-UNWARRANTED",
     "W-UNWARRANTED-BASIS",
@@ -203,13 +204,20 @@ pub fn explain(code: &str) -> Option<&'static str> {
             Fix: add confirmed_by, or change the evidence to a person or a tool.",
         "W-UNPRINCIPLED" => "A declaration sits in a layer the kernel governs, but cites none of that\n\
             layer's laws. It may be right; it is not standing on the principle it claims to be inside.\n\
-            Fix: cite the law in rom: or asis:, or move the declaration out of that layer.",
+            Fix: cite the law in `from:` or `basis:`, or move the declaration out of that layer.",
         "W-UNREFINED" => "A law holds in a layer, but no law at another layer declares that it \
             refines that layer.\n\
             The layer hides detail and the law says what is preserved; nothing says the hidden \
             detail still implements it, so the abstraction is a promise nobody signed.\n\
             Fix: add a law at the lower layer with `refines: <layer>`, or state in this law that \
             it is an assumption rather than a refinement.",
+        "W-UNSATISFIED" => "A declaration cites a law that requires a field the declaration does not carry.\n\
+            A reference is resolved for existence alone, so without this the name of a principle \
+            costs nothing to use.\n\
+            The requirement makes the citation cost the field the law is about. Where no kind that \
+            can cite a law has that field, the principle cannot be cited past: it has to be \
+            satisfied by writing the thing down instead.\n\
+            Fix: declare the field, or stop citing the law and let the declaration carry the ground.",
         "W-UNTESTED" => "A concept is never contrasted with a counterexample.\n\
             Fix: add `against:` with a fact the concept should reject.",
         "W-UNWARRANTED" => "A proposition cites premises, but no rule connects them to it.\n\
