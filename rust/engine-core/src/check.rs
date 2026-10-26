@@ -87,9 +87,9 @@ fn check_record(decl: &Decl, out: &mut Vec<Diagnostic>) {
     };
     for (index, (key, value)) in decl.fields.iter().enumerate() {
         let (line, col) = decl
-            .field_pos
+            .field_span
             .get(index)
-            .copied()
+            .map(|span| (span.0, span.1))
             .unwrap_or((decl.line, decl.col));
         match fields.iter().find(|(name, _, _)| name == key) {
             Some((_, ftype, _)) => {
@@ -233,8 +233,8 @@ fn diag_ref(code: &'static str, message: String, decl: &Decl, key: &str, name: &
     let (line, col) = decl
         .ref_pos
         .iter()
-        .find(|(item, _, _)| item == name)
-        .map(|(_, line, col)| (*line, *col))
+        .find(|(item, _, _, _)| item == name)
+        .map(|(_, line, col, _)| (*line, *col))
         .unwrap_or_else(|| field_pos(decl, key));
     Diagnostic { code, message, line, col, file: decl.file.clone() }
 }
@@ -444,7 +444,11 @@ fn check_layer(decls: &[Decl], out: &mut Vec<Diagnostic>) {
 fn field_pos(decl: &Decl, key: &str) -> (usize, usize) {
     for (index, (name, _)) in decl.fields.iter().enumerate() {
         if name == key {
-            return decl.field_pos.get(index).copied().unwrap_or((decl.line, decl.col));
+            return decl
+                .field_span
+                .get(index)
+                .map(|span| (span.0, span.1))
+                .unwrap_or((decl.line, decl.col));
         }
     }
     (decl.line, decl.col)

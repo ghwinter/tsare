@@ -89,6 +89,11 @@ pub fn applications(decls: &[Decl]) -> Vec<Rule> {
 }
 
 pub fn grounded(decls: &[Decl]) -> HashSet<String> {
+    grounded_sets(decls).0
+}
+
+/// The grounded extension, plus the rules it defeats.  `undecided` is the rest.
+pub fn grounded_sets(decls: &[Decl]) -> (HashSet<String>, HashSet<String>) {
     let warrants: Vec<&Decl> = decls.iter().filter(|decl| decl.kind == "warrant").collect();
     let invalid: HashSet<String> = warrants
         .iter()
@@ -137,7 +142,7 @@ pub fn grounded(decls: &[Decl]) -> HashSet<String> {
         inside = new_inside;
         outside = new_outside;
     }
-    inside
+    (inside, outside)
 }
 
 pub fn statuses(decls: &[Decl], inside: &HashSet<String>) -> HashMap<String, String> {

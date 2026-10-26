@@ -1,5 +1,8 @@
 //! Lexer and parser for the declaration syntax, with positions.
 
+/// A source span: where a value, a reference or a declaration starts and ends.
+pub type Span = (usize, usize, usize, usize);
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Val {
     Id(String),
@@ -16,109 +19,124 @@ pub struct Decl {
     pub kind: String,
     pub name: String,
     pub fields: Vec<(String, Val)>,
-    pub field_pos: Vec<(usize, usize)>,
+    /// The value's span, parallel to `fields`.
+    pub field_span: Vec<Span>,
+    pub kind_line: usize,
+    pub kind_col: usize,
     pub line: usize,
     pub col: usize,
     pub end_line: usize,
     pub end_col: usize,
     pub file: String,
-    pub ref_pos: Vec<(String, usize, usize)>,
+    /// Every identifier value in the declaration, with the span of its occurrence.
+    pub ref_pos: Vec<(String, usize, usize, usize)>,
 }
 
 #[derive(Debug, Clone)]
 pub struct Token {
     pub text: String,
+    /// Characters consumed in the source, so `end_col` is the position after the token.
+    pub width: usize,
     pub line: usize,
     pub col: usize,
 }
 
 fn lex(src: &str) -> Vec<Token> {
+    let chars: Vec<char> = src.chars().collect();
     let mut out: Vec<Token> = Vec::new();
-    let mut chars = src.chars().peekable();
+    let mut i = 0usize;
     let mut line = 1usize;
     let mut col = 1usize;
-    while let Some(&c) = chars.peek() {
-        match c {
-            '#' => {
-                while let Some(&n) = chars.peek() {
-                    chars.next();
-                    if n == '\n' {
-                        line += 1;
-                        col = 1;
-                        break;
-                    }
-                    col += 1;
-                }
-            }
-            c if c.is_whitespace() => {
-                chars.next();
-                if c == '\n' {
-                    line += 1;
-                    col = 1;
-                } else {
-                    col += 1;
-                }
-            }
-            '"' => {
-                let start_line = line;
-                let start_col = col;
-                chars.next();
-                col += 1;
-                let mut text = String::new();
-                while let Some(n) = chars.next() {
-                    col += 1;
-                    if n == '"' {
-                        break;
-                    }
-                    if n == '\\' {
-                        if let Some(next) = chars.next() {
-                            col += 1;
-                            text.push(next);
-                            continue;
-                        }
-                    }
-                    text.push(n);
-                }
-                out.push(Token { text: format!("\x00{}", text), line: start_line, col: start_col });
-            }
-            c if c.is_alphanumeric() || c == '_' || c == '.' => {
-                let start_line = line;
-                let start_col = col;
-                let mut text = String::new();
-                while let Some(&n) = chars.peek() {
-                    if n.is_alphanumeric() || n == '_' || n == '.' {
-                        text.push(n);
-                        chars.next();
-                        col += 1;
-                    } else {
-                        break;
-                    }
-                }
-                out.push(Token { text, line: start_line, col: start_col });
-            }
-            _ => {
-                let start_line = line;
-                let start_col = col;
-                chars.next();
-                col += 1;
-                out.push(Token { text: c.to_string(), line: start_line, col: start_col });
-            }
+    let n = chars.len();
+    while i < n {
+        let c = chars[i];
+        if c == '\n' {
+            i += 1;
+            line += 1;
+            col = 1;
+            continue;
         }
+        if c == ' ' || c == '\t' || c == '\r' {
+            i += 1;
+            col += 1;
+            continue;
+        }
+        if c == '#' {
+            while i < n && chars[i] != '\n' {
+                i += 1;
+            }
+            continue;
+        }
+        if c == '"' {
+            let start_col = col;
+            let mut j = i + 1;
+            let mut text = String::new();
+            while j < n && chars[j] != '"' {
+                if chars[j] == '\\' && j + 1 < n {
+                    let escaped = chars[j + 1];
+                    text.push(match escaped {
+                        'n' => '\n',
+                        't' => '\t',
+                        'r' => '\r',
+                        '"' => '"',
+                        '\\' => '\\',
+                        other => other,
+                    });
+                    j += 2;
+                    continue;
+                }
+                text.push(chars[j]);
+                j += 1;
+            }
+            let width = j - i + 1;
+            out.push(Token { text: format!("\x00{text}"), width, line, col: start_col });
+            i = j + 1;
+            col += width;
+            continue;
+        }
+        if c.is_ascii_digit() || (c == '-' && i + 1 < n && chars[i + 1].is_ascii_digit()) {
+            let mut text = String::new();
+            if c == '-' {
+                text.push('-');
+                i += 1;
+            }
+            while i < n && (chars[i].is_ascii_digit() || chars[i] == '.') {
+                text.push(chars[i]);
+                i += 1;
+            }
+            // `16ms` is one number: the unit suffix is part of it, not an identifier
+            while i < n && (chars[i].is_alphanumeric() || chars[i] == '%') {
+                text.push(chars[i]);
+                i += 1;
+            }
+            let width = text.chars().count();
+            out.push(Token { text, width, line, col });
+            col += width;
+            continue;
+        }
+        if c.is_alphanumeric() || c == '_' || c == '.' {
+            let mut text = String::new();
+            while i < n && (chars[i].is_alphanumeric() || chars[i] == '_' || chars[i] == '.') {
+                text.push(chars[i]);
+                i += 1;
+            }
+            let width = text.chars().count();
+            out.push(Token { text, width, line, col });
+            col += width;
+            continue;
+        }
+        out.push(Token { text: c.to_string(), width: 1, line, col });
+        i += 1;
+        col += 1;
     }
     out
-}
-
-fn position_of(tokens: &[Token], index: usize) -> (usize, usize) {
-    tokens
-        .get(index)
-        .map(|token| (token.line, token.col))
-        .unwrap_or((0, 0))
 }
 
 struct Parser {
     toks: Vec<Token>,
     pos: usize,
-    ref_pos: Vec<(String, usize, usize)>,
+    ref_pos: Vec<(String, usize, usize, usize)>,
+    last_end: (usize, usize),
 }
 
 impl Parser {
@@ -135,6 +153,9 @@ impl Parser {
 
     fn bump(&mut self) -> Option<Token> {
         let token = self.toks.get(self.pos).cloned();
+        if let Some(token) = &token {
+            self.last_end = (token.line, token.col + token.width);
+        }
         self.pos += 1;
         token
     }
@@ -183,7 +204,7 @@ impl Parser {
                 let token = self.bump().unwrap();
                 Ok(Val::Str(token.text[1..].to_string()))
             }
-            Some(text) if text.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false) => {
+            Some(text) if text.chars().next().map(|c| c.is_ascii_digit() || c == '-').unwrap_or(false) => {
                 Ok(Val::Num(self.bump().unwrap().text))
             }
             Some(_) => {
@@ -200,8 +221,12 @@ impl Parser {
                     self.expect(")")?;
                     Ok(Val::Call(name, args))
                 } else {
-                    let (line, col) = position_of(&self.toks, self.pos - 1);
-                    self.ref_pos.push((name.clone(), line, col));
+                    let (line, col) = self
+                        .toks
+                        .get(self.pos.saturating_sub(1))
+                        .map(|token| (token.line, token.col))
+                        .unwrap_or((0, 0));
+                    self.ref_pos.push((name.clone(), line, col, col + name.chars().count()));
                     Ok(Val::Id(name))
                 }
             }
@@ -211,7 +236,7 @@ impl Parser {
 }
 
 pub fn parse(src: &str) -> Result<Vec<Decl>, String> {
-    let mut parser = Parser { toks: lex(src), pos: 0, ref_pos: Vec::new() };
+    let mut parser = Parser { toks: lex(src), pos: 0, ref_pos: Vec::new(), last_end: (0, 0) };
     let mut out = Vec::new();
     while let Some(kind) = parser.peek().map(|text| text.to_string()) {
         if kind == "}" || kind == "]" {
@@ -220,17 +245,18 @@ pub fn parse(src: &str) -> Result<Vec<Decl>, String> {
         }
         let (line, col) = parser.position();
         parser.ref_pos.clear();
-        parser.bump();
+        let kind_token = parser.bump().ok_or("declaration without a kind")?;
         let name = parser.bump().ok_or("declaration without a name")?.text;
         parser.expect("{")?;
         let mut fields = Vec::new();
-        let mut field_pos = Vec::new();
+        let mut field_span = Vec::new();
         while parser.peek() != Some("}") {
-            let (field_line, field_col) = parser.position();
             let key = parser.bump().ok_or("field without a name")?.text;
             parser.expect(":")?;
-            fields.push((key, parser.value()?));
-            field_pos.push((field_line, field_col));
+            let (value_line, value_col) = parser.position();
+            let value = parser.value()?;
+            fields.push((key, value));
+            field_span.push((value_line, value_col, parser.last_end.0, parser.last_end.1));
             if parser.peek() == Some(",") {
                 parser.bump();
             }
@@ -241,7 +267,9 @@ pub fn parse(src: &str) -> Result<Vec<Decl>, String> {
             kind,
             name,
             fields,
-            field_pos,
+            field_span,
+            kind_line: kind_token.line,
+            kind_col: kind_token.col,
             line,
             col,
             end_line,

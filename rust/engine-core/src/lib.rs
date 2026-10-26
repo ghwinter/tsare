@@ -1,6 +1,17 @@
 pub mod apply;
+pub mod argue;
+pub mod assumptions;
+pub mod cat;
 pub mod check;
+pub mod cli;
 pub mod closure;
+pub mod cost;
+pub mod debt;
+pub mod derive;
 pub mod fix;
+pub mod impact;
+pub mod moves;
+pub mod program;
 pub mod specs;
 pub mod syntax;
+pub mod weigh;
