@@ -305,3 +305,30 @@ partition P_SOME { dimension: C_THINGS, elements: [F_A, F_B], closure: open }
     .expect("write the document");
     golden("ask.missing", &run(&["ask", &path.display().to_string()]));
 }
+
+/// `novel` decides whether a proposed attribute is a new distinction or a recombination of the
+/// recorded one.  Two facts with the same record are the witness; the snapshot pins both the
+/// verdict and the sentence it prints.
+#[test]
+fn novel_decides_whether_a_predicate_is_new() {
+    let dir = std::env::temp_dir().join("engine-golden-novel");
+    std::fs::create_dir_all(&dir).expect("temp dir");
+    let path = dir.join("novel.mf");
+    std::fs::write(
+        &path,
+        r#"fact F_A { claim: "a", evidence: tool("t"), attrs: { size: 3, kind: first } }
+fact F_B { claim: "b", evidence: tool("t"), attrs: { kind: first, size: 3 } }
+fact F_C { claim: "c", evidence: tool("t"), attrs: { size: 9, kind: second } }
+"#,
+    )
+    .expect("write the document");
+    let shown = path.display().to_string();
+    golden(
+        "novel.new",
+        &run(&["novel", &shown, "--attribute", "big", "--holds", "F_A"]),
+    );
+    golden(
+        "novel.redundant",
+        &run(&["novel", &shown, "--attribute", "big", "--holds", "F_A,F_B"]),
+    );
+}

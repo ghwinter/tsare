@@ -26,6 +26,7 @@ pub mod json;
 pub mod mapping;
 pub mod mcp;
 pub mod moves;
+pub mod novel;
 pub mod paths;
 pub mod patterns;
 pub mod program;

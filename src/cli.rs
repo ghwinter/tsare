@@ -604,6 +604,64 @@ fn cmd_ask(path: &Path) -> i32 {
     0
 }
 
+fn cmd_novel(path: &Path, args: &Args) -> i32 {
+    let Some(attribute) = args.option("--attribute") else {
+        println!("novel needs --attribute NAME; add --holds F_A,F_B for the facts it is true of");
+        return 2;
+    };
+    let loaded = match load(path) {
+        Ok(loaded) => loaded,
+        Err(error) => return fail(error),
+    };
+    let program = Program::new(&loaded.decls);
+    let holds: Vec<String> = args
+        .option("--holds")
+        .map(|list| {
+            list.split(',')
+                .map(|id| id.trim().to_string())
+                .filter(|id| !id.is_empty())
+                .collect()
+        })
+        .unwrap_or_default();
+    for id in &holds {
+        if !program.has(id) {
+            println!("no such declaration: {id}");
+            return 1;
+        }
+    }
+    match crate::novel::decide(&program, &holds) {
+        crate::novel::Verdict::Empty => {
+            println!("nothing to decide: no fact records an attribute");
+        }
+        crate::novel::Verdict::Redundant { key, value, on } => {
+            println!("redundant: `{attribute}` is exactly {key} = {value}; it is a column, not a new predicate");
+            println!("  true of {}", crate::ask::and_list(&on));
+        }
+        crate::novel::Verdict::Novel { witness } => {
+            let (yes, no) = witness;
+            println!(
+                "novel: {yes} and {no} record the same attributes and differ on `{attribute}`"
+            );
+        }
+        crate::novel::Verdict::Definable { blocks, objects } => {
+            if blocks == 0 {
+                println!(
+                    "definable: the proposal is constant over these facts, so it splits nothing"
+                );
+            } else if blocks == objects {
+                println!(
+                    "definable here, and vacuously: every fact already has its own record, so any proposal fits"
+                );
+            } else {
+                println!(
+                    "definable: `{attribute}` is a function of the recorded attributes ({blocks} block(s) over {objects} facts); it is a recombination, not a new distinction"
+                );
+            }
+        }
+    }
+    0
+}
+
 fn cmd_cost(path: &Path, top: usize) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
@@ -1582,6 +1640,10 @@ fn usage() {
     println!("  impact PATH                  dead facts, single support, load-bearing nodes");
     println!("  next PATH                    open decisions, ranked by what they touch");
     println!("  ask PATH                     the attribute that would decide an open list");
+    println!("  novel PATH --attribute N [--holds IDS]");
+    println!(
+        "                               is a proposed attribute new, redundant, or a recombination"
+    );
     println!("  cost PATH [--top N]          external confirmations the document demands");
     println!("  weigh PATH [--threshold X]   confidence propagated by min/max");
     println!("  fca PATH                     what a concept's examples share, and what they imply");
@@ -1635,6 +1697,7 @@ fn is_command(name: &str) -> bool {
             | "impact"
             | "next"
             | "ask"
+            | "novel"
             | "cost"
             | "weigh"
             | "cat"
@@ -1673,6 +1736,8 @@ const VALUE_FLAGS: &[&str] = &[
     "--apply",
     "--proposals",
     "--policy",
+    "--attribute",
+    "--holds",
 ];
 
 impl Args {
@@ -1807,6 +1872,7 @@ pub fn run() -> i32 {
         "impact" => cmd_impact(&path),
         "next" => cmd_next(&path),
         "ask" => cmd_ask(&path),
+        "novel" => cmd_novel(&path, &args),
         "cost" => cmd_cost(&path, args.count("--top", 8)),
         "weigh" => cmd_weigh(&path, args.number("--threshold", 0.7)),
         "cat" => cmd_cat(&path),

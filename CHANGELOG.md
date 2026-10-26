@@ -14,6 +14,10 @@ All notable changes are recorded here. The format follows
 - A test that walks the `--help` screen and fails when a command is listed there but missing
   from the dispatcher. Without it the command word is taken as a path and the error is
   `cannot find the file ask`, which says nothing about what is actually wrong.
+- `novel --attribute N [--holds IDS]`: whether a proposed attribute is a new distinction, a
+  column that is already recorded, or a recombination of the recorded attributes. The decision
+  is a partition comparison -- two facts with identical records that the proposal separates are
+  the witness -- so it needs no model and no statistics.
 
 ### Fixed
 

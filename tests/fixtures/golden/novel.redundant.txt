@@ -1,0 +1,2 @@
+redundant: `big` is exactly kind = first; it is a column, not a new predicate
+  true of F_A and F_B
