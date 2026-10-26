@@ -239,7 +239,13 @@ fn map_aligns_every_pair() {
 #[test]
 fn every_command_in_the_help_screen_is_dispatched() {
     let help = run(&["--help"]);
-    let fixture = documents()[0].display().to_string();
+    // a copy, not the fixture: `graph` writes next to the document it read, and a test that
+    // dirties the source tree is a test the CI cleanliness step then fails on.
+    let dir = std::env::temp_dir().join("engine-golden-dispatch");
+    std::fs::create_dir_all(&dir).expect("temp dir");
+    let probe = dir.join("probe.mf");
+    std::fs::copy(&documents()[0], &probe).expect("copy the fixture");
+    let fixture = probe.display().to_string();
     // `mcp` speaks a protocol on standard input and would wait for a client here
     let skip = ["mcp"];
     let mut names: Vec<String> = Vec::new();

@@ -42,5 +42,6 @@ __pycache__/
 .venv/
 *.net.mmd
 target/
+.tsare/
 .DS_Store
 Thumbs.db

@@ -15,6 +15,12 @@ All notable changes are recorded here. The format follows
   from the dispatcher. Without it the command word is taken as a path and the error is
   `cannot find the file ask`, which says nothing about what is actually wrong.
 
+### Fixed
+
+- The check cache and the case store live in `.tsare/`, not `.metaform/`. The old name was the
+  abandoned project's, and it was being created inside other people's repositories.
+- `cargo package` carries no stray README from an unlisted directory.
+
 ## [0.3.0] - 2026-10-26
 
 The version that learns to say what it cannot tell apart, and to say which format it speaks.

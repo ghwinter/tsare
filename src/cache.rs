@@ -15,7 +15,7 @@ use crate::json::{self, Json};
 pub const SALT: &str = "tsare-0.1";
 
 pub fn store_path() -> PathBuf {
-    PathBuf::from(".metaform").join("check-cache.json")
+    PathBuf::from(".tsare").join("check-cache.json")
 }
 
 pub fn key(text: &str) -> String {

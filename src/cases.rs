@@ -18,7 +18,7 @@ use crate::cache::SALT;
 use crate::json::{self, Json};
 
 pub fn store_path() -> PathBuf {
-    PathBuf::from(".metaform").join("cases.jsonl")
+    PathBuf::from(".tsare").join("cases.jsonl")
 }
 
 pub fn load() -> Vec<Json> {

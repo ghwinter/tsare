@@ -253,7 +253,6 @@ discharge anything. `SELF.mf` records that as a blind spot rather than guessing 
 ## Acceptance
 
 ```powershell
-cd D:\GitHub\tsare   # or the checkout root
 cargo test            # semantics + golden snapshots for every command
 cargo build --release # the binary
 ```
