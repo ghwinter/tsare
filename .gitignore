@@ -1,4 +1,23 @@
-target/
-__pycache__/
-*.pyc
-.metaform/
+# Default deny: nothing is tracked unless it is named here.
+*
+!*/
+!.gitignore
+!.gitattributes
+!LICENSE
+!README.md
+!CHANGELOG.md
+!Cargo.toml
+!Cargo.lock
+!.cargo/
+!.cargo/**
+!src/
+!src/**
+!tests/
+!tests/**
+!docs/
+!docs/**
+!experiments/
+!experiments/**
+!scripts/
+!scripts/**
+!SELF.mf

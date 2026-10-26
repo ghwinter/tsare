@@ -480,7 +480,7 @@ fn a_warrant_is_ready_only_with_a_basis() {
 
 #[test]
 fn the_self_document_compiles_without_errors() {
-    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("..").join("..").join("SELF.mf");
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("SELF.mf");
     let text = std::fs::read_to_string(&path)
         .unwrap_or_else(|_| panic!("{} is missing", path.display()));
     let declared = parse(&text).expect("the self document parses");
@@ -688,4 +688,5 @@ fn names_resolve_once_per_program() {
     assert!(program.get("P1").is_some());
     assert!(program.get("P2").is_none());
 }
+
 

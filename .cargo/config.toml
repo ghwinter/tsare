@@ -1,0 +1,8 @@
+# Static CRT on Windows so the binary needs no runtime beyond the OS; other targets build
+# with their default toolchain.
+[target.'cfg(all(windows, target_env = "msvc"))']
+rustflags = ["-C", "target-feature=+crt-static"]
+
+[alias]
+t = "test --release"
+b = "build --release"

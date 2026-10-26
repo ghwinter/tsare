@@ -1,0 +1,26 @@
+[package]
+name = "engine-core"
+version = "0.2.0"
+edition = "2021"
+rust-version = "1.85"
+description = "A compiler for checkable claims: it decides whether a statement can be checked, and prints the smallest edit that would make it so."
+license = "MIT"
+readme = "README.md"
+keywords = ["compiler", "logic", "argument", "verification", "reasoning"]
+categories = ["development-tools", "text-processing"]
+
+[workspace]
+
+[lints.rust]
+unsafe_code = "forbid"
+unused = "warn"
+
+[lints.clippy]
+all = "warn"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+
+[dependencies]
