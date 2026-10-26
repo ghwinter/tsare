@@ -1,0 +1,3 @@
+P_ONE                clear        gates 0/1 facts
+P_THREE              clear        gates 0/2 facts
+P_TWO                clear        gates 0/1 facts

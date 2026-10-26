@@ -1,0 +1,21 @@
+# Open
+
+## Declared questions
+
+_none_
+## Blind spots
+
+_none_
+## Blocked concepts
+
+_none_
+
+## Derived questions
+
+Produced by induction failure, not written by hand.
+
+**C_SELF_SUPPORTED**: F_A1 and F_B1 have identical recorded attributes, yet F_B1 is a counterexample to C_SELF_SUPPORTED. What distinguishes them?
+
+1. a dimension that is not recorded yet (add an attribute)
+2. one of the two examples is mislabelled (relabel)
+3. the concept mixes two contexts and must be split (split)

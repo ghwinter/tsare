@@ -1,0 +1,2 @@
+R2 drop a constraint          P_THRESHOLD        no rule supports it (touches 1)
+R1 swap an invariant          P_SMOOTH           rests on P_THRESHOLD alone via W_RENDER

@@ -1,0 +1,4 @@
+threshold 0.7
+  P_IMPORTANT         --  asserted
+  P_SHOULD            --  asserted
+  P_ELEGANT           --  asserted

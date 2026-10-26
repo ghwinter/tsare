@@ -1,0 +1,7 @@
+{
+  "held": ["P_FAST"],
+  "conditional": [],
+  "blocked": [],
+  "chains": {"P_FAST": "P_FAST <- W_FAST <- F_SCROLL"},
+  "gates": {"P_FAST": []}
+}

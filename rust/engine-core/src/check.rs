@@ -28,6 +28,19 @@ fn diag(code: &'static str, message: String, decl: &Decl) -> Diagnostic {
     Diagnostic { code, message, line: decl.line, col: decl.col, file: decl.file.clone() }
 }
 
+/// Codes live as `&'static str` so comparisons are cheap; a replayed code is interned here.
+pub fn code_of(code: &str) -> &'static str {
+    KNOWN_CODES.iter().find(|known| **known == code).copied().unwrap_or_else(|| {
+        Box::leak(code.to_string().into_boxed_str())
+    })
+}
+
+const KNOWN_CODES: &[&str] = &[
+    "E-EMPTY-DOCUMENT", "E-DUP-ID", "E-KIND-UNKNOWN", "E-FIELD", "E-MISSING", "E-TYPE",
+    "E-UNDEFINED", "E-NOTE-REF", "E-KIND", "E-CYCLE", "E-COLLAPSE", "E-TENSION", "E-LAYER-LEAK",
+    "E-UNCOVERED", "W-HOLE", "W-CONDITIONAL",
+];
+
 pub fn refs(value: &Val, out: &mut Vec<String>) {
     match value {
         Val::Id(name) => out.push(name.clone()),

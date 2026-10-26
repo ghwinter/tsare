@@ -1,0 +1,1 @@
+R1 swap an invariant          P_FAST             rests on F_SCROLL alone via W_FAST

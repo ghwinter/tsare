@@ -1,0 +1,4 @@
+C_REQUESTED:
+  positives: F_DARK, F_MULTI
+  negatives: F_NONE
+  structure: none found with variables

@@ -2,9 +2,11 @@
 //!
 //! The learner is a least-generalisation search over attribute literals:
 //!
+//! ```text
 //!     candidates  key = value  (categorical)   key <= t / key >= t  (numeric, t at observed values)
 //!     search      subsets of size 1..3, smallest consistent clause wins
 //!     consistent  covers every positive, covers no negative
+//! ```
 //!
 //! When no clause exists, the failure is informative: a positive and a negative with identical
 //! attributes is a *collision*, and a collision is exactly a blind spot in the current

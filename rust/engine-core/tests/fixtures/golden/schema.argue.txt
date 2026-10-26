@@ -1,0 +1,2 @@
+P_SMOOTH  asserted   no rule
+P_STABLE  asserted   no rule

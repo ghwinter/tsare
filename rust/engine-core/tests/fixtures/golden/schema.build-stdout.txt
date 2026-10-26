@@ -1,0 +1,7 @@
+0 error(s), 0 warning(s)
+emitted <temp>engine-golden-build-schema/OBLIGATIONS.md
+emitted <temp>engine-golden-build-schema/LEARNED.md
+emitted <temp>engine-golden-build-schema/OPEN.md
+emitted <temp>engine-golden-build-schema/NOTES.md
+emitted <temp>engine-golden-build-schema/predicates.py
+predicates: 0 attribute + 1 structural, verified on every example

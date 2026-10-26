@@ -1,0 +1,8 @@
+0.09 w=1  F_A1               ~ F_DARK              shared: from
+0.09 w=1  F_A2               ~ F_DARK              shared: from
+0.09 w=1  P_ONE              ~ P_IMPORTANT         shared: in:from
+0.09 w=1  P_THREE            ~ P_IMPORTANT         shared: in:from
+0.09 w=1  P_TWO              ~ P_IMPORTANT         shared: in:from
+0.08 w=1  F_A1               ~ F_CONTRAST_OK       shared: from
+0.08 w=1  F_A1               ~ F_THEME_FAST        shared: from
+0.08 w=1  F_A2               ~ F_CONTRAST_OK       shared: from

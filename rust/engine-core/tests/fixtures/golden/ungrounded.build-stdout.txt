@@ -1,0 +1,8 @@
+  W-CONDITIONAL <fixtures>/ungrounded.mf:21 P_SMOOTH is supported only through an ungrounded premise: W_RENDER needs P_THRESHOLD (asserted)
+0 error(s), 1 warning(s)
+emitted <temp>engine-golden-build-ungrounded/OBLIGATIONS.md
+emitted <temp>engine-golden-build-ungrounded/LEARNED.md
+emitted <temp>engine-golden-build-ungrounded/OPEN.md
+emitted <temp>engine-golden-build-ungrounded/NOTES.md
+emitted <temp>engine-golden-build-ungrounded/predicates.py
+predicates: 0 attribute + 0 structural, verified on every example

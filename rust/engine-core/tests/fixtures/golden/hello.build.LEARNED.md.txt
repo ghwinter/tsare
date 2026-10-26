@@ -1,0 +1,6 @@
+# Learned clauses
+
+Least generalisation over recorded attributes.
+
+| concept | positives | negatives | clause |
+| --- | --- | --- | --- |

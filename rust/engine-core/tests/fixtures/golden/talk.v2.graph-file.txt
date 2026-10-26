@@ -1,0 +1,57 @@
+graph LR
+  F_DARK["F_DARK<br/><i>fact</i>"]
+  F_MULTI["F_MULTI<br/><i>fact</i>"]
+  F_NONE["F_NONE<br/><i>fact</i>"]
+  F_COMP["F_COMP<br/><i>fact</i>"]
+  F_THEME_FAST["F_THEME_FAST<br/><i>fact</i>"]
+  F_THEME_SLOW["F_THEME_SLOW<br/><i>fact</i>"]
+  F_CONTRAST_OK["F_CONTRAST_OK<br/><i>fact</i>"]
+  F_CONTRAST_LOW["F_CONTRAST_LOW<br/><i>fact</i>"]
+  C_REQUESTED["C_REQUESTED<br/><i>concept</i>"]
+  C_POPULAR["C_POPULAR<br/><i>concept</i>"]
+  C_ELEGANT["C_ELEGANT<br/><i>concept</i>"]
+  C_SWIFT["C_SWIFT<br/><i>concept</i>"]
+  P_IMPORTANT["P_IMPORTANT<br/><i>proposition</i>"]
+  P_SHOULD["P_SHOULD<br/><i>proposition</i>"]
+  P_ELEGANT["P_ELEGANT<br/><i>proposition</i>"]
+  H_RETENTION["H_RETENTION<br/><i>hypothesis</i>"]
+  H_NOVELTY["H_NOVELTY<br/><i>hypothesis</i>"]
+  H_CONTRAST["H_CONTRAST<br/><i>hypothesis</i>"]
+  H_MOTION["H_MOTION<br/><i>hypothesis</i>"]
+  Q_ELEGANT["Q_ELEGANT<br/><i>question</i>"]
+  B_PLAN["B_PLAN<br/><i>blindspot</i>"]
+  B_IS_OUGHT["B_IS_OUGHT<br/><i>blindspot</i>"]
+  V_CONTRAST["V_CONTRAST<br/><i>value</i>"]
+  V_THEME_SWITCH["V_THEME_SWITCH<br/><i>value</i>"]
+  V_SPEED["V_SPEED<br/><i>value</i>"]
+  V_QUALITY["V_QUALITY<br/><i>value</i>"]
+  V_RETENTION["V_RETENTION<br/><i>value</i>"]
+  F_DARK -->|positive| C_REQUESTED
+  F_MULTI -->|positive| C_REQUESTED
+  F_NONE -.->|negative| C_REQUESTED
+  F_COMP -->|positive| C_POPULAR
+  F_MULTI -.->|negative| C_POPULAR
+  F_CONTRAST_OK -->|positive| C_ELEGANT
+  F_CONTRAST_LOW -.->|negative| C_ELEGANT
+  F_THEME_FAST -->|positive| C_SWIFT
+  F_THEME_SLOW -.->|negative| C_SWIFT
+  P_IMPORTANT -->|uses| C_REQUESTED
+  F_DARK -->|from| P_IMPORTANT
+  P_SHOULD -->|uses| C_POPULAR
+  P_ELEGANT -->|uses| C_ELEGANT
+  P_ELEGANT -->|uses| C_SWIFT
+  F_CONTRAST_OK -->|from| P_ELEGANT
+  F_THEME_FAST -->|from| P_ELEGANT
+  P_IMPORTANT -->|assumes| H_RETENTION
+  H_RETENTION -.->|rival| H_NOVELTY
+  P_IMPORTANT -->|assumes| H_NOVELTY
+  P_ELEGANT -->|assumes| H_CONTRAST
+  P_ELEGANT -->|assumes| H_MOTION
+  H_CONTRAST -->|separates| Q_ELEGANT
+  H_MOTION -->|separates| Q_ELEGANT
+  F_DARK -.->|witness| B_PLAN
+  F_MULTI -.->|witness| B_PLAN
+  C_REQUESTED -.->|signature| B_PLAN
+  P_SHOULD -.->|witness| B_IS_OUGHT
+  F_COMP -.->|witness| B_IS_OUGHT
+  C_POPULAR -.->|signature| B_IS_OUGHT

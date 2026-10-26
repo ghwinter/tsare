@@ -1,0 +1,4 @@
+without F_DARK:
+  errors 0 -> 1, warnings 6 -> 5
+  new codes: E-WITNESS
+  no proposition changed status

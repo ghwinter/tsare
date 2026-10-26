@@ -1,0 +1,20 @@
+# Obligations
+
+What must be discharged before the description counts as checked.
+
+| id | kind | action | status | note |
+| --- | --- | --- | --- | --- |
+| F_A1 | fact | check | ready | evidence: tool |
+| F_A2 | fact | check | ready | evidence: tool |
+| F_B1 | fact | check | ready | evidence: tool |
+| F_C | fact | check | ready | evidence: tool |
+| P_ONE | proposition | prove | ready | premises given |
+| P_TWO | proposition | prove | ready | premises given |
+| P_THREE | proposition | prove | ready | premises given |
+| W_S1 | warrant | ? | ? |  |
+| W_S2 | warrant | ? | ? |  |
+| W_X | warrant | ? | ? |  |
+| W_Y | warrant | ? | ? |  |
+| C_SELF_SUPPORTED | concept | induce | blocked | no clause found; see OPEN.md |
+
+12 obligations, 7 ready.

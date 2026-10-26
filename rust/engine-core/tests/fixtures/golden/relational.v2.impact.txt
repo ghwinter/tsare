@@ -1,0 +1,5 @@
+single support: P_ONE rests on W_S1 alone
+single support: P_TWO rests on W_S2 alone
+load-bearing: F_A1 is the only premise of the only rule for P_ONE
+load-bearing: F_A2 is the only premise of the only rule for P_TWO
+graph: concept=1, fact=4, proposition=3, warrant=4

@@ -1,0 +1,4 @@
+single support: P_SMOOTH rests on W_RENDER alone
+propositions with no rule and no dependent: P_THRESHOLD
+load-bearing: P_THRESHOLD is the only premise of the only rule for P_SMOOTH
+graph: concept=1, fact=2, proposition=2, warrant=1

@@ -1,0 +1,4 @@
+kind audit: <fixtures>/hier.v2.mf
+  law      absent
+  value    absent
+  layer    absent

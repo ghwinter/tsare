@@ -1,0 +1,7 @@
+{
+  "held": [],
+  "conditional": ["P_SMOOTH"],
+  "blocked": [{"warrant": "W_RENDER", "missing": ["P_THRESHOLD"]}],
+  "chains": {},
+  "gates": {}
+}

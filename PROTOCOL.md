@@ -1,35 +1,66 @@
-# engine — protocol first
+# engine — one implementation, one contract
 
-This repository is the rewrite. It starts from the contract, not from code.
+This repository is the compiler. `rust/engine-core` is a single, dependency-free binary: no
+interpreter, no runtime beyond the OS, no Python, no second code path to keep in step.
 
-## Why a separate repository
+`obligo` (tag `v1`) is the frozen reference: it holds the original Python implementation and
+every experiment behind it. It is no longer the live compiler. `scripts/diff_text.py` can still
+compare the two, and its output is the record of the port.
 
-`obligo` (now frozen at tag `v1`) holds the working implementation and every experiment.
-`metaform` holds the theory and the Rust prototype (VSA, SME, ILP, store). Both stay as
-they are. This repository exists so the next implementation does not inherit their
-directory layout, their nested-repository problems, or their accumulated scripts.
+## Commands
 
-## The contract
+Every command reads files and prints text. Where a command also has a machine contract it
+answers `--json`.
 
-Every command reads files and writes JSON. The Python CLI is a thin shell over these, and
-a future Rust implementation must produce byte-identical JSON for the same input.
+| command | what it answers | JSON |
+| --- | --- | --- |
+| `check FILE\|DIR` | which declarations are well formed; `--goals`, `--sugar`, `--cache` | yes |
+| `engine FILE\|DIR` | held, conditional, blocked, chains, gates | yes |
+| `argue FILE` | which conclusions survive attack | |
+| `derive FILE` | which conclusions are grounded in facts | |
+| `debt FILE [--all]` | which facts transitively gate a conclusion | |
+| `impact FILE` | dead facts, single support, load-bearing nodes | |
+| `next FILE` | open decisions ranked by what they touch | |
+| `cost FILE` | external confirmations the document demands, and its longest chain | |
+| `weigh FILE` | confidence propagated by min/max, with no probability | |
+| `kinds` | the obligation table: what each kind owes | |
+| `induce FILE` | the clause each concept's examples support, or why none exists | |
+| `pattern FILE CONCEPT [--vars]` | the structure that separates a concept's examples | |
+| `moves FILE` | six representation moves as concrete candidates | |
+| `assumptions FILE` | load-bearing declarations without support | |
+| `whatif FILE NAME` | what falls when one assumption is removed | |
+| `graph FILE [--out]` | the typed relation net as Mermaid | |
+| `map LEFT RIGHT` | structure mapping between two documents | |
+| `audit FILE` | whether a kind can be written with a smaller vocabulary | |
+| `egraph FILE [--write]` | equivalent declarations merged, references rewritten | |
+| `cat FILE` | the pipeline read as a category, and which functors hold | |
+| `project DIR` | a directory checked as one program, grouped by file | |
+| `fix FILE [--apply]` | verified repair candidates, and applying them | |
+| `suggest FILE` | repairs with an applicability | yes |
+| `apply FILE [--dry-run]` | machine repairs spliced and recompiled | |
+| `build FILE\|DIR [--out] [--goals]` | obligations, learned clauses, open items, notes, predicates | |
+| `mem [--recall CODE...] [--k N]` | the case store: audit it, or recall similar situations | |
 
-### `check FILE|DIR`
+`suggest` and `apply` are the engine's own shape: `apply` splices a span and keeps the result
+only if the document compiles better.
+
+## The JSON contract
+
+### `check --json FILE|DIR`
 
 ```json
 {
   "diagnostics": [
     {"code": "E-UNDEFINED", "severity": "error", "file": "02-claims.mf",
-     "line": 2, "col": 41, "message": "...", "hint": "..."}
+     "line": 2, "col": 41, "message": "..."}
   ],
   "errors": 1, "warnings": 2
 }
 ```
 
-`file` is required. Attribution by parsing message text (what v1 does for cross-file
-diagnostics) is not allowed.
+`file` is required. Attribution by parsing message text is not allowed.
 
-### `engine FILE|DIR`
+### `engine --json FILE|DIR`
 
 ```json
 {
@@ -41,7 +72,7 @@ diagnostics) is not allowed.
 }
 ```
 
-### `suggest FILE|DIR`
+### `suggest --json FILE`
 
 ```json
 {
@@ -55,47 +86,69 @@ diagnostics) is not allowed.
 Applicability is one of `MachineApplicable`, `MaybeIncorrect`, `HasPlaceholders`,
 `Unspecified` (order is strictness).
 
-A suggestion names a `span` and a `replacement` for exactly that span.  A deletion is an
-empty replacement over the removed declaration.  `span` may be `null` when the repair
-inserts something with no existing declaration to replace.
+A suggestion names a `span` and a `replacement` for exactly that span. A deletion is an empty
+replacement over the removed declaration. `span` may be `null` when the repair inserts
+something with no existing declaration to replace.
 
 ## Directories
 
-Every command accepts a file or a directory.  A directory is checked as one program:
+Every command accepts a file or a directory. A directory is checked as one program:
 
 - names are global; a duplicate is reported with both file names;
 - cross-file references resolve;
 - layer visibility is computed once over the merged program;
-- a diagnostic is attributed by its span, matching a declaration's span exactly.  Attribution
+- a diagnostic is attributed by its span, matching a declaration's span exactly. Attribution
   never inspects the message text.
 
-## Module tiers
+## Modules
 
-| tier | modules | in the protocol |
-| --- | --- | --- |
-| core | `syntax`, `diag`, `check`, `project`, `cli` | yes |
-| reasoning | `argue`, `closure`, `derive`, `engine`, `debt`, `fix`, `suggestion` | yes |
-| analysis | `cost`, `impact`, `egraph`, `whatif` | no — experiments and tests only |
+One crate, grouped by what a module needs:
 
-`check` calls into `derive` for the conditional-conclusion warning, so the core tier depends
-on the reasoning tier in exactly one place.  Keep it that way.
+| tier | modules |
+| --- | --- |
+| syntax | `syntax`, `specs`, `sugar` |
+| check | `check`, `coverage`, `project` (via `cli`) |
+| reasoning | `closure`, `argue`, `derive`, `debt`, `engine`, `fix`, `apply` |
+| analysis | `impact`, `cost`, `weigh`, `cat`, `moves`, `assumptions`, `egraph`, `whatif`, `audit`, `map` (`mapping`), `graph`, `induce`, `paths`, `patterns` |
+| emit | `build` |
+| stores | `cache`, `cases`, `json`, `hash` |
+| front | `cli`, `program` |
 
-## What carries over from v1
+`check` calls `closure` for the conditional-conclusion warning, so the check tier depends on
+the reasoning tier in exactly one place. Keep it that way.
 
-Semantics, not structure:
+## Deliberate differences from v1
 
-1. Kinds and their obligations (`kinds_meta`).
-2. Local checks: record shape, references, cycles, semantics.
-3. Global checks: collapse, tension, layer visibility.
-4. Grounding closure and attack propagation (`engine`).
-5. Verified repairs with applicability (`suggest`).
+These are decisions, not drift:
 
-Everything else — generation, loops, benchmarks, memory — lives on the `experiments`
-branch of `obligo` and is not part of this contract.
+1. **Diagnostic wording and rendering.** The engine words its own messages and prints
+   `CODE file:line message`; v1 printed rustc-style frames with hints. Codes, severities,
+   lines and columns agree; prose does not.
+2. **`project` attribution.** v1 guessed the owning file from the message text; the engine
+   attributes by span.
+3. **`E-LAYER-LEAK` span.** v1 pointed at the target declaration; the engine points at the
+   declaration that reaches across layers, which is the one to edit. Line numbers differ.
+4. **`apply` only applies `MachineApplicable`.** Both sides do this; the note is here because
+   a "verified" repair that changes meaning is still a suggestion.
+5. **`mem` salt.** The case store records which checker produced an entry. The engine's salt
+   is its own, so entries written by v1 read as expired. That is what the field is for.
+6. **`egraph` does not crash.** v1 raised `KeyError` on a document whose concept references a
+   note; the engine merges what it can and reports the rest.
+7. **Empty extents do not collide.** A concept with no positive example asserts nothing, so
+   it is not reported as `E-COLLAPSE`.
 
 ## Acceptance
 
-The 64 tests in `obligo/tests` are the acceptance suite. A port is done when it passes
-them, and when `check` on every `obligo/*.mf` produces the same diagnostic set.  Line
-numbers are compared only when spans are unchanged; the layer-leak span is a deliberate
-difference.
+```powershell
+cd rust/engine-core
+cargo test            # semantics + golden snapshots for every command
+cargo build --release # the binary
+```
+
+`tests/semantics.rs` holds properties (`an_attack_defeats_its_target`). `tests/golden.rs` holds
+the exact text of every command on six fixture documents, captured while the engine still
+agreed with v1 byte for byte. `UPDATE_GOLDEN=1 cargo test` rewrites them; read the diff first.
+
+The port itself is recorded by `scripts/diff_text.py`, which compares the binary with the
+frozen Python in `obligo`: 760 comparisons across 32 documents, no mismatch, one document the
+reference cannot process (item 6 above).

@@ -1,0 +1,19 @@
+# Learned clauses
+
+Least generalisation over recorded attributes.
+
+| concept | positives | negatives | clause |
+| --- | --- | --- | --- |
+| C_REQUESTED | 2 | 1 | asked >= 12 |
+| C_POPULAR | 1 | 1 | competitors >= 3 |
+| C_ELEGANT | 1 | 1 | contrast >= 7.2 |
+| C_SWIFT | 1 | 1 | theme_ms <= 12 |
+
+## Structural clauses
+
+Learned from graph position, not attributes.
+
+| concept | structure |
+| --- | --- |
+| C_ELEGANT | ?r -from-> -assumes-> ?v |
+| C_SWIFT | ?r -from-> -assumes-> ?v |

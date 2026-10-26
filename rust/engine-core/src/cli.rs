@@ -103,7 +103,7 @@ fn diagnostics_json(diagnostics: &[crate::check::Diagnostic], fallback: &str) ->
     )
 }
 
-fn report(diagnostics: &[crate::check::Diagnostic], fallback: &str) -> i32 {
+fn report(diagnostics: &[crate::check::Diagnostic]) -> i32 {
     println!("{} error(s), {} warning(s)", error_count(diagnostics), warning_count(diagnostics));
     if error_count(diagnostics) > 0 {
         1
@@ -119,7 +119,7 @@ fn text_diagnostics(diagnostics: &[crate::check::Diagnostic], fallback: &str) ->
         let file = if item.file.is_empty() { fallback.to_string() } else { item.file.clone() };
         println!("  {} {}:{} {}", item.code, file, item.line, item.message);
     }
-    report(diagnostics, fallback)
+    report(diagnostics)
 }
 
 fn collect_holes(decls: &[Decl]) -> Vec<(String, String)> {
@@ -144,7 +144,13 @@ fn collect_holes(decls: &[Decl]) -> Vec<(String, String)> {
 
 // --------------------------------------------------------------------- subcommands
 
-fn cmd_check(path: &Path, json: bool, sugar: bool, goals_path: Option<&str>) -> i32 {
+fn cmd_check(
+    path: &Path,
+    json: bool,
+    sugar: bool,
+    goals_path: Option<&str>,
+    use_cache: bool,
+) -> i32 {
     let loaded = if sugar {
         let raw = match fs::read_to_string(path) {
             Ok(raw) => raw,
@@ -161,7 +167,27 @@ fn cmd_check(path: &Path, json: bool, sugar: bool, goals_path: Option<&str>) -> 
             Err(error) => return fail(error),
         }
     };
-    let mut diagnostics = crate::check::check(&loaded.decls);
+    let cacheable = use_cache && !sugar && !path.is_dir();
+    let cache_key = if cacheable { Some(crate::cache::key(&loaded.text)) } else { None };
+    let mut diagnostics = match cache_key.as_ref().and_then(|key| crate::cache::load().get(key).cloned()) {
+        Some(payload) => crate::cache::restore(&payload),
+        None => {
+            let computed = crate::check::check(&loaded.decls);
+            if let Some(key) = &cache_key {
+                let payload = match crate::json::parse(&crate::cache::dump(&computed)) {
+                    Ok(payload) => payload,
+                    Err(_) => crate::json::Json::Arr(Vec::new()),
+                };
+                let mut entries: Vec<(String, crate::json::Json)> =
+                    crate::cache::load().into_iter().collect();
+                entries.retain(|(existing, _)| existing != key);
+                entries.push((key.clone(), payload));
+                entries.sort_by(|left, right| left.0.cmp(&right.0));
+                let _ = crate::cache::save(&entries);
+            }
+            computed
+        }
+    };
     if let Some(goals_file) = goals_path {
         let text = match fs::read_to_string(goals_file) {
             Ok(text) => text,
@@ -199,6 +225,7 @@ fn cmd_check(path: &Path, json: bool, sugar: bool, goals_path: Option<&str>) -> 
     if !holes.is_empty() {
         println!("holes: {} unknown value(s), listed in OPEN.md after a build", holes.len());
     }
+    println!("{} error(s), {} warning(s)", error_count(&diagnostics), warning_count(&diagnostics));
     if error_count(&diagnostics) > 0 {
         1
     } else {
@@ -972,6 +999,76 @@ fn learning_map(learnings: &[crate::induce::Learning]) -> std::collections::Hash
         .collect()
 }
 
+fn cmd_project(path: &Path) -> i32 {
+    let loaded = match load(path) {
+        Ok(loaded) => loaded,
+        Err(error) => return fail(error),
+    };
+    let diagnostics = crate::check::check(&loaded.decls);
+    let mut by_file: Vec<(String, Vec<&crate::check::Diagnostic>)> = Vec::new();
+    for item in &diagnostics {
+        match by_file.iter_mut().find(|(file, _)| file == &item.file) {
+            Some((_, list)) => list.push(item),
+            None => by_file.push((item.file.clone(), vec![item])),
+        }
+    }
+    by_file.sort_by(|left, right| left.0.cmp(&right.0));
+    for (file, list) in &by_file {
+        println!("# {file}");
+        for item in list {
+            println!("  {} {file}:{} {}", item.code, item.line, item.message);
+        }
+    }
+    println!("{} error(s), {} warning(s)", error_count(&diagnostics), warning_count(&diagnostics));
+    if error_count(&diagnostics) > 0 {
+        1
+    } else {
+        0
+    }
+}
+
+fn cmd_mem(recall: Option<&[String]>, k: usize) -> i32 {
+    if let Some(codes) = recall {
+        let entries = crate::cases::recall(codes, k);
+        if entries.is_empty() {
+            println!("no similar case");
+            return 0;
+        }
+        for entry in entries {
+            let outcome = if entry.improved { "improved" } else { "no better" };
+            let codes = entry.entry.get("codes").map(|value| value.strings()).unwrap_or_default();
+            let action = entry.entry.get("action").and_then(|value| value.as_str()).unwrap_or("");
+            let errors = |side: &str| {
+                entry
+                    .entry
+                    .get(side)
+                    .and_then(|item| item.get("errors"))
+                    .and_then(|item| item.as_f64())
+                    .unwrap_or(0.0)
+            };
+            println!(
+                "{} {} {}->{} errors  ({outcome})",
+                crate::cases::list_repr(&codes),
+                pad(action, 10),
+                crate::program::fmt_g(errors("before")),
+                crate::program::fmt_g(errors("after"))
+            );
+        }
+        return 0;
+    }
+    let report = crate::cases::audit();
+    println!("cases: {}", report.entries);
+    println!("expired:     {}  (recorded under a different checker)", report.expired);
+    println!(
+        "conflicting: {}  (same situation and action, opposite outcome)",
+        report.conflicting
+    );
+    println!("no-op:       {}  (changed nothing either way)", report.noop);
+    println!("unchanged:   {}", report.unchanged);
+    println!("orphans:     {}  (document no longer exists)", report.orphans);
+    0
+}
+
 fn cmd_kinds() -> i32 {
     println!("{} {} discharge", pad("kind", 12), pad("obligation", 52));
     for (kind, obligation, discharge) in program::TABLE {
@@ -1101,13 +1198,24 @@ pub fn run() -> i32 {
     if command == "kinds" {
         return cmd_kinds();
     }
+    if command == "mem" {
+        let codes: Vec<String> = args.positional.clone();
+        let recall = if args.has("--recall") { Some(codes.as_slice()) } else { None };
+        return cmd_mem(recall, args.count("--k", 3));
+    }
     let Some(target) = args.at(0) else {
         println!("usage: engine-core {command} FILE");
         return 2;
     };
     let path = PathBuf::from(target);
     match command.as_str() {
-        "check" => cmd_check(&path, args.has("--json"), args.has("--sugar"), args.option("--goals")),
+        "check" => cmd_check(
+            &path,
+            args.has("--json"),
+            args.has("--sugar"),
+            args.option("--goals"),
+            args.has("--cache"),
+        ),
         "engine" => cmd_engine(&path, args.has("--json")),
         "suggest" => cmd_suggest(&path, args.has("--json")),
         "apply" => cmd_apply(&path, args.has("--dry-run")),
@@ -1148,6 +1256,7 @@ pub fn run() -> i32 {
             cmd_pattern(&path, name, args.has("--vars"))
         }
         "build" => cmd_build(&path, args.option("--out").unwrap_or("out"), args.option("--goals")),
+        "project" => cmd_project(&path),
         _ => {
             println!("unknown command {command}");
             2

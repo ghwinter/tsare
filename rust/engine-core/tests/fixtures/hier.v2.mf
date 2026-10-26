@@ -1,0 +1,54 @@
+# hier.v1.mf -- 概念之间第一次有"上下位"。
+#
+# 子概念的外延必须在外概念里面。这是子类型规则，不是注释。
+
+fact F_SCROLL {
+  claim: "滚动时一帧 8ms",
+  evidence: tool("trace"),
+  attrs: { frame_ms: 8 }
+}
+
+fact F_RESIZE {
+  claim: "拉伸窗口时一帧 10ms",
+  evidence: tool("trace"),
+  attrs: { frame_ms: 10 }
+}
+
+fact F_LAUNCH {
+  claim: "冷启动首帧 900ms",
+  evidence: tool("trace"),
+  attrs: { frame_ms: 900 }
+}
+
+fact F_IDLE {
+  claim: "空闲时不渲染任何一帧",
+  evidence: tool("trace"),
+  attrs: { frame_ms: 0 }
+}
+
+concept C_TIMED {
+  name: "有帧时间记录的操作",
+  grounded_by: [F_SCROLL, F_RESIZE, F_LAUNCH],
+  against: [F_IDLE]
+}
+
+concept C_FAST {
+  name: "一帧之内",
+  grounded_by: [F_SCROLL, F_RESIZE],
+  against: [F_LAUNCH],
+  parent: C_TIMED
+}
+
+concept C_VERY_FAST {
+  name: "半帧之内",
+  grounded_by: [F_SCROLL],
+  against: [F_RESIZE],
+  parent: C_FAST
+}
+
+concept C_SLOW {
+  name: "明显卡顿",
+  grounded_by: [F_LAUNCH],
+  against: [F_SCROLL],
+  parent: C_TIMED
+}

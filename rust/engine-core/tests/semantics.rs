@@ -1,0 +1,317 @@
+//! What the compiler decides, in the smallest form that can be checked by eye.
+//!
+//! These assertions came from the reference suite and were kept because they name a property,
+//! not an implementation: a rule that attacks another defeats it, an ungrounded premise makes
+//! a conclusion conditional, a duplicate is repaired only when the repair compiles better.
+
+use std::collections::HashSet;
+
+use engine_core::argue::conclusions;
+use engine_core::build::{learnings_of, verify_predicates};
+use engine_core::check::check;
+use engine_core::closure::{engine, grounded_sets};
+use engine_core::cost::report as cost_report;
+use engine_core::derive::analyze;
+use engine_core::egraph::merge_groups;
+use engine_core::fix::suggestions;
+use engine_core::induce::induce_concept;
+use engine_core::program::Program;
+use engine_core::sugar::expand;
+use engine_core::syntax::{parse, Decl};
+
+fn decls(source: &str) -> Vec<Decl> {
+    parse(source).expect("parse")
+}
+
+fn codes(source: &str) -> Vec<&'static str> {
+    check(&decls(source)).iter().map(|item| item.code).collect()
+}
+
+fn statuses(source: &str) -> std::collections::HashMap<String, &'static str> {
+    let decls = decls(source);
+    conclusions(&Program::new(&decls)).into_iter().map(|row| (row.name, row.status)).collect()
+}
+
+const ATTACK: &str = r#"
+fact F1 { claim: "x", evidence: user }
+proposition P1 { statement: "a", from: [F1] }
+warrant W1 { claim: "r1", from: [F1], to: P1 }
+warrant W2 { claim: "r2", from: [F1], to: P1, attacks: [W1] }
+"#;
+
+#[test]
+fn an_attack_defeats_its_target() {
+    let parsed = decls(ATTACK);
+    let (inside, outside) = grounded_sets(&parsed);
+    assert!(inside.contains("W2"), "the attacking rule survives");
+    assert!(outside.contains("W1"), "the attacked rule falls");
+    assert_eq!(statuses(ATTACK)["P1"], "supported", "the other rule still concludes it");
+}
+
+#[test]
+fn a_rule_without_premises_licenses_nothing() {
+    let source = r#"
+fact F1 { claim: "x", evidence: user }
+proposition P1 { statement: "a", from: [F1] }
+warrant W1 { claim: "r", from: [], to: P1 }
+"#;
+    let (inside, outside) = grounded_sets(&decls(source));
+    assert!(!inside.contains("W1"));
+    assert!(outside.contains("W1"), "it is out from the start and cannot defeat anything");
+}
+
+#[test]
+fn a_supported_conclusion_without_facts_is_conditional() {
+    let source = r#"
+fact F1 { claim: "x", evidence: model }
+proposition P1 { statement: "a", from: [F1] }
+warrant W1 { claim: "r", from: [F1], to: P1 }
+"#;
+    let declared = decls(source);
+    let program = Program::new(&declared);
+    let result = analyze(&program);
+    assert!(result.conditional.is_empty(), "F1 is a fact, so P1 is grounded");
+
+    let source = r#"
+proposition P0 { statement: "unchecked" }
+proposition P1 { statement: "a", from: [P0] }
+warrant W1 { claim: "r", from: [P0], to: P1 }
+"#;
+    let declared = decls(source);
+    let program = Program::new(&declared);
+    let result = analyze(&program);
+    assert_eq!(result.conditional, vec!["P1".to_string()]);
+    assert!(result.reasons["P1"][0].contains("W1 needs P0"), "the reason names the missing premise");
+}
+
+#[test]
+fn engine_separates_held_from_conditional() {
+    let source = r#"
+fact F1 { claim: "x", evidence: tool("t") }
+proposition P1 { statement: "a", from: [F1] }
+proposition P2 { statement: "b", from: [P1, P3] }
+warrant W1 { claim: "r1", from: [F1], to: P1 }
+warrant W2 { claim: "r2", from: [P1, P3], to: P2 }
+"#;
+    let result = engine(&decls(source));
+    assert!(result.held.contains(&"P1".to_string()));
+    assert!(result.conditional.iter().any(|(name, _)| name == "P2"));
+}
+
+#[test]
+fn a_model_fact_costs_one_confirmation() {
+    let declared = decls(r#"fact F1 { claim: "x", evidence: model }"#);
+    let cost = cost_report(&Program::new(&declared));
+    assert_eq!(cost.total, 1);
+    assert_eq!(cost.rows[0].0, "F1");
+}
+
+#[test]
+fn a_measured_support_costs_nothing() {
+    let source = r#"
+fact F1 { claim: "x", evidence: tool("t") }
+proposition P1 { statement: "a", from: [F1] }
+warrant W1 { claim: "r", from: [F1], to: P1, basis: [V1] }
+value V1 { metric: "m", direction: min, unit: "ms", threshold: 1, measured_by: tool("t") }
+"#;
+    let cost = cost_report(&Program::new(&decls(source)));
+    assert_eq!(cost.total, 0);
+}
+
+#[test]
+fn removing_the_only_premise_defeats_the_conclusion() {
+    assert_eq!(statuses(ATTACK)["P1"], "supported");
+    let declared = decls(ATTACK);
+    let reduced = engine_core::whatif::remove(&declared, "F1").expect("F1 is removable");
+    let result = engine_core::whatif::compare(&declared, &reduced);
+    assert!(result.changed.iter().any(|(name, before, after)| {
+        name == "P1" && before == "supported" && after != "supported"
+    }));
+}
+
+#[test]
+fn identical_facts_merge() {
+    let source = r#"
+fact F1 { claim: "x", evidence: user }
+fact F2 { claim: "x", evidence: user }
+"#;
+    let declared = decls(source);
+    let (_, groups) = merge_groups(&Program::new(&declared));
+    let merged: Vec<&Vec<String>> = groups.iter().filter(|group| group.len() > 1).collect();
+    assert_eq!(merged.len(), 1);
+    assert_eq!(merged[0], &vec!["F1".to_string(), "F2".to_string()]);
+}
+
+#[test]
+fn a_duplicate_is_a_machine_repair() {
+    let text = "fact F { claim: \"a\", evidence: user }\nfact F { claim: \"b\", evidence: user }\n";
+    let declared = decls(text);
+    let items = suggestions(&declared);
+    let drop = items
+        .iter()
+        .find(|item| item.message.contains("drop the duplicate"))
+        .expect("a duplicate can be dropped");
+    assert_eq!(drop.applicability, "MachineApplicable");
+    let (updated, applied) = engine_core::apply::apply_best(text, &items);
+    assert_eq!(applied.len(), 1);
+    assert!(!updated.contains("\"b\""), "the later duplicate is the one that goes");
+    let before = engine_core::apply::score(text);
+    let after = engine_core::apply::score(&updated);
+    assert!(after < before, "the applied text compiles better");
+}
+
+#[test]
+fn a_repair_that_does_not_improve_is_dropped() {
+    let text = "fact F { claim: \"a\", evidence: user }\n";
+    let declared = decls(text);
+    let noop = engine_core::fix::Suggestion {
+        applicability: "MachineApplicable",
+        message: "no-op".to_string(),
+        file: String::new(),
+        line: declared[0].line,
+        col: declared[0].col,
+        end_line: declared[0].end_line,
+        end_col: declared[0].end_col,
+        replacement: String::new(),
+    };
+    let (updated, applied) = engine_core::apply::apply_best(text, &[noop]);
+    assert!(applied.is_empty());
+    assert_eq!(updated, text);
+}
+
+#[test]
+fn the_checks_name_the_problem() {
+    assert!(codes("").contains(&"E-EMPTY-DOCUMENT"));
+    assert!(codes("fact F1 { claim: \"x\", evidence: user }\nfact F1 { claim: \"y\", evidence: user }")
+        .contains(&"E-DUP-ID"));
+    assert!(codes("proposition P1 { statement: \"a\", from: [F_MISSING] }")
+        .contains(&"E-UNDEFINED"));
+    assert!(codes("fact F1 { claim: \"x\", evidence: nonsense }").contains(&"E-TYPE"));
+    assert!(codes("nonsense N { x: 1 }").contains(&"E-KIND-UNKNOWN"));
+}
+
+#[test]
+fn a_layer_leak_is_reported_where_the_reference_is_made() {
+    let source = r#"
+layer L_CORE { name: "core", exposes: [] }
+layer L_APP { name: "app", exposes: [] }
+fact F_INTERNAL { claim: "x", evidence: user, layer: L_CORE }
+proposition P_LEAK { statement: "y", from: [F_INTERNAL], layer: L_APP }
+"#;
+    let diagnostics = check(&decls(source));
+    let leak = diagnostics.iter().find(|item| item.code == "E-LAYER-LEAK").expect("a leak");
+    assert!(leak.message.contains("P_LEAK"), "the declaration that reaches out is named");
+}
+
+#[test]
+fn a_concept_learns_a_clause_from_its_examples() {
+    let source = r#"
+fact F_SLOW { claim: "slow", evidence: tool("t"), attrs: { frame_ms: 900 } }
+fact F_FAST { claim: "fast", evidence: tool("t"), attrs: { frame_ms: 8 } }
+fact F_MEDIUM { claim: "medium", evidence: tool("t"), attrs: { frame_ms: 40 } }
+concept C_FAST { name: "fast", grounded_by: [F_FAST, F_MEDIUM], against: [F_SLOW] }
+"#;
+    let declared = decls(source);
+    let program = Program::new(&declared);
+    let concept = program.of_kind("concept")[0];
+    let learning = induce_concept(&program, concept);
+    let clause = learning.clause.expect("a clause exists");
+    let text = engine_core::induce::clause_text(&clause);
+    assert_eq!(text, "frame_ms <= 40", "the tightest bound the data supports");
+}
+
+#[test]
+fn generated_predicates_hold_on_every_example() {
+    let source = r#"
+fact F_SLOW { claim: "slow", evidence: tool("t"), attrs: { frame_ms: 900 } }
+fact F_FAST { claim: "fast", evidence: tool("t"), attrs: { frame_ms: 8 } }
+concept C_FAST { name: "fast", grounded_by: [F_FAST], against: [F_SLOW] }
+"#;
+    let declared = decls(source);
+    let program = Program::new(&declared);
+    let learnings = learnings_of(&program);
+    let mut structurals = Vec::new();
+    for concept in program.of_kind("concept") {
+        structurals.push((
+            concept.name.clone(),
+            engine_core::patterns::learn(
+                &program,
+                &engine_core::program::pos(concept),
+                &engine_core::program::neg(concept),
+            ),
+        ));
+    }
+    let problems = verify_predicates(&program, &learnings.iter().map(|item| (item.concept.clone(), engine_core::induce::Learning {
+        concept: item.concept.clone(),
+        positives: item.positives.clone(),
+        negatives: item.negatives.clone(),
+        clause: item.clause.clone(),
+        witness: item.witness.clone(),
+        reason: item.reason.clone(),
+    })).collect(), &structurals);
+    assert!(problems.is_empty(), "{problems:?}");
+}
+
+#[test]
+fn sugar_expands_one_line_into_one_declaration() {
+    let source = "fact \"the window appears\" by user as F_WINDOW\n\
+                  measure \"frame_ms\" min 16ms by tool(\"trace\") as V_FRAME\n\
+                  because F_SCROLL rule \"one frame is the budget\" given V_FRAME => P_FAST\n";
+    let expanded = expand(source);
+    let lines: Vec<&str> = expanded.lines().collect();
+    assert_eq!(lines[0], "fact F_WINDOW { claim: \"the window appears\", evidence: user }");
+    assert_eq!(
+        lines[1],
+        "value V_FRAME { metric: \"frame_ms\", direction: min, unit: \"ms\", threshold: 16, measured_by: tool(\"trace\") }"
+    );
+    assert_eq!(
+        lines[2],
+        "warrant W_L3 { claim: \"one frame is the budget\", from: [F_SCROLL], to: P_FAST, basis: [V_FRAME] }"
+    );
+    // the line count is unchanged, so spans still point at the line the author wrote
+    assert_eq!(expanded.lines().count(), source.lines().count());
+}
+
+#[test]
+fn a_declaration_keeps_its_positions() {
+    let declared = decls("fact F1 { claim: \"x\", evidence: user }\n");
+    assert_eq!(declared[0].line, 1);
+    assert_eq!(declared[0].col, 1);
+    assert_eq!(declared[0].field_span[0], (1, 18, 1, 21), "the claim value runs from col 18 to 21");
+    let reference = decls("proposition P1 { statement: \"a\", from: [F_MISSING] }");
+    assert_eq!(reference[0].ref_pos[0].0, "F_MISSING");
+    assert_eq!(reference[0].ref_pos[0].2, 41, "the reference is where the name was written");
+}
+
+#[test]
+fn the_content_hash_is_a_function_of_the_bytes() {
+    assert_eq!(
+        engine_core::hash::hex(b"abc"),
+        "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+    );
+    assert_ne!(engine_core::hash::hex(b"abc"), engine_core::hash::hex(b"abd"));
+}
+
+#[test]
+fn the_store_reader_reads_the_records_it_wrote() {
+    let line = r#"{"doc": "a.mf", "codes": ["E-UNDEFINED", "W-HOLE"], "action": "mechanical", "before": {"errors": 2, "cost": 1}, "after": {"errors": 1, "cost": 1}, "checker": "engine-core-0.1"}"#;
+    let entry = engine_core::json::parse(line).expect("parse");
+    assert_eq!(entry.get("codes").map(|value| value.strings()).unwrap_or_default(), vec!["E-UNDEFINED", "W-HOLE"]);
+    assert!(engine_core::cases::improved(&entry));
+    assert_eq!(
+        engine_core::json::serialize(&entry),
+        r#"{"doc": "a.mf", "codes": ["E-UNDEFINED", "W-HOLE"], "action": "mechanical", "before": {"errors": 2, "cost": 1}, "after": {"errors": 1, "cost": 1}, "checker": "engine-core-0.1"}"#
+    );
+    assert_eq!(engine_core::cases::list_repr(&["A".to_string(), "B".to_string()]), "['A', 'B']");
+}
+
+#[test]
+fn names_resolve_once_per_program() {
+    let source = "fact F1 { claim: \"x\", evidence: user }\nproposition P1 { statement: \"a\", from: [F1] }\n";
+    let declared = decls(source);
+    let program = Program::new(&declared);
+    let names: HashSet<&str> = program.of_kind("fact").iter().map(|decl| decl.name.as_str()).collect();
+    assert_eq!(names, HashSet::from(["F1"]));
+    assert!(program.get("P1").is_some());
+    assert!(program.get("P2").is_none());
+}

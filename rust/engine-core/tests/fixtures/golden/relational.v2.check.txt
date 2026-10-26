@@ -1,0 +1,4 @@
+declarations: 12
+diagnostics: 1
+  W-UNWARRANTED-BASIS <fixtures>/relational.v2.mf:59 warrant W_X states a rule, but nothing makes the rule acceptable
+0 error(s), 1 warning(s)

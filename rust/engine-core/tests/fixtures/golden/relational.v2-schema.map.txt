@@ -1,0 +1,8 @@
+0.60 w=3  F_C                ~ F_TRACE             shared: premise>in:basis, premise
+0.22 w=2  W_S1               ~ W_RULE              shared: in:basis, in:premise
+0.22 w=2  W_S2               ~ W_RULE              shared: in:basis, in:premise
+0.18 w=2  W_Y                ~ W_RULE              shared: in:basis, in:premise
+0.09 w=1  F_A1               ~ F_TRACE             shared: premise
+0.09 w=1  F_A2               ~ F_TRACE             shared: premise
+0.09 w=1  W_X                ~ W_RULE              shared: in:premise
+0.08 w=1  F_B1               ~ F_TRACE             shared: premise

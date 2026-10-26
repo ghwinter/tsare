@@ -1,0 +1,14 @@
+graph LR
+  F_SCROLL["F_SCROLL<br/><i>fact</i>"]
+  F_HEADLESS["F_HEADLESS<br/><i>fact</i>"]
+  C_RENDERED["C_RENDERED<br/><i>concept</i>"]
+  P_THRESHOLD["P_THRESHOLD<br/><i>proposition</i>"]
+  P_SMOOTH["P_SMOOTH<br/><i>proposition</i>"]
+  W_RENDER["W_RENDER<br/><i>warrant</i>"]
+  F_SCROLL -->|positive| C_RENDERED
+  F_HEADLESS -.->|negative| C_RENDERED
+  P_THRESHOLD -->|uses| C_RENDERED
+  P_THRESHOLD -->|from| P_SMOOTH
+  P_THRESHOLD -->|premise| W_RENDER
+  C_RENDERED -.->|basis| W_RENDER
+  W_RENDER -->|concludes| P_SMOOTH

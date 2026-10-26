@@ -1,0 +1,8 @@
+C_REQUESTED:
+  positives: F_DARK, F_MULTI
+  negatives: F_NONE
+  structure: none found up to two edges
+  positions:
+    pos F_DARK: from, from>assumes
+    pos F_MULTI: -
+    neg F_NONE: -

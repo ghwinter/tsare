@@ -1,0 +1,2 @@
+grounded: 0 proposition(s) from 4 facts
+every supported conclusion is grounded in facts

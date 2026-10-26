@@ -1,0 +1,14 @@
+# Obligations
+
+What must be discharged before the description counts as checked.
+
+| id | kind | action | status | note |
+| --- | --- | --- | --- | --- |
+| F_SCROLL | fact | check | ready | evidence: tool |
+| F_HEADLESS | fact | check | ready | evidence: tool |
+| C_RENDERED | concept | induce | blocked | no clause found; see OPEN.md |
+| P_THRESHOLD | proposition | prove | assumed | no premises; treated as an assumption |
+| P_SMOOTH | proposition | prove | ready | premises given |
+| W_RENDER | warrant | ? | ? |  |
+
+6 obligations, 3 ready.

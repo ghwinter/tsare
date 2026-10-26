@@ -1,0 +1,4 @@
+kind audit: <fixtures>/ungrounded.mf
+  law      absent
+  value    absent
+  layer    absent

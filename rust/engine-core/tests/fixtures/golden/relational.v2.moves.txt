@@ -1,0 +1,3 @@
+R2 drop a constraint          W_X                rule with no basis: why should it be acceptable? (touches 1)
+R1 swap an invariant          P_ONE              rests on F_A1 alone via W_S1
+R1 swap an invariant          P_TWO              rests on F_A2 alone via W_S2

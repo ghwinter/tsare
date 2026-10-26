@@ -1,0 +1,4 @@
+decompression cost: 1 external confirmation(s), depth 2
+by kind: proposition=1
+  P_THRESHOLD        1  no rule supports it
+chain: P_THRESHOLD -> W_RENDER -> P_SMOOTH

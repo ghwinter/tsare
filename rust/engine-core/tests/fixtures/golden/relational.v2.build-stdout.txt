@@ -1,0 +1,8 @@
+  W-UNWARRANTED-BASIS <fixtures>/relational.v2.mf:59 warrant W_X states a rule, but nothing makes the rule acceptable
+0 error(s), 1 warning(s)
+emitted <temp>engine-golden-build-relational.v2/OBLIGATIONS.md
+emitted <temp>engine-golden-build-relational.v2/LEARNED.md
+emitted <temp>engine-golden-build-relational.v2/OPEN.md
+emitted <temp>engine-golden-build-relational.v2/NOTES.md
+emitted <temp>engine-golden-build-relational.v2/predicates.py
+predicates: 0 attribute + 1 structural, verified on every example

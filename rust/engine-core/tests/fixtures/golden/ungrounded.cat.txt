@@ -1,0 +1,13 @@
+objects: concept=1, fact=2, proposition=2, warrant=1
+arrows:  basis=1, concludes=1, from=1, negative=1, positive=1, premise=1
+Ext:     0/0 parent arrows preserved
+Expose:  0/0 cross-layer arrows visible
+checker: 0 error(s)
+stages:
+  source -> AST            total            parse() either produces a tree or an E-SYNTAX
+  AST -> signature         total            check() is a function of the declaration list
+  signature -> diagnostics total            same input, same codes
+  signature -> clauses     partial          a concept without examples yields no clause
+  clauses -> predicates    total            renderer + exec verification
+  diagnostics -> repair    non-deterministic the model may no-op or change meaning
+  signature -> weights     total            min/max over a finite set

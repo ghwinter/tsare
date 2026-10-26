@@ -1,0 +1,4 @@
+declarations: 6
+diagnostics: 1
+  W-CONDITIONAL <fixtures>/ungrounded.mf:21 P_SMOOTH is supported only through an ungrounded premise: W_RENDER needs P_THRESHOLD (asserted)
+0 error(s), 1 warning(s)

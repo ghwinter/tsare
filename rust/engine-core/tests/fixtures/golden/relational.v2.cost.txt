@@ -1,0 +1,4 @@
+decompression cost: 1 external confirmation(s), depth 2
+by kind: warrant=1
+  W_X                1  rule with no basis: why should it be acceptable?
+chain: F_C -> W_Y -> P_THREE

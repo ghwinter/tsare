@@ -1,0 +1,13 @@
+graph LR
+  F_TRACE["F_TRACE<br/><i>fact</i>"]
+  F_HEADLESS["F_HEADLESS<br/><i>fact</i>"]
+  C_RENDERED["C_RENDERED<br/><i>concept</i>"]
+  P_SMOOTH["P_SMOOTH<br/><i>proposition</i>"]
+  P_STABLE["P_STABLE<br/><i>proposition</i>"]
+  W_RULE["W_RULE<br/><i>warrant</i>"]
+  F_TRACE -->|positive| C_RENDERED
+  F_HEADLESS -.->|negative| C_RENDERED
+  P_SMOOTH -->|uses| C_RENDERED
+  P_STABLE -->|uses| C_RENDERED
+  F_TRACE -->|premise| W_RULE
+  C_RENDERED -.->|basis| W_RULE

@@ -1,0 +1,5 @@
+grounded: 3 proposition(s) from 4 facts
+  derived P_ONE
+  derived P_THREE
+  derived P_TWO
+every supported conclusion is grounded in facts

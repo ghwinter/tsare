@@ -4,8 +4,10 @@
 //! independence assumptions a probability needs.  So the number propagated here is a lower
 //! bound under "weakest link":
 //!
+//! ```text
 //!     strength(rule)        = min(rule.confidence, min(strength of its premises))
 //!     strength(proposition) = max(strength of rules concluding it), or its own number if asserted
+//! ```
 //!
 //! `min` and `max` over a finite set are decidable and monotone.  Sums, products and
 //! conditional probabilities are deliberately absent: they would require a joint distribution

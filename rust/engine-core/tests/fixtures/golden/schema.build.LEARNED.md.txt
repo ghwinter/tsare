@@ -1,0 +1,20 @@
+# Learned clauses
+
+Least generalisation over recorded attributes.
+
+| concept | positives | negatives | clause |
+| --- | --- | --- | --- |
+| C_RENDERED | 1 | 1 | _failed_ |
+
+## Structural clauses
+
+Learned from graph position, not attributes.
+
+| concept | structure |
+| --- | --- |
+| C_RENDERED | ?r -premise-> ?v |
+
+## Failures
+
+- **C_RENDERED**: no attribute distinguishes the examples; they are indistinguishable as recorded
+  - witness: `F_TRACE` vs `F_HEADLESS`

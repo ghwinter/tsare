@@ -1,0 +1,7 @@
+0 error(s), 0 warning(s)
+emitted <temp>engine-golden-build-hier.v2/OBLIGATIONS.md
+emitted <temp>engine-golden-build-hier.v2/LEARNED.md
+emitted <temp>engine-golden-build-hier.v2/OPEN.md
+emitted <temp>engine-golden-build-hier.v2/NOTES.md
+emitted <temp>engine-golden-build-hier.v2/predicates.py
+predicates: 4 attribute + 0 structural, verified on every example

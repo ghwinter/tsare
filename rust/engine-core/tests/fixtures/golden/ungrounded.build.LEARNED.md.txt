@@ -1,0 +1,12 @@
+# Learned clauses
+
+Least generalisation over recorded attributes.
+
+| concept | positives | negatives | clause |
+| --- | --- | --- | --- |
+| C_RENDERED | 1 | 1 | _failed_ |
+
+## Failures
+
+- **C_RENDERED**: no attribute distinguishes the examples; they are indistinguishable as recorded
+  - witness: `F_SCROLL` vs `F_HEADLESS`

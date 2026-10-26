@@ -1,0 +1,5 @@
+0.11 w=1  P_FAST             ~ P_IMPORTANT         shared: in:from
+0.10 w=1  F_SCROLL           ~ F_DARK              shared: from
+0.09 w=1  P_FAST             ~ P_ELEGANT           shared: in:from
+0.08 w=1  F_SCROLL           ~ F_CONTRAST_OK       shared: from
+0.08 w=1  F_SCROLL           ~ F_THEME_FAST        shared: from

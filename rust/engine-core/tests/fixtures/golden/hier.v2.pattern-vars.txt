@@ -1,0 +1,4 @@
+C_TIMED:
+  positives: F_SCROLL, F_RESIZE, F_LAUNCH
+  negatives: F_IDLE
+  structure: none found with variables

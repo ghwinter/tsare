@@ -1,0 +1,31 @@
+# Open
+
+## Declared questions
+
+**Q_ELEGANT** (to user): 说到底，优雅指的是对比度、动效，还是留白？
+
+1. 对比度与可读性
+2. 动效与过渡
+3. 留白与密度
+
+## Blind spots
+
+**B_PLAN**: 先做哪个：两个功能都有人点名，谁先谁后没有词能表达
+
+- witness: `F_DARK` vs `F_MULTI`
+- needs: a predicate that separates them
+
+**B_IS_OUGHT**: 从竞品有推出我们应该有
+
+- witness: `P_SHOULD` vs `F_COMP`
+- needs: a predicate that separates them
+
+## Blocked concepts
+
+_none_
+
+## Derived questions
+
+Produced by induction failure, not written by hand.
+
+_none_

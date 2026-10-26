@@ -1,0 +1,23 @@
+graph LR
+  F_SCROLL["F_SCROLL<br/><i>fact</i>"]
+  F_RESIZE["F_RESIZE<br/><i>fact</i>"]
+  F_LAUNCH["F_LAUNCH<br/><i>fact</i>"]
+  F_IDLE["F_IDLE<br/><i>fact</i>"]
+  C_TIMED["C_TIMED<br/><i>concept</i>"]
+  C_FAST["C_FAST<br/><i>concept</i>"]
+  C_VERY_FAST["C_VERY_FAST<br/><i>concept</i>"]
+  C_SLOW["C_SLOW<br/><i>concept</i>"]
+  F_SCROLL -->|positive| C_TIMED
+  F_RESIZE -->|positive| C_TIMED
+  F_LAUNCH -->|positive| C_TIMED
+  F_IDLE -.->|negative| C_TIMED
+  F_SCROLL -->|positive| C_FAST
+  F_RESIZE -->|positive| C_FAST
+  F_LAUNCH -.->|negative| C_FAST
+  C_FAST -.->|parent| C_TIMED
+  F_SCROLL -->|positive| C_VERY_FAST
+  F_RESIZE -.->|negative| C_VERY_FAST
+  C_VERY_FAST -.->|parent| C_FAST
+  F_LAUNCH -->|positive| C_SLOW
+  F_SCROLL -.->|negative| C_SLOW
+  C_SLOW -.->|parent| C_TIMED

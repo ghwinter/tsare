@@ -1,0 +1,4 @@
+grounded: 0 proposition(s) from 2 facts
+supported but not grounded: 1
+  P_SMOOTH
+    W_RENDER needs P_THRESHOLD (asserted)

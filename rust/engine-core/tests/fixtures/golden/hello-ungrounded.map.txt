@@ -1,0 +1,2 @@
+1.00 w=8  P_FAST             ~ P_SMOOTH            shared: in:concludes>in:basis, in:concludes>in:premise, in:from>premise, in:concludes
+1.00 w=7  W_FAST             ~ W_RENDER            shared: concludes>in:from, in:premise>from, concludes, in:basis

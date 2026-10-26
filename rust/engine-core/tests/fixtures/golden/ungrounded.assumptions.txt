@@ -1,0 +1,2 @@
+1 load-bearing assumption(s):
+  P_THRESHOLD        proposition  touches  1  no rule supports it

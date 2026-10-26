@@ -1,0 +1,7 @@
+{
+  "held": ["P_SMOOTH", "P_STABLE"],
+  "conditional": [],
+  "blocked": [],
+  "chains": {"P_SMOOTH": "P_SMOOTH <- W_RULE <- F_TRACE", "P_STABLE": "P_STABLE <- W_RULE <- F_TRACE"},
+  "gates": {"P_SMOOTH": [], "P_STABLE": []}
+}

@@ -1,0 +1,7 @@
+{
+  "held": ["P_ONE", "P_THREE", "P_TWO"],
+  "conditional": [],
+  "blocked": [],
+  "chains": {"P_ONE": "P_ONE <- W_S1 <- F_A1", "P_THREE": "P_THREE <- W_X <- F_B1", "P_TWO": "P_TWO <- W_S2 <- F_A2"},
+  "gates": {"P_ONE": [], "P_THREE": [], "P_TWO": []}
+}

@@ -1,0 +1,3 @@
+threshold 0.7
+  P_SMOOTH            --  asserted
+  P_STABLE            --  asserted

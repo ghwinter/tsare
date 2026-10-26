@@ -1,0 +1,3 @@
+single support: P_FAST rests on W_FAST alone
+load-bearing: F_SCROLL is the only premise of the only rule for P_FAST
+graph: fact=1, proposition=1, value=1, warrant=1

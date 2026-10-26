@@ -1,0 +1,13 @@
+  W-OVERCLAIM <fixtures>/talk.v2.mf:12 fact F_MULTI is a universal claim with no scope
+  W-OVERCLAIM <fixtures>/talk.v2.mf:24 fact F_COMP is a universal claim with no scope
+  W-UNWARRANTED <fixtures>/talk.v2.mf:80 proposition P_IMPORTANT cites premises, but no rule connects them to it
+  W-UNWARRANTED <fixtures>/talk.v2.mf:92 proposition P_ELEGANT cites premises, but no rule connects them to it
+  W-NO-EXIT <fixtures>/talk.v2.mf:129 blindspot B_PLAN closes no question, so nothing will ever resolve it
+  W-NO-EXIT <fixtures>/talk.v2.mf:135 blindspot B_IS_OUGHT closes no question, so nothing will ever resolve it
+0 error(s), 6 warning(s)
+emitted <temp>engine-golden-build-talk.v2/OBLIGATIONS.md
+emitted <temp>engine-golden-build-talk.v2/LEARNED.md
+emitted <temp>engine-golden-build-talk.v2/OPEN.md
+emitted <temp>engine-golden-build-talk.v2/NOTES.md
+emitted <temp>engine-golden-build-talk.v2/predicates.py
+predicates: 4 attribute + 2 structural, verified on every example

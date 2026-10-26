@@ -1,0 +1,2 @@
+before: 0 errors, 6 warnings (holes not counted)
+no verified candidate reduces this

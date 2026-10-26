@@ -1,0 +1,12 @@
+{
+  "diagnostics": [
+    {"code": "W-OVERCLAIM", "severity": "warning", "file": "D://GitHub//engine//rust//engine-core//tests//fixtures//talk.v2.mf", "line": 12, "col": 10, "message": "fact F_MULTI is a universal claim with no scope"},
+    {"code": "W-OVERCLAIM", "severity": "warning", "file": "D://GitHub//engine//rust//engine-core//tests//fixtures//talk.v2.mf", "line": 24, "col": 10, "message": "fact F_COMP is a universal claim with no scope"},
+    {"code": "W-UNWARRANTED", "severity": "warning", "file": "D://GitHub//engine//rust//engine-core//tests//fixtures//talk.v2.mf", "line": 80, "col": 9, "message": "proposition P_IMPORTANT cites premises, but no rule connects them to it"},
+    {"code": "W-UNWARRANTED", "severity": "warning", "file": "D://GitHub//engine//rust//engine-core//tests//fixtures//talk.v2.mf", "line": 92, "col": 9, "message": "proposition P_ELEGANT cites premises, but no rule connects them to it"},
+    {"code": "W-NO-EXIT", "severity": "warning", "file": "D://GitHub//engine//rust//engine-core//tests//fixtures//talk.v2.mf", "line": 129, "col": 19, "message": "blindspot B_PLAN closes no question, so nothing will ever resolve it"},
+    {"code": "W-NO-EXIT", "severity": "warning", "file": "D://GitHub//engine//rust//engine-core//tests//fixtures//talk.v2.mf", "line": 135, "col": 19, "message": "blindspot B_IS_OUGHT closes no question, so nothing will ever resolve it"}
+],
+  "errors": 0,
+  "warnings": 6
+}

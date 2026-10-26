@@ -1,0 +1,8 @@
+0.80 w=8  P_FAST             ~ P_ONE               shared: in:concludes>in:basis, in:concludes>in:premise, in:from>premise, in:concludes
+0.80 w=8  P_FAST             ~ P_THREE             shared: in:concludes>in:basis, in:concludes>in:premise, in:from>premise, in:concludes
+0.80 w=8  P_FAST             ~ P_TWO               shared: in:concludes>in:basis, in:concludes>in:premise, in:from>premise, in:concludes
+0.78 w=7  W_FAST             ~ W_S1                shared: concludes>in:from, in:premise>from, concludes, in:basis
+0.78 w=7  W_FAST             ~ W_S2                shared: concludes>in:from, in:premise>from, concludes, in:basis
+0.62 w=5  F_SCROLL           ~ F_C                 shared: premise>concludes, premise>in:basis, premise
+0.55 w=6  F_SCROLL           ~ F_A1                shared: from>in:concludes, premise>concludes, from, premise
+0.55 w=6  F_SCROLL           ~ F_A2                shared: from>in:concludes, premise>concludes, from, premise

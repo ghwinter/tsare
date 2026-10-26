@@ -1,0 +1,35 @@
+# Obligations
+
+What must be discharged before the description counts as checked.
+
+| id | kind | action | status | note |
+| --- | --- | --- | --- | --- |
+| F_DARK | fact | check | ready | evidence: tool |
+| F_MULTI | fact | check | ready | evidence: tool |
+| F_NONE | fact | check | ready | evidence: tool |
+| F_COMP | fact | check | ready | evidence: tool |
+| F_THEME_FAST | fact | check | ready | evidence: tool |
+| F_THEME_SLOW | fact | check | ready | evidence: tool |
+| F_CONTRAST_OK | fact | check | ready | evidence: tool |
+| F_CONTRAST_LOW | fact | check | ready | evidence: tool |
+| C_REQUESTED | concept | induce | ready | clause: asked >= 12 |
+| C_POPULAR | concept | induce | ready | clause: competitors >= 3 |
+| C_ELEGANT | concept | induce | ready | clause: contrast >= 7.2 |
+| C_SWIFT | concept | induce | ready | clause: theme_ms <= 12 |
+| P_IMPORTANT | proposition | prove | ready | premises given |
+| P_SHOULD | proposition | prove | assumed | no premises; treated as an assumption |
+| P_ELEGANT | proposition | prove | ready | premises given |
+| H_RETENTION | hypothesis | test | ready | test: 上线四周，控制发布节奏，比较留存曲线 |
+| H_NOVELTY | hypothesis | test | ready | test: 上线四周与八周各测一次留存 |
+| H_CONTRAST | hypothesis | test | ready | test: 五位用户按对比度评分，再按动效评分 |
+| H_MOTION | hypothesis | test | ready | test: 五位用户按对比度评分，再按动效评分 |
+| Q_ELEGANT | question | ask | waiting | to user |
+| B_PLAN | blindspot | extend | waiting | signature must grow |
+| B_IS_OUGHT | blindspot | extend | waiting | signature must grow |
+| V_CONTRAST | value | measure | ready | contrast_ratio min 4.5 |
+| V_THEME_SWITCH | value | measure | ready | theme_switch_ms max 16 |
+| V_SPEED | value | measure | ready | features_per_quarter max 6 |
+| V_QUALITY | value | measure | ready | features_per_quarter min 2 |
+| V_RETENTION | value | measure | ready | retention_delta_pp min 0 |
+
+27 obligations, 23 ready.

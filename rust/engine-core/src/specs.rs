@@ -1,4 +1,4 @@
-//! Generated from the Python core SPECS table.  Regenerate rather than edit.
+//! The field table: kind -> (field, type, required).  One entry per kind, in source order.
 
 pub type Field = (&'static str, &'static str, bool);
 

@@ -1,0 +1,4 @@
+kind audit: <fixtures>/talk.v2.mf
+  law      absent
+  value    present  lost: -                            added: W-UNCONFIRMED          rewrite adds diagnostics
+  layer    absent

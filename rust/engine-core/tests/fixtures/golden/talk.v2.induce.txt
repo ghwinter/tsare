@@ -1,0 +1,5 @@
+concept          pos neg  result
+C_REQUESTED        2   1  learned: asked >= 12
+C_POPULAR          1   1  learned: competitors >= 3
+C_ELEGANT          1   1  learned: contrast >= 7.2
+C_SWIFT            1   1  learned: theme_ms <= 12

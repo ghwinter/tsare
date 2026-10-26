@@ -1,0 +1,12 @@
+# Obligations
+
+What must be discharged before the description counts as checked.
+
+| id | kind | action | status | note |
+| --- | --- | --- | --- | --- |
+| F_SCROLL | fact | check | ready | evidence: tool |
+| V_FRAME | value | measure | ready | frame_ms min 16 |
+| P_FAST | proposition | prove | ready | premises given |
+| W_FAST | warrant | ? | ? |  |
+
+4 obligations, 3 ready.

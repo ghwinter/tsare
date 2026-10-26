@@ -1,0 +1,11 @@
+decompression cost: 8 external confirmation(s), depth 3
+by kind: blindspot=2, proposition=3, question=1, value=2
+  P_IMPORTANT        1  no rule supports it
+  P_SHOULD           1  no rule supports it
+  P_ELEGANT          1  no rule supports it
+  Q_ELEGANT          1  needs an answer from the user
+  B_PLAN             1  no question would close it
+  B_IS_OUGHT         1  no question would close it
+  V_SPEED            1  no instrument to measure it
+  V_QUALITY          1  no instrument to measure it
+chain: F_CONTRAST_OK -> P_ELEGANT -> H_CONTRAST -> Q_ELEGANT

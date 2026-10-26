@@ -1,0 +1,8 @@
+concept          pos neg  result
+C_SELF_SUPPORTED   2   1  FAILED: no attribute distinguishes the examples; they are indistinguishable as recorded
+
+derived question for C_SELF_SUPPORTED:
+  F_A1 and F_B1 have identical recorded attributes, yet F_B1 is a counterexample to C_SELF_SUPPORTED. What distinguishes them?
+    1. a dimension that is not recorded yet (add an attribute)
+    2. one of the two examples is mislabelled (relabel)
+    3. the concept mixes two contexts and must be split (split)

@@ -1,0 +1,30 @@
+graph LR
+  F_A1["F_A1<br/><i>fact</i>"]
+  F_A2["F_A2<br/><i>fact</i>"]
+  F_B1["F_B1<br/><i>fact</i>"]
+  F_C["F_C<br/><i>fact</i>"]
+  P_ONE["P_ONE<br/><i>proposition</i>"]
+  P_TWO["P_TWO<br/><i>proposition</i>"]
+  P_THREE["P_THREE<br/><i>proposition</i>"]
+  W_S1["W_S1<br/><i>warrant</i>"]
+  W_S2["W_S2<br/><i>warrant</i>"]
+  W_X["W_X<br/><i>warrant</i>"]
+  W_Y["W_Y<br/><i>warrant</i>"]
+  C_SELF_SUPPORTED["C_SELF_SUPPORTED<br/><i>concept</i>"]
+  F_A1 -->|from| P_ONE
+  F_A2 -->|from| P_TWO
+  F_B1 -->|from| P_THREE
+  F_A1 -->|premise| W_S1
+  F_A1 -.->|basis| W_S1
+  W_S1 -->|concludes| P_ONE
+  F_A2 -->|premise| W_S2
+  F_A2 -.->|basis| W_S2
+  W_S2 -->|concludes| P_TWO
+  F_B1 -->|premise| W_X
+  W_X -->|concludes| P_THREE
+  F_C -->|premise| W_Y
+  F_B1 -.->|basis| W_Y
+  W_Y -->|concludes| P_THREE
+  F_A1 -->|positive| C_SELF_SUPPORTED
+  F_A2 -->|positive| C_SELF_SUPPORTED
+  F_B1 -.->|negative| C_SELF_SUPPORTED

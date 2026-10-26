@@ -4,9 +4,11 @@
 //! the long form badly.  These three forms are expanded line-by-line before parsing, so spans
 //! and diagnostics still point at the line the author wrote.
 //!
+//! ```text
 //!     fact "the window appears at launch" by user as F_WINDOW
 //!     measure "frame_ms" min 16ms by tool("trace") as V_FRAME
 //!     because F_SCROLL rule "one frame is the budget" given V_FRAME => P_FAST
+//! ```
 
 fn quoted(text: &str) -> Option<(String, &str)> {
     let start = text.find('"')?;
@@ -114,17 +116,23 @@ pub fn expand_line(line: &str, number: usize) -> String {
         if let Some((premises, tail)) = rest.split_once(" rule ") {
             if let Some((claim, after)) = quoted(tail) {
                 let after = after.trim();
-                let after = match after.strip_prefix("given ") {
-                    Some(rest) => rest.trim(),
-                    None => after,
+                let (basis, conclusion) = match after.strip_prefix("given ") {
+                    Some(rest) => match rest.split_once("=>") {
+                        Some((basis, conclusion)) => (Some(basis.trim().to_string()), conclusion),
+                        None => (None, rest),
+                    },
+                    None => (None, after),
                 };
-                if let Some((_, conclusion)) = after.split_once("=>") {
-                    if let Some(conclusion) = identifier(conclusion) {
-                        let froms = identifiers(premises).join(", ");
-                        return format!(
-                            "warrant W_L{number} {{ claim: \"{claim}\", from: [{froms}], to: {conclusion} }}"
-                        );
-                    }
+                let conclusion = conclusion.trim();
+                if let Some(conclusion) = identifier(conclusion) {
+                    let froms = identifiers(premises).join(", ");
+                    let extra = match &basis {
+                        Some(basis) if !basis.is_empty() => format!(", basis: [{basis}]"),
+                        _ => String::new(),
+                    };
+                    return format!(
+                        "warrant W_L{number} {{ claim: \"{claim}\", from: [{froms}], to: {conclusion}{extra} }}"
+                    );
                 }
             }
         }

@@ -1,0 +1,2 @@
+decompression cost: 0 external confirmation(s), depth 2
+chain: V_FRAME -> W_FAST -> P_FAST

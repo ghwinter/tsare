@@ -38,7 +38,7 @@ pub struct Obligation {
     pub note: String,
 }
 
-pub fn obligation(decl: &Decl, prog: &Program, learnings: &HashMap<String, Learning>) -> Obligation {
+pub fn obligation(decl: &Decl, _prog: &Program, learnings: &HashMap<String, Learning>) -> Obligation {
     let action = action_of(&decl.kind);
     match decl.kind.as_str() {
         "fact" => {
@@ -418,7 +418,12 @@ fn python_repr_pattern(pattern: &Pattern) -> String {
             format!("({tuple}, {target})")
         })
         .collect();
-    format!("[{}]", branches.join(", "))
+    // the learned rule is a tuple of branches, so a one-branch rule keeps its comma
+    if branches.len() == 1 {
+        format!("({},)", branches[0])
+    } else {
+        format!("({})", branches.join(", "))
+    }
 }
 
 pub fn predicates_source(

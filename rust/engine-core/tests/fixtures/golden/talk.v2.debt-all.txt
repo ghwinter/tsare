@@ -1,0 +1,7 @@
+H_CONTRAST           clear        gates 0/2 facts
+H_MOTION             clear        gates 0/2 facts
+H_NOVELTY            clear        gates 0/1 facts
+H_RETENTION          clear        gates 0/1 facts
+P_ELEGANT            clear        gates 0/2 facts
+P_IMPORTANT          clear        gates 0/1 facts
+P_SHOULD             clear        gates 0/0 facts

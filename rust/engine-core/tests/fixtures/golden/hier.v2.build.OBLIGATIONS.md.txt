@@ -1,0 +1,16 @@
+# Obligations
+
+What must be discharged before the description counts as checked.
+
+| id | kind | action | status | note |
+| --- | --- | --- | --- | --- |
+| F_SCROLL | fact | check | ready | evidence: tool |
+| F_RESIZE | fact | check | ready | evidence: tool |
+| F_LAUNCH | fact | check | ready | evidence: tool |
+| F_IDLE | fact | check | ready | evidence: tool |
+| C_TIMED | concept | induce | ready | clause: frame_ms >= 8 |
+| C_FAST | concept | induce | ready | clause: frame_ms <= 10 |
+| C_VERY_FAST | concept | induce | ready | clause: frame_ms <= 8 |
+| C_SLOW | concept | induce | ready | clause: frame_ms >= 900 |
+
+8 obligations, 8 ready.

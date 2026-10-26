@@ -1,0 +1,2 @@
+P_THRESHOLD  asserted   no rule
+P_SMOOTH     supported  W_RENDER

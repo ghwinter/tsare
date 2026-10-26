@@ -1,0 +1,9 @@
+C_TIMED:
+  positives: F_SCROLL, F_RESIZE, F_LAUNCH
+  negatives: F_IDLE
+  structure: none found up to two edges
+  positions:
+    pos F_SCROLL: -
+    pos F_RESIZE: -
+    pos F_LAUNCH: -
+    neg F_IDLE: -

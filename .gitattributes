@@ -1,0 +1,2 @@
+# The compiler compares output byte for byte, so nothing is line-ending normalized.
+* -text

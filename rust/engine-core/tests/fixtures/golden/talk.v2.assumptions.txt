@@ -1,0 +1,3 @@
+2 load-bearing assumption(s):
+  P_ELEGANT          proposition  touches  3  no rule supports it
+  P_IMPORTANT        proposition  touches  2  no rule supports it

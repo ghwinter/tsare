@@ -1,0 +1,3 @@
+P_ONE    supported  W_S1
+P_TWO    supported  W_S2
+P_THREE  supported  W_X, W_Y

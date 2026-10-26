@@ -1,0 +1,75 @@
+# relational.v2.mf -- 两条边是否指向同一个节点，属性看不出来，路径也看不出来。
+#
+# F_A1 同时是某条规则的"依据"和"依据的可接受性来源"（同一个 warrant）；
+# F_B1 的两条边指向两个不同的 warrant。标签序列完全一样，只有身份不同。
+
+fact F_A1 {
+  claim: "A1 支持一条规则，也给它提供依据",
+  evidence: tool("review"),
+  attrs: { strength: 1 }
+}
+
+fact F_A2 {
+  claim: "A2 支持一条规则，也给它提供依据",
+  evidence: tool("review"),
+  attrs: { strength: 1 }
+}
+
+fact F_B1 {
+  claim: "B1 支持一条规则，但依据给了另一条规则",
+  evidence: tool("review"),
+  attrs: { strength: 1 }
+}
+
+fact F_C {
+  claim: "C 是另一条规则的来源",
+  evidence: tool("review")
+}
+
+proposition P_ONE {
+  statement: "结论一",
+  from: [F_A1]
+}
+
+proposition P_TWO {
+  statement: "结论二",
+  from: [F_A2]
+}
+
+proposition P_THREE {
+  statement: "结论三",
+  from: [F_B1]
+}
+
+warrant W_S1 {
+  claim: "A1 既支持又担保这条规则",
+  from: [F_A1],
+  to: P_ONE,
+  basis: [F_A1]
+}
+
+warrant W_S2 {
+  claim: "A2 既支持又担保这条规则",
+  from: [F_A2],
+  to: P_TWO,
+  basis: [F_A2]
+}
+
+warrant W_X {
+  claim: "B1 支持这条规则",
+  from: [F_B1],
+  to: P_THREE
+}
+
+warrant W_Y {
+  claim: "B1 只是另一条规则的依据",
+  from: [F_C],
+  to: P_THREE,
+  basis: [F_B1]
+}
+
+concept C_SELF_SUPPORTED {
+  name: "自己给自己担保的依据",
+  grounded_by: [F_A1, F_A2],
+  against: [F_B1]
+}

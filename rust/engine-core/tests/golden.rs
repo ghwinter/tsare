@@ -1,0 +1,191 @@
+//! Golden snapshots: the exact text every command prints for a fixture document.
+//!
+//! The snapshots were taken from the binary while it still agreed, command for command and
+//! byte for byte, with the reference implementation in `obligo` (tag `v1`).  The Python is no
+//! longer needed to run the compiler, but its output is still the standard here.
+//!
+//! Set `UPDATE_GOLDEN=1` to rewrite the snapshots after an intended change, then read the
+//! diff before committing it.
+
+use std::path::{Path, PathBuf};
+use std::process::Command;
+
+fn binary() -> &'static str {
+    env!("CARGO_BIN_EXE_engine-core")
+}
+
+fn fixtures() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("tests").join("fixtures")
+}
+
+fn documents() -> Vec<PathBuf> {
+    let mut out: Vec<PathBuf> = std::fs::read_dir(fixtures())
+        .expect("fixtures directory")
+        .filter_map(|entry| entry.ok().map(|item| item.path()))
+        .filter(|path| path.extension().map(|ext| ext == "mf").unwrap_or(false))
+        .collect();
+    out.sort();
+    out
+}
+
+/// Paths are machine-specific, so the snapshots name the fixture directory instead.
+fn normalize(text: &str) -> String {
+    let fixtures = fixtures().display().to_string();
+    let temp = std::env::temp_dir().display().to_string();
+    text.replace(&fixtures, "<fixtures>")
+        .replace(&temp, "<temp>")
+        .replace('\\', "/")
+}
+
+fn run(args: &[&str]) -> String {
+    let output = Command::new(binary()).args(args).output().expect("run the binary");
+    normalize(&String::from_utf8_lossy(&output.stdout))
+}
+
+fn first_after(text: &str, marker: &str) -> Option<String> {
+    for line in text.lines() {
+        if let Some(rest) = line.strip_prefix(marker) {
+            let name: String = rest
+                .chars()
+                .skip_while(|c| c.is_whitespace())
+                .take_while(|c| c.is_alphanumeric() || *c == '_')
+                .collect();
+            if !name.is_empty() {
+                return Some(name);
+            }
+        }
+    }
+    None
+}
+
+fn golden(name: &str, produced: &str) {
+    let path = fixtures().join("golden").join(format!("{name}.txt"));
+    if std::env::var("UPDATE_GOLDEN").is_ok() {
+        std::fs::create_dir_all(path.parent().unwrap()).expect("golden directory");
+        std::fs::write(&path, produced).expect("write golden");
+        return;
+    }
+    let expected = std::fs::read_to_string(&path)
+        .unwrap_or_else(|_| panic!("missing golden {}: run with UPDATE_GOLDEN=1", path.display()));
+    if expected != produced {
+        let expected_lines: Vec<&str> = expected.lines().collect();
+        let produced_lines: Vec<&str> = produced.lines().collect();
+        for index in 0..expected_lines.len().max(produced_lines.len()) {
+            let left = expected_lines.get(index).copied().unwrap_or("<none>");
+            let right = produced_lines.get(index).copied().unwrap_or("<none>");
+            if left != right {
+                panic!(
+                    "{} differs at line {}\n  golden: {left:?}\n  now:    {right:?}",
+                    path.display(),
+                    index + 1
+                );
+            }
+        }
+        panic!("{} differs", path.display());
+    }
+}
+
+fn stem(path: &Path) -> String {
+    path.file_stem().unwrap().to_string_lossy().to_string()
+}
+
+const COMMANDS: &[(&str, &[&str])] = &[
+    ("check", &[]),
+    ("check-json", &["--json"]),
+    ("engine-json", &["--json"]),
+    ("suggest-json", &["--json"]),
+    ("apply-dry", &["--dry-run"]),
+    ("argue", &[]),
+    ("derive", &[]),
+    ("debt", &[]),
+    ("debt-all", &["--all"]),
+    ("impact", &[]),
+    ("next", &[]),
+    ("cost", &[]),
+    ("weigh", &[]),
+    ("cat", &[]),
+    ("moves", &[]),
+    ("assumptions", &[]),
+    ("audit", &[]),
+    ("egraph", &[]),
+    ("fix", &[]),
+    ("induce", &[]),
+];
+
+#[test]
+fn every_command_on_every_fixture() {
+    for path in documents() {
+        let shown = path.display().to_string();
+        let name = stem(&path);
+        for (label, flags) in COMMANDS {
+            let mut args: Vec<&str> = vec![label.split('-').next().unwrap()];
+            args.extend_from_slice(flags);
+            args.push(&shown);
+            golden(&format!("{name}.{label}"), &run(&args));
+        }
+
+        // whatif needs a declaration to remove, pattern needs a concept
+        let text = std::fs::read_to_string(&path).unwrap_or_default();
+        if let Some(declaration) = first_after(&text, "fact ").or_else(|| first_after(&text, "warrant ")) {
+            golden(&format!("{name}.whatif"), &run(&["whatif", &shown, &declaration]));
+        }
+        if let Some(concept) = first_after(&text, "concept ") {
+            golden(&format!("{name}.pattern"), &run(&["pattern", &shown, &concept]));
+            golden(&format!("{name}.pattern-vars"), &run(&["pattern", &shown, &concept, "--vars"]));
+        }
+    }
+}
+
+#[test]
+fn graph_writes_the_same_network() {
+    for path in documents() {
+        let name = stem(&path);
+        let out = std::env::temp_dir().join(format!("engine-golden-{name}.net.mmd"));
+        let _ = std::fs::remove_file(&out);
+        let produced = run(&[
+            "graph",
+            &path.display().to_string(),
+            "--out",
+            &out.display().to_string(),
+        ]);
+        let written = normalize(&std::fs::read_to_string(&out).unwrap_or_default());
+        golden(&format!("{name}.graph-stdout"), &produced);
+        golden(&format!("{name}.graph-file"), &written);
+        let _ = std::fs::remove_file(&out);
+    }
+}
+
+#[test]
+fn build_emits_the_same_files() {
+    for path in documents() {
+        let name = stem(&path);
+        let out = std::env::temp_dir().join(format!("engine-golden-build-{name}"));
+        let _ = std::fs::remove_dir_all(&out);
+        std::fs::create_dir_all(&out).unwrap();
+        let produced = run(&["build", &path.display().to_string(), "--out", &out.display().to_string()]);
+        golden(&format!("{name}.build-stdout"), &produced);
+        for file in ["OBLIGATIONS.md", "LEARNED.md", "OPEN.md", "NOTES.md", "predicates.py"] {
+            let text = std::fs::read_to_string(out.join(file)).unwrap_or_default();
+            golden(&format!("{name}.build.{file}"), &normalize(&text));
+        }
+        let _ = std::fs::remove_dir_all(&out);
+    }
+}
+
+#[test]
+fn map_aligns_every_pair() {
+    let documents = documents();
+    for left in &documents {
+        for right in &documents {
+            if left >= right {
+                continue;
+            }
+            let produced =
+                run(&["map", &left.display().to_string(), &right.display().to_string()]);
+            if produced == "no shared structure\n" {
+                continue;
+            }
+            golden(&format!("{}-{}.map", stem(left), stem(right)), &produced);
+        }
+    }
+}

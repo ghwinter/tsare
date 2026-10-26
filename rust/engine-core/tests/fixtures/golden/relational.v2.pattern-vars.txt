@@ -1,0 +1,4 @@
+C_SELF_SUPPORTED:
+  positives: F_A1, F_A2
+  negatives: F_B1
+  structure: ?r -premise-> ?w  and  ?r -basis-> ?w

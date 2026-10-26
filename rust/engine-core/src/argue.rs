@@ -3,9 +3,11 @@
 //! Warrants can attack warrants.  The grounded extension gives the unique set of rules that
 //! survive every attack they receive:
 //!
+//! ```text
 //!     IN_0 = {}
 //!     OUT_i = { a : some b in IN_i attacks a }
 //!     IN_{i+1} = { a : every b that attacks a is in OUT_i }
+//! ```
 //!
 //! A proposition is supported when some rule for it is IN, defeated when every rule for it is
 //! OUT, contested when the rules are undecided, and asserted when it has no rule at all.

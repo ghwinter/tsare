@@ -1,0 +1,7 @@
+0.80 w=8  P_ONE              ~ P_SMOOTH            shared: in:concludes>in:basis, in:concludes>in:premise, in:from>premise, in:concludes
+0.80 w=8  P_THREE            ~ P_SMOOTH            shared: in:concludes>in:basis, in:concludes>in:premise, in:from>premise, in:concludes
+0.80 w=8  P_TWO              ~ P_SMOOTH            shared: in:concludes>in:basis, in:concludes>in:premise, in:from>premise, in:concludes
+0.78 w=7  W_S1               ~ W_RENDER            shared: concludes>in:from, in:premise>from, concludes, in:basis
+0.78 w=7  W_S2               ~ W_RENDER            shared: concludes>in:from, in:premise>from, concludes, in:basis
+0.55 w=6  W_X                ~ W_RENDER            shared: concludes>in:from, in:premise>from, concludes, in:premise
+0.38 w=5  W_Y                ~ W_RENDER            shared: concludes>in:from, concludes, in:basis, in:premise

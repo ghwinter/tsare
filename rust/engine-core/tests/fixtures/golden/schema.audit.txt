@@ -1,0 +1,4 @@
+kind audit: <fixtures>/schema.mf
+  law      absent
+  value    absent
+  layer    absent

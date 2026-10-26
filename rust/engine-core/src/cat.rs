@@ -3,8 +3,10 @@
 //! Objects: the signature (declarations).  Arrows: the typed references between them.
 //! Two candidate functors are testable right now:
 //!
+//! ```text
 //!     Ext     concept -> its extent (a set of facts);  parent arrow must map to inclusion
 //!     Expose  declaration -> the layer that may be seen from outside
+//! ```
 //!
 //! `Ext` is a functor exactly when every child's extent sits inside its parent's: `E-HIERARCHY`.
 //! `Expose` is a functor exactly when every cross-layer reference lands on an exposed name:
@@ -16,7 +18,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::impact::dependents;
-use crate::program::{f_id, f_ids, neg, pos, Program};
+use crate::program::{f_id, f_ids, pos, Program};
 use crate::specs::spec;
 use crate::syntax::Val;
 

@@ -1,0 +1,4 @@
+without F_SCROLL:
+  errors 0 -> 1, warnings 0 -> 1
+  new codes: E-UNGROUNDED, W-UNTESTED
+  no proposition changed status

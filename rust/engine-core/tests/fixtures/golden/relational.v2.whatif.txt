@@ -1,0 +1,4 @@
+without F_A1:
+  errors 0 -> 2, warnings 1 -> 2
+  new codes: E-NO-PREMISE, E-VACUOUS
+  P_ONE: supported -> defeated

@@ -1,0 +1,4 @@
+grounded: 2 proposition(s) from 2 facts
+  derived P_SMOOTH
+  derived P_STABLE
+every supported conclusion is grounded in facts

@@ -1,0 +1,8 @@
+C_RENDERED:
+  positives: F_TRACE
+  negatives: F_HEADLESS
+  structure: premise
+  predicate: def C_RENDERED(features): return "premise" in features
+  positions:
+    pos F_TRACE: premise
+    neg F_HEADLESS: -

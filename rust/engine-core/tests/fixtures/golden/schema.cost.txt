@@ -1,0 +1,5 @@
+decompression cost: 2 external confirmation(s), depth 1
+by kind: proposition=2
+  P_SMOOTH           1  no rule supports it
+  P_STABLE           1  no rule supports it
+chain: C_RENDERED -> W_RULE

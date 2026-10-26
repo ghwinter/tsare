@@ -1,0 +1,2 @@
+P_SMOOTH             clear        gates 0/0 facts
+P_THRESHOLD          clear        gates 0/0 facts

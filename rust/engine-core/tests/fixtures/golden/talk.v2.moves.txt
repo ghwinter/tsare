@@ -1,0 +1,5 @@
+R4 invent a unit              V_SPEED            no measured_by: the number has no instrument
+R4 invent a unit              V_QUALITY          no measured_by: the number has no instrument
+R2 drop a constraint          P_ELEGANT          no rule supports it (touches 3)
+R2 drop a constraint          P_IMPORTANT        no rule supports it (touches 2)
+R6 import from elsewhere      (document)         has open questions: map another document for structure

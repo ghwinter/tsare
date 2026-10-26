@@ -1,0 +1,2 @@
+threshold 0.7
+  P_FAST            1.00  derived  ok    W_FAST=1.00

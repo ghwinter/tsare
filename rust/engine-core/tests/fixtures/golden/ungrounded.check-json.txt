@@ -1,0 +1,7 @@
+{
+  "diagnostics": [
+    {"code": "W-CONDITIONAL", "severity": "warning", "file": "D://GitHub//engine//rust//engine-core//tests//fixtures//ungrounded.mf", "line": 21, "col": 1, "message": "P_SMOOTH is supported only through an ungrounded premise: W_RENDER needs P_THRESHOLD (asserted)"}
+],
+  "errors": 0,
+  "warnings": 1
+}

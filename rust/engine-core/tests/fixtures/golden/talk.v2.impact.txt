@@ -1,0 +1,2 @@
+propositions with no rule and no dependent: P_SHOULD
+graph: blindspot=2, concept=4, fact=8, hypothesis=4, proposition=3, question=1, value=5

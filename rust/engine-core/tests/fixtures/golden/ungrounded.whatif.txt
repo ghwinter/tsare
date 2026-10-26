@@ -1,0 +1,4 @@
+without F_SCROLL:
+  errors 0 -> 1, warnings 1 -> 1
+  new codes: E-UNGROUNDED
+  no proposition changed status

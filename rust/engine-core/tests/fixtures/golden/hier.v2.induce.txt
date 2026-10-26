@@ -1,0 +1,5 @@
+concept          pos neg  result
+C_TIMED            3   1  learned: frame_ms >= 8
+C_FAST             2   1  learned: frame_ms <= 10
+C_VERY_FAST        1   1  learned: frame_ms <= 8
+C_SLOW             1   1  learned: frame_ms >= 900

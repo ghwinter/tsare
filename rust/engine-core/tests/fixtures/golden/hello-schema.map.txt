@@ -1,0 +1,2 @@
+0.38 w=3  F_SCROLL           ~ F_TRACE             shared: premise>in:basis, premise
+0.29 w=2  W_FAST             ~ W_RULE              shared: in:basis, in:premise

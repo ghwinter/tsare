@@ -1,0 +1,8 @@
+concept          pos neg  result
+C_RENDERED         1   1  FAILED: no attribute distinguishes the examples; they are indistinguishable as recorded
+
+derived question for C_RENDERED:
+  F_TRACE and F_HEADLESS have identical recorded attributes, yet F_HEADLESS is a counterexample to C_RENDERED. What distinguishes them?
+    1. a dimension that is not recorded yet (add an attribute)
+    2. one of the two examples is mislabelled (relabel)
+    3. the concept mixes two contexts and must be split (split)

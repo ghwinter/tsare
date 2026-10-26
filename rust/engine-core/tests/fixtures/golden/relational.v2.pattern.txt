@@ -1,0 +1,8 @@
+C_SELF_SUPPORTED:
+  positives: F_A1, F_A2
+  negatives: F_B1
+  structure: none found up to two edges
+  positions:
+    pos F_A1: basis, basis>concludes, from, premise, premise>concludes
+    pos F_A2: basis, basis>concludes, from, premise, premise>concludes
+    neg F_B1: basis, basis>concludes, from, premise, premise>concludes

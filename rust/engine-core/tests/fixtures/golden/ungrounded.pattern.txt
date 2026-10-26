@@ -1,0 +1,7 @@
+C_RENDERED:
+  positives: F_SCROLL
+  negatives: F_HEADLESS
+  structure: none found up to two edges
+  positions:
+    pos F_SCROLL: -
+    neg F_HEADLESS: -

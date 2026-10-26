@@ -26,6 +26,7 @@ fn edges_of(prog: &Program) -> HashMap<String, Vec<(String, String)>> {
             targets
                 .into_iter()
                 .filter(|(dst, kind)| prog.has(dst) && kind != "positive" && kind != "negative")
+                .map(|(dst, kind)| (kind, dst))
                 .collect(),
         );
     }
@@ -153,7 +154,7 @@ pub fn candidates(prog: &Program, positive: &str) -> Vec<Pattern> {
     let observed = branches(prog, positive, 2);
     let mut patterns: Vec<(String, Pattern)> = Vec::new();
     let mut index: HashMap<String, usize> = HashMap::new();
-    let mut add = |pattern: Pattern, patterns: &mut Vec<(String, Pattern)>, index: &mut HashMap<String, usize>| {
+    let add = |pattern: Pattern, patterns: &mut Vec<(String, Pattern)>, index: &mut HashMap<String, usize>| {
         let key = render(&pattern);
         match index.get(&key) {
             Some(position) => patterns[*position].1 = pattern,

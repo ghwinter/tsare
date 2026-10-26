@@ -1,0 +1,3 @@
+Q_ELEGANT (question)     touches 4 claim(s)
+B_IS_OUGHT (blind spot)  touches 0 claim(s)
+B_PLAN (blind spot)      touches 0 claim(s)

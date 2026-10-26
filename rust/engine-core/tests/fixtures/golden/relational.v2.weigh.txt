@@ -1,0 +1,4 @@
+threshold 0.7
+  P_ONE             1.00  derived  ok    W_S1=1.00
+  P_TWO             1.00  derived  ok    W_S2=1.00
+  P_THREE           1.00  derived  ok    W_X=1.00  W_Y=1.00

@@ -1,0 +1,178 @@
+# talk.v2.mf -- 同一场讨论，改写成可以被检验的说法。
+#
+# 原话没有删掉：它们变成了 claim 与 statement。加的是"谁来判定、拿什么判定"。
+
+fact F_DARK {
+  claim: "40 人里的 32 人点名暗色模式",
+  evidence: tool("survey 2026-10, n=40"),
+  attrs: { asked: 32, total: 40, competitors: 3 }
+}
+
+fact F_MULTI {
+  claim: "40 人里的 12 人点名多选，竞品都没有做",
+  evidence: tool("survey 2026-10, n=40"),
+  attrs: { asked: 12, total: 40, competitors: 0 }
+}
+
+fact F_NONE {
+  claim: "设置搜索没有人点名",
+  evidence: tool("survey 2026-10, n=40"),
+  attrs: { asked: 0, total: 40, competitors: 1 }
+}
+
+fact F_COMP {
+  claim: "三个竞品都有暗色模式",
+  evidence: tool("manual review"),
+  attrs: { competitors: 3 }
+}
+
+fact F_THEME_FAST {
+  claim: "换主题只要 12ms",
+  evidence: tool("trace"),
+  attrs: { theme_ms: 12 }
+}
+
+fact F_THEME_SLOW {
+  claim: "换主题要 40ms，因为整表重绘",
+  evidence: tool("trace"),
+  attrs: { theme_ms: 40 }
+}
+
+fact F_CONTRAST_OK {
+  claim: "暗色主题的正文对比度是 7.2",
+  evidence: tool("contrast checker"),
+  attrs: { contrast: 7.2 }
+}
+
+fact F_CONTRAST_LOW {
+  claim: "灰色次要文字的对比度是 2.8",
+  evidence: tool("contrast checker"),
+  attrs: { contrast: 2.8 }
+}
+
+concept C_REQUESTED {
+  name: "用户点名要的功能",
+  grounded_by: [F_DARK, F_MULTI],
+  against: [F_NONE]
+}
+
+concept C_POPULAR {
+  name: "竞品都有的功能",
+  grounded_by: [F_COMP],
+  against: [F_MULTI]
+}
+
+concept C_ELEGANT {
+  name: "可读的界面",
+  grounded_by: [F_CONTRAST_OK],
+  against: [F_CONTRAST_LOW]
+}
+
+concept C_SWIFT {
+  name: "主题切换不打断操作",
+  grounded_by: [F_THEME_FAST],
+  against: [F_THEME_SLOW]
+}
+
+proposition P_IMPORTANT {
+  statement: "暗色模式很重要",
+  uses: [C_REQUESTED],
+  from: [F_DARK],
+  by: deductive
+}
+
+proposition P_SHOULD {
+  statement: "竞品有，所以我们也该有",
+  uses: [C_POPULAR]
+}
+
+proposition P_ELEGANT {
+  statement: "优雅在这里被分解成对比度与切换速度两件事",
+  uses: [C_ELEGANT, C_SWIFT],
+  from: [F_CONTRAST_OK, F_THEME_FAST],
+  by: inductive
+}
+
+hypothesis H_RETENTION {
+  assumes: [P_IMPORTANT],
+  predicts: "做了暗色模式，四周后留存涨三个点",
+  test: "上线四周，控制发布节奏，比较留存曲线",
+  rival: H_NOVELTY
+}
+
+hypothesis H_NOVELTY {
+  assumes: [P_IMPORTANT],
+  predicts: "留存上涨来自新鲜感，八周后回落到基线",
+  test: "上线四周与八周各测一次留存"
+}
+
+hypothesis H_CONTRAST {
+  assumes: [P_ELEGANT],
+  predicts: "用户对界面的评价主要由正文对比度决定",
+  test: "五位用户按对比度评分，再按动效评分"
+}
+
+hypothesis H_MOTION {
+  assumes: [P_ELEGANT],
+  predicts: "用户对界面的评价主要由过渡动效决定",
+  test: "五位用户按对比度评分，再按动效评分"
+}
+
+question Q_ELEGANT {
+  asks: "说到底，优雅指的是对比度、动效，还是留白？",
+  answers: ["对比度与可读性", "动效与过渡", "留白与密度"],
+  separates: [H_CONTRAST, H_MOTION],
+  to: user
+}
+
+blindspot B_PLAN {
+  cannot_express: "先做哪个：两个功能都有人点名，谁先谁后没有词能表达",
+  witness: [F_DARK, F_MULTI],
+  signature: [C_REQUESTED]
+}
+
+blindspot B_IS_OUGHT {
+  cannot_express: "从竞品有推出我们应该有",
+  witness: [P_SHOULD, F_COMP],
+  signature: [C_POPULAR]
+}
+
+value V_CONTRAST {
+  metric: "contrast_ratio",
+  direction: min,
+  unit: "ratio",
+  threshold: 4.5,
+  measured_by: "contrast checker on every theme"
+}
+
+value V_THEME_SWITCH {
+  metric: "theme_switch_ms",
+  direction: max,
+  unit: "ms",
+  threshold: 16,
+  measured_by: "trace theme switch"
+}
+
+value V_SPEED {
+  metric: "features_per_quarter",
+  direction: max,
+  unit: "features",
+  threshold: 6,
+  priority: 1
+}
+
+value V_QUALITY {
+  metric: "features_per_quarter",
+  direction: min,
+  unit: "features",
+  threshold: 2,
+  priority: 2
+}
+
+value V_RETENTION {
+  metric: "retention_delta_pp",
+  direction: min,
+  unit: "pp",
+  threshold: 0,
+  measured_by: "cohort comparison after four weeks"
+}

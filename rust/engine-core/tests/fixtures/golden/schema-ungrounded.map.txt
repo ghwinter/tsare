@@ -1,0 +1,2 @@
+0.60 w=3  C_RENDERED         ~ C_RENDERED          shared: basis>in:premise, basis
+0.29 w=2  W_RULE             ~ W_RENDER            shared: in:basis, in:premise

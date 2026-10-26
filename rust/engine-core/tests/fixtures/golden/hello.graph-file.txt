@@ -1,0 +1,9 @@
+graph LR
+  F_SCROLL["F_SCROLL<br/><i>fact</i>"]
+  V_FRAME["V_FRAME<br/><i>value</i>"]
+  P_FAST["P_FAST<br/><i>proposition</i>"]
+  W_FAST["W_FAST<br/><i>warrant</i>"]
+  F_SCROLL -->|from| P_FAST
+  F_SCROLL -->|premise| W_FAST
+  V_FRAME -.->|basis| W_FAST
+  W_FAST -->|concludes| P_FAST
