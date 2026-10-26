@@ -27,8 +27,18 @@ jobs:
       # Builds the exact package that would ship, from its include list, and compiles it.
       - run: cargo package --locked
 
+      # Publishing needs a token.  Its absence fails the run on purpose: a release job that goes
+      # green without uploading is the silent failure this project exists to remove.
+      - name: a token is configured
+        run: |
+          test -n "$CARGO_REGISTRY_TOKEN" || {
+            echo "CARGO_REGISTRY_TOKEN is not set; this tag was not published."
+            exit 1
+          }
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
       - name: publish to crates.io
-        if: env.CARGO_REGISTRY_TOKEN != ''
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: cargo publish --locked
