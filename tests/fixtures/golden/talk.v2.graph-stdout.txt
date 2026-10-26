@@ -1,1 +1,1 @@
-27 nodes, 29 edges -> <temp>engine-golden-talk.v2.net.mmd
+27 nodes, 29 edges -> <temp>/engine-golden-talk.v2.net.mmd

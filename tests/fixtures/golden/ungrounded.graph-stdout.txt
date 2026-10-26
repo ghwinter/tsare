@@ -1,1 +1,1 @@
-6 nodes, 7 edges -> <temp>engine-golden-ungrounded.net.mmd
+6 nodes, 7 edges -> <temp>/engine-golden-ungrounded.net.mmd

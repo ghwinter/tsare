@@ -1,1 +1,1 @@
-8 nodes, 14 edges -> <temp>engine-golden-hier.v2.net.mmd
+8 nodes, 14 edges -> <temp>/engine-golden-hier.v2.net.mmd

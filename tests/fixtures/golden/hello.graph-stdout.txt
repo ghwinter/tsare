@@ -1,1 +1,1 @@
-4 nodes, 4 edges -> <temp>engine-golden-hello.net.mmd
+4 nodes, 4 edges -> <temp>/engine-golden-hello.net.mmd

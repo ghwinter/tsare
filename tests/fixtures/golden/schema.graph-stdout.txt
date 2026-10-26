@@ -1,1 +1,1 @@
-6 nodes, 6 edges -> <temp>engine-golden-schema.net.mmd
+6 nodes, 6 edges -> <temp>/engine-golden-schema.net.mmd

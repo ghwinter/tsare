@@ -32,13 +32,18 @@ fn documents() -> Vec<PathBuf> {
 
 /// Paths are machine-specific, so the snapshots name the fixture directory instead.  JSON
 /// escapes the separator, so both spellings are replaced before slashes are unified.
+///
+/// The prefixes are trimmed of a trailing separator first: on Windows `temp_dir()` ends with a
+/// backslash and on unix it does not, so replacing the untrimmed string swallowed the separator
+/// on one platform and kept it on the other.  Trimming makes both produce `<temp>/...`.
 fn normalize(text: &str) -> String {
     let fixtures = fixtures().display().to_string();
     let temp = std::env::temp_dir().display().to_string();
     let mut out = text.to_string();
     for (needle, label) in [(&fixtures, "<fixtures>"), (&temp, "<temp>")] {
-        out = out.replace(needle.as_str(), label);
-        out = out.replace(&needle.replace('\\', "\\\\"), label);
+        let trimmed = needle.trim_end_matches(['\\', '/']);
+        out = out.replace(trimmed, label);
+        out = out.replace(&trimmed.replace('\\', "\\\\"), label);
     }
     out.replace('\\', "/")
         .replace("<fixtures>//", "<fixtures>/")

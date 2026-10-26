@@ -27,9 +27,9 @@
      |                   ^^^^^^^^^^^^^
 
 0 error(s), 7 warning(s)
-emitted <temp>engine-golden-build-talk.v2/OBLIGATIONS.md
-emitted <temp>engine-golden-build-talk.v2/LEARNED.md
-emitted <temp>engine-golden-build-talk.v2/OPEN.md
-emitted <temp>engine-golden-build-talk.v2/NOTES.md
-emitted <temp>engine-golden-build-talk.v2/predicates.py
+emitted <temp>/engine-golden-build-talk.v2/OBLIGATIONS.md
+emitted <temp>/engine-golden-build-talk.v2/LEARNED.md
+emitted <temp>/engine-golden-build-talk.v2/OPEN.md
+emitted <temp>/engine-golden-build-talk.v2/NOTES.md
+emitted <temp>/engine-golden-build-talk.v2/predicates.py
 predicates: 4 attribute + 2 structural, verified on every example

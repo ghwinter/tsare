@@ -1,1 +1,1 @@
-12 nodes, 17 edges -> <temp>engine-golden-relational.v2.net.mmd
+12 nodes, 17 edges -> <temp>/engine-golden-relational.v2.net.mmd

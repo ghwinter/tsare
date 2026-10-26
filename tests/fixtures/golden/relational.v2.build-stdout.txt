@@ -15,9 +15,9 @@
     |          ^^^^^^^^^^^
 
 0 error(s), 4 warning(s)
-emitted <temp>engine-golden-build-relational.v2/OBLIGATIONS.md
-emitted <temp>engine-golden-build-relational.v2/LEARNED.md
-emitted <temp>engine-golden-build-relational.v2/OPEN.md
-emitted <temp>engine-golden-build-relational.v2/NOTES.md
-emitted <temp>engine-golden-build-relational.v2/predicates.py
+emitted <temp>/engine-golden-build-relational.v2/OBLIGATIONS.md
+emitted <temp>/engine-golden-build-relational.v2/LEARNED.md
+emitted <temp>/engine-golden-build-relational.v2/OPEN.md
+emitted <temp>/engine-golden-build-relational.v2/NOTES.md
+emitted <temp>/engine-golden-build-relational.v2/predicates.py
 predicates: 0 attribute + 1 structural, verified on every example
