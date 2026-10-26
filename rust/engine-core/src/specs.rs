@@ -82,6 +82,14 @@ pub fn spec(kind: &str) -> Option<&'static [Field]> {
             ("measured_by", "instrument", false),
             ("layer", "ref:layer", false),
         ],
+        "partition" => &[
+            ("of", "ref:any", false),
+            ("dimension", "ref:concept", true),
+            ("elements", "list:ref:any", true),
+            ("closure", "enum:closed,open", true),
+            ("basis", "list:ref:any", false),
+            ("layer", "ref:layer", false),
+        ],
         "note" => &[
             ("tag", "enum:intuition,conjecture,preference,hunch", true),
             ("text", "str", true),

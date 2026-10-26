@@ -207,6 +207,11 @@ pub const TABLE: &[(&str, &str, &str)] = &[
     ("warrant", "a premise and a basis", "say what makes the rule acceptable"),
     ("law", "something that would break if it failed", "point checked_by at that thing"),
     ("layer", "an interface that hides its internals", "expose exactly what others may use"),
+    (
+        "partition",
+        "a dimension whose extent is closed, or a stated blind spot",
+        "name the concept the elements share, then say whether the list is complete",
+    ),
     ("note", "nothing; it is not a commitment", "promote it to a typed declaration to make it count"),
 ];
 
@@ -261,6 +266,11 @@ pub fn obligations(prog: &Program, decl: &Decl) -> Vec<String> {
         "law" => {
             if f_ids(decl, "checked_by").is_empty() {
                 out.push("no checker".to_string());
+            }
+        }
+        "partition" => {
+            if f_id(decl, "closure") == Some("closed") && f_ids(decl, "basis").is_empty() {
+                out.push("closed with no basis".to_string());
             }
         }
         _ => {}

@@ -273,6 +273,112 @@ fn sugar_expands_one_line_into_one_declaration() {
 }
 
 #[test]
+fn a_closed_partition_must_cover_its_dimension() {
+    let source = r#"
+fact F_A { claim: "a", evidence: user }
+fact F_B { claim: "b", evidence: user }
+concept C_ALL { name: "all", grounded_by: [F_A, F_B] }
+partition E_ONE { dimension: C_ALL, elements: [F_A], closure: closed, basis: [F_B] }
+"#;
+    assert!(
+        codes(source).contains(&"E-PARTITION-CLOSED-CONTRADICTED"),
+        "a closed list that omits an instance of its own dimension is wrong"
+    );
+}
+
+#[test]
+fn a_partition_element_must_be_an_instance_of_its_dimension() {
+    let source = r#"
+fact F_A { claim: "a", evidence: user }
+fact F_OUTSIDE { claim: "outside", evidence: user }
+concept C_ALL { name: "all", grounded_by: [F_A] }
+partition E_ONE { dimension: C_ALL, elements: [F_A, F_OUTSIDE], closure: open }
+"#;
+    assert!(codes(source).contains(&"E-PARTITION-ELEMENT"));
+}
+
+#[test]
+fn a_closed_partition_needs_a_reason() {
+    let source = r#"
+fact F_A { claim: "a", evidence: user }
+concept C_ALL { name: "all", grounded_by: [F_A] }
+partition E_ONE { dimension: C_ALL, elements: [F_A], closure: closed }
+"#;
+    assert!(codes(source).contains(&"W-PARTITION-CLOSED-UNJUSTIFIED"));
+}
+
+#[test]
+fn an_open_partition_used_as_a_premise_is_flagged() {
+    let source = r#"
+fact F_A { claim: "a", evidence: user }
+concept C_ALL { name: "all", grounded_by: [F_A] }
+partition E_ONE { dimension: C_ALL, elements: [F_A], closure: open }
+proposition P_ONE { statement: "s", from: [E_ONE] }
+"#;
+    assert!(
+        codes(source).contains(&"W-PARTITION-OPEN-USED"),
+        "a list known to be open cannot silently carry a conclusion"
+    );
+}
+
+#[test]
+fn every_kind_owes_an_action() {
+    use engine_core::program::TABLE;
+    assert_eq!(TABLE.len(), 12, "one row per kind");
+    for (kind, obligation, discharge) in TABLE {
+        assert!(engine_core::specs::spec(kind).is_some(), "{kind} has no field spec");
+        assert!(!obligation.is_empty() && !discharge.is_empty(), "{kind} owes nothing?");
+        assert_ne!(
+            engine_core::build::action_of(kind),
+            "?",
+            "{kind} has no action in OBLIGATIONS.md"
+        );
+    }
+}
+
+#[test]
+fn a_warrant_is_ready_only_with_a_basis() {
+    let with = decls(
+        "fact F { claim: \"x\", evidence: user }\n\
+         proposition P { statement: \"s\", from: [F] }\n\
+         warrant W1 { claim: \"r\", from: [F], to: P, basis: [F] }\n",
+    );
+    let program = Program::new(&with);
+    let row = engine_core::build::obligation(program.get("W1").unwrap(), &program, &Default::default());
+    assert_eq!((row.action, row.state), ("justify", "ready"));
+
+    let without = decls(
+        "fact F { claim: \"x\", evidence: user }\n\
+         proposition P { statement: \"s\", from: [F] }\n\
+         warrant W1 { claim: \"r\", from: [F], to: P }\n",
+    );
+    let program = Program::new(&without);
+    let row = engine_core::build::obligation(program.get("W1").unwrap(), &program, &Default::default());
+    assert_eq!(row.state, "blocked");
+}
+
+#[test]
+fn the_self_document_compiles_without_errors() {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("..").join("..").join("SELF.mf");
+    let text = std::fs::read_to_string(&path)
+        .unwrap_or_else(|_| panic!("{} is missing", path.display()));
+    let declared = parse(&text).expect("the self document parses");
+    let errors: Vec<&str> = check(&declared)
+        .iter()
+        .filter(|item| item.code.starts_with("E-"))
+        .map(|item| item.code)
+        .collect();
+    assert!(errors.is_empty(), "the self document reports {errors:?}");
+    // and the concept it argues about must be learnable, not merely declared
+    let program = Program::new(&declared);
+    let learnings = learnings_of(&program);
+    assert!(
+        learnings.iter().any(|item| item.concept == "C_REFUSE_NOW" && item.clause.is_some()),
+        "the self document's concept has no learnable clause"
+    );
+}
+
+#[test]
 fn a_declaration_keeps_its_positions() {
     let declared = decls("fact F1 { claim: \"x\", evidence: user }\n");
     assert_eq!(declared[0].line, 1);

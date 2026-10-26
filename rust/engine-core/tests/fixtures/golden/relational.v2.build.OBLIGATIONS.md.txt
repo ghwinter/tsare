@@ -11,10 +11,10 @@ What must be discharged before the description counts as checked.
 | P_ONE | proposition | prove | ready | premises given |
 | P_TWO | proposition | prove | ready | premises given |
 | P_THREE | proposition | prove | ready | premises given |
-| W_S1 | warrant | ? | ? |  |
-| W_S2 | warrant | ? | ? |  |
-| W_X | warrant | ? | ? |  |
-| W_Y | warrant | ? | ? |  |
+| W_S1 | warrant | justify | ready | basis: F_A1 |
+| W_S2 | warrant | justify | ready | basis: F_A2 |
+| W_X | warrant | justify | blocked | rule with no basis: why should it be acceptable? |
+| W_Y | warrant | justify | ready | basis: F_B1 |
 | C_SELF_SUPPORTED | concept | induce | blocked | no clause found; see OPEN.md |
 
-12 obligations, 7 ready.
+12 obligations, 10 ready.

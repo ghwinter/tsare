@@ -9,7 +9,7 @@ use crate::syntax::{Decl, Val};
 pub const REF_KEYS: &[&str] = &[
     "from", "to", "grounded_by", "against", "uses", "assumes", "answers", "separates",
     "rival", "witness", "basis", "attacks", "checked_by", "holds_in", "exposes",
-    "closes_with", "parent", "questions",
+    "closes_with", "parent", "questions", "dimension", "elements", "of",
 ];
 
 /// Values that name a procedure rather than a declaration.
@@ -712,6 +712,104 @@ fn separates(concept: &Decl, left: &str, right: &str) -> bool {
     (has(&positives, left) && has(&negatives, right)) || (has(&positives, right) && has(&negatives, left))
 }
 
+fn check_partition(
+    decl: &Decl,
+    decls: &[Decl],
+    by_name: &std::collections::HashMap<&str, &Decl>,
+    out: &mut Vec<Diagnostic>,
+) {
+    let elements = list_field(decl, "elements");
+    if elements.is_empty() {
+        sem(
+            decl,
+            "E-PARTITION-EMPTY",
+            format!("partition {} names no element, so it partitions nothing", decl.name),
+            Some("elements"),
+            out,
+        );
+        return;
+    }
+    let mut seen: HashSet<String> = HashSet::new();
+    for name in &elements {
+        if !seen.insert(name.clone()) {
+            sem(
+                decl,
+                "E-PARTITION-DUPLICATE",
+                format!("partition {} lists {name} twice", decl.name),
+                Some("elements"),
+                out,
+            );
+        }
+    }
+
+    // the dimension's extent is what the list can be checked against: a concept already
+    // records its positive examples, so closedness is a claim about a set we can see
+    let dimension = id_field(decl, "dimension");
+    let extent = dimension
+        .and_then(|name| by_name.get(name))
+        .filter(|target| target.kind == "concept")
+        .map(|target| list_field(target, "grounded_by"))
+        .unwrap_or_default();
+    for name in &elements {
+        if !extent.contains(name) {
+            sem(
+                decl,
+                "E-PARTITION-ELEMENT",
+                format!(
+                    "{name} is not an instance of {}, which is what the list claims",
+                    dimension.unwrap_or("the dimension")
+                ),
+                Some("elements"),
+                out,
+            );
+        }
+    }
+
+    if id_field(decl, "closure") == Some("closed") {
+        if list_field(decl, "basis").is_empty() {
+            sem(
+                decl,
+                "W-PARTITION-CLOSED-UNJUSTIFIED",
+                format!("partition {} claims to be closed without a reason", decl.name),
+                Some("closure"),
+                out,
+            );
+        }
+        for name in &extent {
+            if !elements.contains(name) {
+                sem(
+                    decl,
+                    "E-PARTITION-CLOSED-CONTRADICTED",
+                    format!(
+                        "{} also holds of {name}, which the closed list omits",
+                        dimension.unwrap_or("the dimension")
+                    ),
+                    Some("elements"),
+                    out,
+                );
+            }
+        }
+    } else {
+        // an open list used as a premise asserts in use what it denied in form
+        let referenced = decls.iter().any(|other| {
+            (other.kind == "proposition" || other.kind == "warrant")
+                && list_field(other, "from").iter().any(|name| name == &decl.name)
+        });
+        if referenced {
+            sem(
+                decl,
+                "W-PARTITION-OPEN-USED",
+                format!(
+                    "partition {} is open but used as a premise; the conclusion rests on a list known to be incomplete",
+                    decl.name
+                ),
+                Some("closure"),
+                out,
+            );
+        }
+    }
+}
+
 fn check_remaining(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     let by_name: std::collections::HashMap<&str, &Decl> =
         decls.iter().map(|decl| (decl.name.as_str(), decl)).collect();
@@ -721,6 +819,7 @@ fn check_remaining(decls: &[Decl], out: &mut Vec<Diagnostic>) {
             continue;
         }
         match decl.kind.as_str() {
+            "partition" => check_partition(decl, decls, &by_name, out),
             "concept" => {
                 let positives = list_field(decl, "grounded_by");
                 let negatives = list_field(decl, "against");

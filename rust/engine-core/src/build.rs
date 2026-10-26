@@ -18,9 +18,14 @@ pub const ACTIONS: &[(&str, &str)] = &[
     ("question", "ask"),
     ("blindspot", "extend"),
     ("value", "measure"),
+    ("partition", "close"),
+    ("warrant", "justify"),
+    ("law", "watch"),
+    ("layer", "expose"),
+    ("note", "promote"),
 ];
 
-fn action_of(kind: &str) -> &'static str {
+pub fn action_of(kind: &str) -> &'static str {
     ACTIONS.iter().find(|(name, _)| *name == kind).map(|(_, action)| *action).unwrap_or("?")
 }
 
@@ -155,6 +160,74 @@ pub fn obligation(decl: &Decl, _prog: &Program, learnings: &HashMap<String, Lear
                 },
             }
         }
+        "partition" => {
+            let closed = f_id(decl, "closure") == Some("closed");
+            let basis = f_ids(decl, "basis");
+            if closed && !basis.is_empty() {
+                Obligation {
+                    action,
+                    state: "ready",
+                    note: format!("closed by {}", basis.join(", ")),
+                }
+            } else if closed {
+                Obligation {
+                    action,
+                    state: "blocked",
+                    note: "closed with no reason, so the list asserts more than it shows".to_string(),
+                }
+            } else {
+                Obligation {
+                    action,
+                    state: "waiting",
+                    note: "open: the list is not exhaustive, and that has to be said".to_string(),
+                }
+            }
+        }
+        "warrant" => {
+            let basis = f_ids(decl, "basis");
+            if basis.is_empty() {
+                Obligation {
+                    action,
+                    state: "blocked",
+                    note: "rule with no basis: why should it be acceptable?".to_string(),
+                }
+            } else {
+                Obligation { action, state: "ready", note: format!("basis: {}", basis.join(", ")) }
+            }
+        }
+        "law" => {
+            let checked = f_ids(decl, "checked_by");
+            if checked.is_empty() {
+                Obligation {
+                    action,
+                    state: "blocked",
+                    note: "nothing would break if it were false".to_string(),
+                }
+            } else {
+                Obligation { action, state: "ready", note: format!("checked by {}", checked.join(", ")) }
+            }
+        }
+        "layer" => {
+            let exposes = f_ids(decl, "exposes");
+            if exposes.is_empty() {
+                Obligation {
+                    action,
+                    state: "blocked",
+                    note: "exposes nothing, so it hides nothing".to_string(),
+                }
+            } else {
+                Obligation {
+                    action,
+                    state: "ready",
+                    note: format!("exposes {} name(s)", exposes.len()),
+                }
+            }
+        }
+        "note" => Obligation {
+            action,
+            state: "none",
+            note: "not a commitment".to_string(),
+        },
         _ => Obligation { action, state: "?", note: String::new() },
     }
 }

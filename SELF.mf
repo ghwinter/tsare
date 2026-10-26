@@ -1,0 +1,187 @@
+# SELF.mf -- the reply that proposed this document, written as declarations.
+#
+# This file exists so the reply can be checked by the thing it describes.  Compile it:
+#
+#     engine-core check SELF.mf
+#     engine-core derive SELF.mf
+#
+# Every fact below is model-supplied.  The checker is expected to say so; only the user can
+# discharge that, and the document says which claims are waiting.
+
+fact F_ENUM_FORM {
+  claim: "prose asserts that an enumeration is complete through its form, not through a stated reason",
+  evidence: model
+}
+
+fact F_CLOSED_WORLD {
+  claim: "closure of a list is decidable only when the dimension it ranges over is closed",
+  evidence: model
+}
+
+fact F_CONCEPT_COST {
+  claim: "naming a dimension as a concept costs a positive example and a counterexample",
+  evidence: code("rust/engine-core/src/check.rs")
+}
+
+fact F_NO_ENUM_OBLIGATION {
+  claim: "before this file, the checker had no obligation attached to an enumeration",
+  evidence: code("rust/engine-core/src/specs.rs")
+}
+
+fact F_EDGE_CLASSES {
+  claim: "a new edge is structural, declared-opposition, or inferential; the third one needs a rule language",
+  evidence: model
+}
+
+fact F_USE_NOT_MENTION {
+  claim: "an obligation must attach to the use of a claim, or the language regresses without end",
+  evidence: model
+}
+
+fact F_DECIDABILITY_BILL {
+  claim: "a rule or proof language turns a checker into a theorem prover and must buy decidability separately",
+  evidence: model
+}
+
+fact F_NO_PROOF_LANGUAGE {
+  claim: "a proof language is an addition that would spend decidability",
+  evidence: model,
+  attrs: { checker_can_verify: false, adds: inference }
+}
+
+fact F_MORE_ILP {
+  claim: "more ILP learns inside a signature that is already too poor to separate the examples",
+  evidence: model,
+  attrs: { checker_can_verify: false, adds: learning }
+}
+
+fact F_ADVICE_PROSE {
+  claim: "generated advice prose made repair worse in our own experiment, not better",
+  evidence: model,
+  attrs: { checker_can_verify: false, adds: advice }
+}
+
+fact F_PARTITION_IS_ADDITION {
+  claim: "adding the partition kind is itself an addition, and it is wanted now",
+  evidence: code("rust/engine-core/src/specs.rs"),
+  attrs: { checker_can_verify: true, adds: classification }
+}
+
+# The three things the reply told me not to add, and the one that looks the same but is not:
+# the criterion is decidability, not novelty.  Without the negative example this concept
+# would be "any addition", and the list would be worthless.
+concept C_REFUSE_NOW {
+  name: "an addition that must be refused at this stage",
+  grounded_by: [F_NO_PROOF_LANGUAGE, F_MORE_ILP, F_ADVICE_PROSE],
+  against: [F_PARTITION_IS_ADDITION]
+}
+
+# The enumeration as a checkable claim: the elements must be instances of the dimension, the
+# dimension's extent must be exactly this list, and "closed" must name its reason.
+partition E_REFUSE_NOW {
+  of: Q_STAGE,
+  dimension: C_REFUSE_NOW,
+  elements: [F_NO_PROOF_LANGUAGE, F_MORE_ILP, F_ADVICE_PROSE],
+  closure: closed,
+  basis: [F_DECIDABILITY_BILL]
+}
+
+question Q_STAGE {
+  asks: "which additions belong to this stage of the engine?",
+  answers: ["only those that keep every new check decidable", "any addition that makes the engine more capable"],
+  separates: [H_CHEAP, H_CAPABLE]
+}
+
+hypothesis H_CHEAP {
+  assumes: [F_DECIDABILITY_BILL, F_EDGE_CLASSES],
+  predicts: "a checkable addition costs no decidability",
+  test: "add the partition kind and count how many of its new checks are decidable"
+}
+
+hypothesis H_CAPABLE {
+  assumes: [F_EDGE_CLASSES],
+  predicts: "capability growth pays for itself later",
+  rival: H_CHEAP
+}
+
+proposition P_OBLIGATION_ON_USE {
+  statement: "an obligation belongs to the use of a claim, not to its mention",
+  from: [F_USE_NOT_MENTION]
+}
+
+warrant W_OBLIGATION_ON_USE {
+  claim: "a duty on every mention costs a duty per mention, and that never terminates",
+  from: [F_USE_NOT_MENTION, F_EDGE_CLASSES],
+  to: P_OBLIGATION_ON_USE,
+  basis: [F_EDGE_CLASSES]
+}
+
+proposition P_ENUM {
+  statement: "an enumeration in prose carries a completeness claim that its form, not its content, asserts",
+  from: [F_ENUM_FORM],
+  uses: [C_REFUSE_NOW]
+}
+
+warrant W_ENUM {
+  claim: "the list form is doing work that the sentences never state",
+  from: [F_ENUM_FORM, F_NO_ENUM_OBLIGATION],
+  to: P_ENUM,
+  basis: [P_OBLIGATION_ON_USE]
+}
+
+proposition P_TWO_OF_THREE {
+  statement: "of the three kinds of new edge, only the structural and the declared-opposition kinds are cheap",
+  from: [F_EDGE_CLASSES]
+}
+
+warrant W_TWO_OF_THREE {
+  claim: "the inferential kind needs a rule language, and a rule language has its own price",
+  from: [F_EDGE_CLASSES, F_DECIDABILITY_BILL],
+  to: P_TWO_OF_THREE,
+  basis: [F_DECIDABILITY_BILL]
+}
+
+proposition P_PARTITION_DECIDABLE {
+  statement: "a partition over a concept's own extent can be checked with no rule language at all",
+  from: [F_CLOSED_WORLD, F_CONCEPT_COST]
+}
+
+warrant W_PARTITION_DECIDABLE {
+  claim: "membership and closure are set operations on an extent the concept already records",
+  from: [F_CLOSED_WORLD, F_CONCEPT_COST],
+  to: P_PARTITION_DECIDABLE,
+  basis: [F_CONCEPT_COST]
+}
+
+# What this document cannot say, and where the next question comes from.
+blindspot B_PARTITION_PREMISE {
+  cannot_express: "a partition used as a premise: the fixpoint knows facts and rules, not closed lists",
+  witness: [F_CLOSED_WORLD, F_PARTITION_IS_ADDITION],
+  signature: [C_REFUSE_NOW],
+  closes_with: [Q_DERIVATION]
+}
+
+question Q_DERIVATION {
+  asks: "should a closed partition count as a premise in the fixpoint?",
+  answers: ["yes: closed, and every element held", "no: a partition classifies, it does not assert"],
+  separates: [H_CLOSE, H_CLASSIFY]
+}
+
+hypothesis H_CLOSE {
+  assumes: [F_CLOSED_WORLD],
+  predicts: "a closed partition whose elements are all held can discharge a premise",
+  test: "add it to the fixpoint, then recompile this file"
+}
+
+hypothesis H_CLASSIFY {
+  assumes: [F_EDGE_CLASSES],
+  predicts: "a partition is structure, not an assertion, and must discharge nothing",
+  rival: H_CLOSE
+}
+
+# Not a commitment.  It records where the claims came from.
+note N_SOURCE {
+  tag: hunch,
+  text: "every claim here came from a model reply, and the user has not confirmed it",
+  about: [F_ENUM_FORM, F_CLOSED_WORLD, F_DECIDABILITY_BILL]
+}

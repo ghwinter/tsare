@@ -136,6 +136,35 @@ These are decisions, not drift:
    note; the engine merges what it can and reports the rest.
 7. **Empty extents do not collide.** A concept with no positive example asserts nothing, so
    it is not reported as `E-COLLAPSE`.
+8. **`partition` is new.** v1 had no obligation attached to an enumeration. The engine adds
+   one: a list must name the concept its elements share, say whether it is closed, and give a
+   reason when it is closed. The checks are `E-PARTITION-EMPTY`, `E-PARTITION-DUPLICATE`,
+   `E-PARTITION-ELEMENT`, `E-PARTITION-CLOSED-CONTRADICTED`, `W-PARTITION-CLOSED-UNJUSTIFIED`
+   and `W-PARTITION-OPEN-USED`.
+
+## What a partition does and does not check
+
+```
+partition E_REFUSE_NOW {
+  of: Q_STAGE,
+  dimension: C_REFUSE_NOW,
+  elements: [F_NO_PROOF_LANGUAGE, F_MORE_ILP, F_ADVICE_PROSE],
+  closure: closed,
+  basis: [F_DECIDABILITY_BILL]
+}
+```
+
+Checked: every element is an instance of the dimension (a concept records its extent, so this
+is a set membership test); a closed list covers that extent; "closed" names a reason; an open
+list is not silently used as a premise.
+
+Not checked: whether the dimension is the right one, and whether the world contains a fourth
+element. Those stay where they were — in the concept's counterexample and in the `basis`
+declaration. The list's completeness is now a stated claim with a named reason instead of a
+rhetorical effect, which is the whole of the improvement.
+
+A partition is not yet a premise in the fixpoint: `argue` and `derive` do not use one to
+discharge anything. `SELF.mf` records that as a blind spot rather than guessing either way.
 
 ## Acceptance
 

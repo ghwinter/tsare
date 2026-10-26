@@ -43,14 +43,27 @@ concept C_FAST { name: "fast", grounded_by: [F_TRACE], against: [F_SLOW] }
 warrant W_FAST { claim: "14ms is fast", from: [F_TRACE], to: P_FAST, basis: [V_BUDGET] }
 ```
 
-Eleven kinds, each with a decidable obligation: a fact owes evidence someone else can check, a
+Twelve kinds, each with a decidable obligation: a fact owes evidence someone else can check, a
 concept owes a counterexample, a proposition owes a rule, a hypothesis owes a test or a rival, a
-value owes an instrument, a warrant owes a basis.
+value owes an instrument, a warrant owes a basis, a partition owes a dimension and a stated
+closure.
 
 `engine-core build` turns a checked document into `OBLIGATIONS.md` (what is still owed),
 `LEARNED.md` (the clause each concept's examples support), `OPEN.md` (holes, questions, blind
 spots), `NOTES.md`, and `predicates.py` (the learned clauses as runnable functions, verified
 against every example).
+
+## It checks itself
+
+`SELF.mf` is the repository describing itself: the argument for the partition kind, written as
+declarations, compiled by the compiler it argues about. `cargo test` fails if that document
+stops compiling cleanly or if its concept stops being learnable, so the description and the
+implementation cannot drift apart.
+
+```powershell
+.\target\release\engine-core.exe check ..\..\SELF.mf
+.\target\release\engine-core.exe induce ..\..\SELF.mf
+```
 
 ## Layout
 

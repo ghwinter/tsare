@@ -9,6 +9,6 @@ What must be discharged before the description counts as checked.
 | C_RENDERED | concept | induce | blocked | no clause found; see OPEN.md |
 | P_THRESHOLD | proposition | prove | assumed | no premises; treated as an assumption |
 | P_SMOOTH | proposition | prove | ready | premises given |
-| W_RENDER | warrant | ? | ? |  |
+| W_RENDER | warrant | justify | ready | basis: C_RENDERED |
 
-6 obligations, 3 ready.
+6 obligations, 4 ready.
