@@ -10,7 +10,7 @@ pub const CODES: &[&str] = &[
     "E-NO-EVIDENCE", "E-NO-PREMISE", "E-NO-SIGNATURE", "E-NON-DISCRIMINATING", "E-NOTE-REF",
     "E-PARTITION-CLOSED-CONTRADICTED", "E-PARTITION-CLOSURE", "E-PARTITION-DUPLICATE",
     "E-PARTITION-ELEMENT", "E-PARTITION-EMPTY", "E-PARTITION-UNKNOWN-NO-EXIT",
-    "E-PARTITION-UNKNOWN-USED", "E-TENSION", "E-TYPE", "E-UNCOVERED", "E-UNDEFINED",
+    "E-PARTITION-UNKNOWN-USED", "E-SYNTAX", "E-TENSION", "E-TYPE", "E-UNCOVERED", "E-UNDEFINED",
     "E-UNFALSIFIABLE", "E-UNGROUNDED", "E-VACUOUS", "E-WARRANT-MODE", "E-WITNESS",
     "W-BY-MISMATCH", "W-COARSE", "W-CONDITIONAL", "W-CONFIDENCE-ASSERTED",
     "W-CONFIDENCE-INFLATED", "W-CONFIDENCE-MODEL", "W-EXAMPLE-SHAPE", "W-EXPOSE-FOREIGN",
@@ -83,6 +83,8 @@ pub fn explain(code: &str) -> Option<&'static str> {
             Fix: add closes_with pointing at the question.",
         "E-PARTITION-UNKNOWN-USED" => "A pile with no dimension is used as a premise. A hole cannot discharge anything.\n\
             Fix: give it a dimension, or stop using it as support.",
+        "E-SYNTAX" => "The document does not parse: a string is unterminated, a bracket is missing, or a value is not a value.\n\
+            Fix: the caret points at the first token that could not start what the grammar expected.",
         "E-TENSION" => "Two values constrain the same metric in opposite directions and neither has a priority.\n\
             Fix: give one a higher priority, or split the metric by phase.",
         "E-TYPE" => "A field's value does not have the field's type. Lists are checked element by element.\n\
@@ -147,3 +149,4 @@ pub fn explain(code: &str) -> Option<&'static str> {
         _ => return None,
     })
 }
+

@@ -14,9 +14,25 @@ pub struct Loaded {
     pub decls: Vec<Decl>,
     pub text: String,
     pub path: PathBuf,
+    /// A document that does not parse has no declarations, but it does have a diagnostic.
+    pub syntax: Vec<crate::check::Diagnostic>,
 }
 
-pub fn load(path: &Path) -> Result<Loaded, String> {
+fn syntax_diagnostic(file: &str, error: &syntax::ParseError) -> crate::check::Diagnostic {
+    crate::check::Diagnostic {
+        code: "E-SYNTAX",
+        message: error.message.clone(),
+        line: error.line,
+        col: error.col,
+        end_line: error.line,
+        end_col: error.col + 1,
+        file: file.to_string(),
+    }
+}
+
+/// Load and parse, keeping syntax errors as diagnostics.  Callers that cannot analyse a
+/// broken document use `load`, which turns the first one into a printed message.
+pub fn load_for_check(path: &Path) -> Result<Loaded, String> {
     if path.is_dir() {
         let mut files: Vec<PathBuf> = fs::read_dir(path)
             .map_err(|error| format!("{}: {error}", path.display()))?
@@ -25,21 +41,47 @@ pub fn load(path: &Path) -> Result<Loaded, String> {
             .collect();
         files.sort();
         let mut decls = Vec::new();
+        let mut syntax_errors = Vec::new();
         for file in &files {
             let source = fs::read_to_string(file).map_err(|error| format!("{}: {error}", file.display()))?;
-            let mut parsed = syntax::parse(&source)
-                .map_err(|error| format!("{}: {error}", file.display()))?;
             let name = file.file_name().unwrap_or_default().to_string_lossy().to_string();
-            for decl in &mut parsed {
-                decl.file = name.clone();
+            match syntax::parse(&source) {
+                Ok(mut parsed) => {
+                    for decl in &mut parsed {
+                        decl.file = name.clone();
+                    }
+                    decls.extend(parsed);
+                }
+                Err(error) => syntax_errors.push(syntax_diagnostic(&name, &error)),
             }
-            decls.extend(parsed);
         }
-        return Ok(Loaded { decls, text: String::new(), path: path.to_path_buf() });
+        return Ok(Loaded { decls, text: String::new(), path: path.to_path_buf(), syntax: syntax_errors });
     }
     let text = fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
-    let decls = syntax::parse(&text).map_err(|error| format!("{}: {error}", path.display()))?;
-    Ok(Loaded { decls, text, path: path.to_path_buf() })
+    let (decls, syntax_error) = match syntax::parse(&text) {
+        Ok(decls) => (decls, None),
+        Err(error) => (Vec::new(), Some(syntax_diagnostic("", &error))),
+    };
+    Ok(Loaded {
+        decls,
+        text,
+        path: path.to_path_buf(),
+        syntax: syntax_error.into_iter().collect(),
+    })
+}
+
+pub fn load(path: &Path) -> Result<Loaded, String> {
+    let loaded = load_for_check(path)?;
+    if let Some(first) = loaded.syntax.first() {
+        return Err(format!(
+            "{}:{}:{}: error[E-SYNTAX]: {}",
+            path.display(),
+            first.line,
+            first.col,
+            first.message
+        ));
+    }
+    Ok(loaded)
 }
 
 fn fail(error: String) -> i32 {
@@ -178,15 +220,34 @@ fn cmd_check(
         };
         let expanded = crate::sugar::expand(&raw);
         match syntax::parse(&expanded) {
-            Ok(decls) => Loaded { decls, text: expanded, path: path.to_path_buf() },
+            Ok(decls) => Loaded { decls, text: expanded, path: path.to_path_buf(), syntax: Vec::new() },
             Err(error) => return fail(format!("{}: {error}", path.display())),
         }
     } else {
-        match load(path) {
+        match load_for_check(path) {
             Ok(loaded) => loaded,
             Err(error) => return fail(error),
         }
     };
+    if !loaded.syntax.is_empty() {
+        // a document that does not parse has one thing to say, and it is the syntax error
+        if json {
+            println!("{}", diagnostics_json(&loaded.syntax, &path.display().to_string()));
+            return 1;
+        }
+        if loaded.text.is_empty() {
+            for item in &loaded.syntax {
+                println!("{}:{}:{}: error[E-SYNTAX]: {}", item.file, item.line, item.col, item.message);
+            }
+        } else {
+            print!(
+                "{}",
+                crate::render::render(&loaded.text, &path.display().to_string(), &loaded.syntax)
+            );
+        }
+        println!("1 error(s), 0 warning(s)");
+        return 1;
+    }
     let cacheable = use_cache && !sugar && !path.is_dir();
     let cache_key = if cacheable { Some(crate::cache::key(&loaded.text)) } else { None };
     let mut diagnostics = match cache_key.as_ref().and_then(|key| crate::cache::load().get(key).cloned()) {
@@ -1462,6 +1523,7 @@ pub fn run() -> i32 {
         }
     }
 }
+
 
 
 

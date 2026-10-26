@@ -41,7 +41,7 @@ pub struct Token {
     pub col: usize,
 }
 
-fn lex(src: &str) -> Vec<Token> {
+fn lex(src: &str) -> Result<Vec<Token>, ParseError> {
     let chars: Vec<char> = src.chars().collect();
     let mut out: Vec<Token> = Vec::new();
     let mut i = 0usize;
@@ -72,6 +72,13 @@ fn lex(src: &str) -> Vec<Token> {
             let mut j = i + 1;
             let mut text = String::new();
             while j < n && chars[j] != '"' {
+                if chars[j] == '\n' {
+                    return Err(ParseError {
+                        message: "unterminated string literal".to_string(),
+                        line,
+                        col: start_col,
+                    });
+                }
                 if chars[j] == '\\' && j + 1 < n {
                     let escaped = chars[j + 1];
                     text.push(match escaped {
@@ -87,6 +94,13 @@ fn lex(src: &str) -> Vec<Token> {
                 }
                 text.push(chars[j]);
                 j += 1;
+            }
+            if j >= n {
+                return Err(ParseError {
+                    message: "unterminated string literal".to_string(),
+                    line,
+                    col: start_col,
+                });
             }
             let width = j - i + 1;
             out.push(Token { text: format!("\x00{text}"), width, line, col: start_col });
@@ -129,7 +143,7 @@ fn lex(src: &str) -> Vec<Token> {
         i += 1;
         col += 1;
     }
-    out
+    Ok(out)
 }
 
 struct Parser {
@@ -160,21 +174,34 @@ impl Parser {
         token
     }
 
-    fn expect(&mut self, want: &str) -> Result<(), String> {
+    fn fail(&self, message: String) -> ParseError {
+        // at the end of input the useful position is the end of the last token read
+        let (line, col) = if self.pos >= self.toks.len() { self.last_end } else { self.position() };
+        ParseError { message, line: line.max(1), col: col.max(1) }
+    }
+
+    fn expect(&mut self, want: &str) -> Result<(), ParseError> {
         match self.bump() {
             Some(token) if token.text == want => Ok(()),
-            Some(token) => Err(format!("line {}: expected {want}, got {:?}", token.line, token.text)),
-            None => Err(format!("expected {want}, reached the end")),
+            Some(token) => Err(ParseError {
+                message: format!("expected {want}, got {:?}", token.text),
+                line: token.line,
+                col: token.col,
+            }),
+            None => Err(self.fail(format!("expected {want}, reached the end"))),
         }
     }
 
-    fn value(&mut self) -> Result<Val, String> {
+    fn value(&mut self) -> Result<Val, ParseError> {
         match self.peek() {
             Some("{") => {
                 self.bump();
                 let mut fields = Vec::new();
                 while self.peek() != Some("}") {
-                    let key = self.bump().ok_or("missing key")?.text;
+                    if self.peek().is_none() {
+                        return Err(self.fail("unexpected end of input: missing }".to_string()));
+                    }
+                    let key = self.bump().ok_or_else(|| self.fail("missing field name".to_string()))?.text;
                     self.expect(":")?;
                     fields.push((key, self.value()?));
                     if self.peek() == Some(",") {
@@ -188,6 +215,9 @@ impl Parser {
                 self.bump();
                 let mut items = Vec::new();
                 while self.peek() != Some("]") {
+                    if self.peek().is_none() {
+                        return Err(self.fail("unexpected end of input: missing ]".to_string()));
+                    }
                     items.push(self.value()?);
                     if self.peek() == Some(",") {
                         self.bump();
@@ -208,7 +238,7 @@ impl Parser {
                 Ok(Val::Num(self.bump().unwrap().text))
             }
             Some(_) => {
-                let name = self.bump().ok_or("missing value")?.text;
+                let name = self.bump().ok_or_else(|| self.fail("missing value".to_string()))?.text;
                 if self.peek() == Some("(") {
                     self.bump();
                     let mut args = Vec::new();
@@ -230,13 +260,26 @@ impl Parser {
                     Ok(Val::Id(name))
                 }
             }
-            None => Err("unexpected end of input".into()),
+            None => Err(self.fail("unexpected end of input".to_string())),
         }
     }
 }
 
-pub fn parse(src: &str) -> Result<Vec<Decl>, String> {
-    let mut parser = Parser { toks: lex(src), pos: 0, ref_pos: Vec::new(), last_end: (0, 0) };
+#[derive(Debug, Clone, PartialEq)]
+pub struct ParseError {
+    pub message: String,
+    pub line: usize,
+    pub col: usize,
+}
+
+impl std::fmt::Display for ParseError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "{}:{}: {}", self.line, self.col, self.message)
+    }
+}
+
+pub fn parse(src: &str) -> Result<Vec<Decl>, ParseError> {
+    let mut parser = Parser { toks: lex(src)?, pos: 0, ref_pos: Vec::new(), last_end: (0, 0) };
     let mut out = Vec::new();
     while let Some(kind) = parser.peek().map(|text| text.to_string()) {
         if kind == "}" || kind == "]" {
@@ -245,13 +288,16 @@ pub fn parse(src: &str) -> Result<Vec<Decl>, String> {
         }
         let (line, col) = parser.position();
         parser.ref_pos.clear();
-        let kind_token = parser.bump().ok_or("declaration without a kind")?;
-        let name = parser.bump().ok_or("declaration without a name")?.text;
+        let kind_token = parser.bump().ok_or_else(|| parser.fail("declaration without a kind".to_string()))?;
+        let name = parser.bump().ok_or_else(|| parser.fail("declaration without a name".to_string()))?.text;
         parser.expect("{")?;
         let mut fields = Vec::new();
         let mut field_span = Vec::new();
         while parser.peek() != Some("}") {
-            let key = parser.bump().ok_or("field without a name")?.text;
+            if parser.peek().is_none() {
+                return Err(parser.fail("unexpected end of input: missing }".to_string()));
+            }
+            let key = parser.bump().ok_or_else(|| parser.fail("field without a name".to_string()))?.text;
             parser.expect(":")?;
             let (value_line, value_col) = parser.position();
             let value = parser.value()?;
@@ -280,3 +326,8 @@ pub fn parse(src: &str) -> Result<Vec<Decl>, String> {
     }
     Ok(out)
 }
+
+
+
+
+

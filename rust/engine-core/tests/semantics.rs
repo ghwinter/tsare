@@ -500,6 +500,18 @@ fn the_self_document_compiles_without_errors() {
 }
 
 #[test]
+fn a_syntax_error_is_a_diagnostic_with_a_span() {
+    let error = parse("fact F { claim: \"unterminated\nevidence: user }").expect_err("must not parse");
+    assert_eq!(error.line, 1);
+    assert!(error.col > 10, "the caret points at the opening quote");
+    assert!(error.message.contains("unterminated"));
+
+    let error = parse("fact F { claim: \"x\", evidence: user").expect_err("missing brace");
+    assert!(!error.message.is_empty(), "the error must say something");
+    assert!(error.line >= 1 && error.col >= 1);
+}
+
+#[test]
 fn every_code_the_compiler_prints_has_an_explanation() {
     let golden = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests").join("fixtures").join("golden");
     let mut codes: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
@@ -568,3 +580,4 @@ fn names_resolve_once_per_program() {
     assert!(program.get("P1").is_some());
     assert!(program.get("P2").is_none());
 }
+
