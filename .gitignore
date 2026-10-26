@@ -17,12 +17,21 @@
 !docs/
 !docs/**
 !agent/
-!agent/**
+!dsh/
+!dsh/**
+!agent/
+!dsh/
+!dsh/****
 !experiments/
 !agent/
-!agent/**
+!dsh/
+!dsh/**
+!agent/
+!dsh/
+!dsh/****
 !experiments/**
 !scripts/
 !scripts/**
 !SELF.mf
+
 

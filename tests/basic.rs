@@ -1,5 +1,5 @@
-use engine_core::check;
-use engine_core::syntax::parse;
+use cogent::check;
+use cogent::syntax::parse;
 
 #[test]
 fn parses_a_fact() {

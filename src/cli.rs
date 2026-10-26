@@ -1494,12 +1494,12 @@ fn cmd_kinds() -> i32 {
 
 fn usage() {
     println!(
-        "engine-core {} — a compiler for checkable claims",
+        "cogent {} — a compiler for checkable claims",
         env!("CARGO_PKG_VERSION")
     );
     println!();
-    println!("usage: engine-core [COMMAND] PATH [options]");
-    println!("       engine-core kinds | mem | --explain CODE | --version | --help");
+    println!("usage: cogent [COMMAND] PATH [options]");
+    println!("       cogent kinds | mem | --explain CODE | --version | --help");
     println!();
     println!("PATH is a .mf document, a directory of them, or - for standard input.");
     println!();
@@ -1586,6 +1586,7 @@ fn is_command(name: &str) -> bool {
             | "whatif"
             | "propose"
             | "fca"
+            | "mcp"
     )
 }
 
@@ -1669,7 +1670,7 @@ pub fn run() -> i32 {
     let raw: Vec<String> = std::env::args().skip(1).collect();
     if let Some(position) = raw.iter().position(|arg| arg == "--explain") {
         let Some(code) = raw.get(position + 1) else {
-            println!("usage: engine-core --explain CODE");
+            println!("usage: cogent --explain CODE");
             return 2;
         };
         return match crate::explain::explain(code) {
@@ -1686,7 +1687,7 @@ pub fn run() -> i32 {
     }
     if raw.iter().any(|arg| arg == "--version" || arg == "-V") {
         println!(
-            "engine-core {} — a compiler for checkable claims",
+            "cogent {} — a compiler for checkable claims",
             env!("CARGO_PKG_VERSION")
         );
         return 0;
@@ -1701,6 +1702,9 @@ pub fn run() -> i32 {
         ("check".to_string(), raw.clone())
     };
     let args = Args::parse(&rest);
+    if command == "mcp" {
+        return crate::mcp::serve();
+    }
     if command == "kinds" {
         return cmd_kinds();
     }
@@ -1714,7 +1718,7 @@ pub fn run() -> i32 {
         return cmd_mem(recall, args.count("--k", 3));
     }
     let Some(target) = args.at(0) else {
-        println!("usage: engine-core {command} FILE");
+        println!("usage: cogent {command} FILE");
         return 2;
     };
     let path = PathBuf::from(target);
@@ -1743,7 +1747,7 @@ pub fn run() -> i32 {
         "egraph" => cmd_egraph(&path, args.option("--write")),
         "whatif" => {
             let Some(name) = args.at(1) else {
-                println!("usage: engine-core whatif FILE NAME");
+                println!("usage: cogent whatif FILE NAME");
                 return 2;
             };
             cmd_whatif(&path, name)
@@ -1752,7 +1756,7 @@ pub fn run() -> i32 {
         "fix" => cmd_fix(&path, args.option("--apply")),
         "map" => {
             let Some(right) = args.at(1) else {
-                println!("usage: engine-core map LEFT RIGHT");
+                println!("usage: cogent map LEFT RIGHT");
                 return 2;
             };
             cmd_map(&path, Path::new(right), args.count("--top", 8))
@@ -1760,7 +1764,7 @@ pub fn run() -> i32 {
         "induce" => cmd_induce(&path),
         "propose" => {
             let Some(proposals) = args.option("--proposals") else {
-                println!("usage: engine-core propose FILE --proposals FILE.json [--apply]");
+                println!("usage: cogent propose FILE --proposals FILE.json [--apply]");
                 return 2;
             };
             cmd_propose(
@@ -1773,7 +1777,7 @@ pub fn run() -> i32 {
         "fca" => cmd_fca(&path),
         "pattern" => {
             let Some(name) = args.at(1) else {
-                println!("usage: engine-core pattern FILE CONCEPT");
+                println!("usage: cogent pattern FILE CONCEPT");
                 return 2;
             };
             cmd_pattern(&path, name, args.has("--vars"))
@@ -1790,3 +1794,4 @@ pub fn run() -> i32 {
         }
     }
 }
+

@@ -6,18 +6,18 @@
 
 use std::collections::HashSet;
 
-use engine_core::argue::conclusions;
-use engine_core::build::{learnings_of, verify_predicates};
-use engine_core::check::check;
-use engine_core::closure::{engine, grounded_sets};
-use engine_core::cost::report as cost_report;
-use engine_core::derive::analyze;
-use engine_core::egraph::merge_groups;
-use engine_core::fix::suggestions;
-use engine_core::induce::induce_concept;
-use engine_core::program::Program;
-use engine_core::sugar::expand;
-use engine_core::syntax::{parse, Decl};
+use cogent::argue::conclusions;
+use cogent::build::{learnings_of, verify_predicates};
+use cogent::check::check;
+use cogent::closure::{engine, grounded_sets};
+use cogent::cost::report as cost_report;
+use cogent::derive::analyze;
+use cogent::egraph::merge_groups;
+use cogent::fix::suggestions;
+use cogent::induce::induce_concept;
+use cogent::program::Program;
+use cogent::sugar::expand;
+use cogent::syntax::{parse, Decl};
 
 fn decls(source: &str) -> Vec<Decl> {
     parse(source).expect("parse")
@@ -138,8 +138,8 @@ value V1 { metric: "m", direction: min, unit: "ms", threshold: 1, measured_by: t
 fn removing_the_only_premise_defeats_the_conclusion() {
     assert_eq!(statuses(ATTACK)["P1"], "supported");
     let declared = decls(ATTACK);
-    let reduced = engine_core::whatif::remove(&declared, "F1").expect("F1 is removable");
-    let result = engine_core::whatif::compare(&declared, &reduced);
+    let reduced = cogent::whatif::remove(&declared, "F1").expect("F1 is removable");
+    let result = cogent::whatif::compare(&declared, &reduced);
     assert!(result.changed.iter().any(|(name, before, after)| {
         name == "P1" && before == "supported" && after != "supported"
     }));
@@ -168,14 +168,14 @@ fn a_duplicate_is_a_machine_repair() {
         .find(|item| item.message.contains("drop the duplicate"))
         .expect("a duplicate can be dropped");
     assert_eq!(drop.applicability, "MachineApplicable");
-    let (updated, applied) = engine_core::apply::apply_best(text, &items);
+    let (updated, applied) = cogent::apply::apply_best(text, &items);
     assert_eq!(applied.len(), 1);
     assert!(
         !updated.contains("\"b\""),
         "the later duplicate is the one that goes"
     );
-    let before = engine_core::apply::score(text);
-    let after = engine_core::apply::score(&updated);
+    let before = cogent::apply::score(text);
+    let after = cogent::apply::score(&updated);
     assert!(after < before, "the applied text compiles better");
 }
 
@@ -183,7 +183,7 @@ fn a_duplicate_is_a_machine_repair() {
 fn a_repair_that_does_not_improve_is_dropped() {
     let text = "fact F { claim: \"a\", evidence: user }\n";
     let declared = decls(text);
-    let noop = engine_core::fix::Suggestion {
+    let noop = cogent::fix::Suggestion {
         applicability: "MachineApplicable",
         message: "no-op".to_string(),
         file: String::new(),
@@ -193,7 +193,7 @@ fn a_repair_that_does_not_improve_is_dropped() {
         end_col: declared[0].end_col,
         replacement: String::new(),
     };
-    let (updated, applied) = engine_core::apply::apply_best(text, &[noop]);
+    let (updated, applied) = cogent::apply::apply_best(text, &[noop]);
     assert!(applied.is_empty());
     assert_eq!(updated, text);
 }
@@ -244,7 +244,7 @@ concept C_FAST { name: "fast", grounded_by: [F_FAST, F_MEDIUM], against: [F_SLOW
     let concept = program.of_kind("concept")[0];
     let learning = induce_concept(&program, concept);
     let clause = learning.clause.expect("a clause exists");
-    let text = engine_core::induce::clause_text(&clause);
+    let text = cogent::induce::clause_text(&clause);
     assert_eq!(
         text, "frame_ms <= 40",
         "the tightest bound the data supports"
@@ -265,10 +265,10 @@ concept C_FAST { name: "fast", grounded_by: [F_FAST], against: [F_SLOW] }
     for concept in program.of_kind("concept") {
         structurals.push((
             concept.name.clone(),
-            engine_core::patterns::learn(
+            cogent::patterns::learn(
                 &program,
-                &engine_core::program::pos(concept),
-                &engine_core::program::neg(concept),
+                &cogent::program::pos(concept),
+                &cogent::program::neg(concept),
             ),
         ));
     }
@@ -279,7 +279,7 @@ concept C_FAST { name: "fast", grounded_by: [F_FAST], against: [F_SLOW] }
             .map(|item| {
                 (
                     item.concept.clone(),
-                    engine_core::induce::Learning {
+                    cogent::induce::Learning {
                         concept: item.concept.clone(),
                         positives: item.positives.clone(),
                         negatives: item.negatives.clone(),
@@ -493,11 +493,11 @@ proposition P { statement: "s", from: [F], confidence: 0.8 }
 
 #[test]
 fn every_kind_owes_an_action() {
-    use engine_core::program::TABLE;
+    use cogent::program::TABLE;
     assert_eq!(TABLE.len(), 12, "one row per kind");
     for (kind, obligation, discharge) in TABLE {
         assert!(
-            engine_core::specs::spec(kind).is_some(),
+            cogent::specs::spec(kind).is_some(),
             "{kind} has no field spec"
         );
         assert!(
@@ -505,7 +505,7 @@ fn every_kind_owes_an_action() {
             "{kind} owes nothing?"
         );
         assert_ne!(
-            engine_core::build::action_of(kind),
+            cogent::build::action_of(kind),
             "?",
             "{kind} has no action in OBLIGATIONS.md"
         );
@@ -520,8 +520,7 @@ fn a_warrant_is_ready_only_with_a_basis() {
          warrant W1 { claim: \"r\", from: [F], to: P, basis: [F] }\n",
     );
     let program = Program::new(&with);
-    let row =
-        engine_core::build::obligation(program.get("W1").unwrap(), &program, &Default::default());
+    let row = cogent::build::obligation(program.get("W1").unwrap(), &program, &Default::default());
     assert_eq!((row.action, row.state), ("justify", "ready"));
 
     let without = decls(
@@ -530,8 +529,7 @@ fn a_warrant_is_ready_only_with_a_basis() {
          warrant W1 { claim: \"r\", from: [F], to: P }\n",
     );
     let program = Program::new(&without);
-    let row =
-        engine_core::build::obligation(program.get("W1").unwrap(), &program, &Default::default());
+    let row = cogent::build::obligation(program.get("W1").unwrap(), &program, &Default::default());
     assert_eq!(row.state, "blocked");
 }
 
@@ -577,7 +575,7 @@ fn parsing_reports_every_error_in_one_run() {
                   proposition P_BROKEN { statement: \"unterminated\n\
                   fact F_AFTER { claim: \"still parses\", evidence: user }\n\
                   concept C_BAD { name: \"c\" grounded_by: [F_OK] }\n";
-    let (decls, errors) = engine_core::syntax::parse_recovering(source);
+    let (decls, errors) = cogent::syntax::parse_recovering(source);
     assert_eq!(
         errors.len(),
         3,
@@ -610,8 +608,8 @@ fn a_missing_separator_is_an_error() {
 
 #[test]
 fn a_session_owns_order_counts_and_shape() {
-    let mut session = engine_core::session::Session::new("doc.mf");
-    session.emit(engine_core::check::Diagnostic {
+    let mut session = cogent::session::Session::new("doc.mf");
+    session.emit(cogent::check::Diagnostic {
         code: "W-HOLE",
         message: "later".to_string(),
         line: 9,
@@ -620,7 +618,7 @@ fn a_session_owns_order_counts_and_shape() {
         end_col: 2,
         file: String::new(),
     });
-    session.emit(engine_core::check::Diagnostic {
+    session.emit(cogent::check::Diagnostic {
         code: "E-TYPE",
         message: "earlier".to_string(),
         line: 2,
@@ -642,7 +640,7 @@ fn a_session_owns_order_counts_and_shape() {
         "sorted by position"
     );
     // with the source, the text form is the rendered form
-    let rendered = engine_core::session::Session::new("doc.mf")
+    let rendered = cogent::session::Session::new("doc.mf")
         .with_source("x\nfact F { claim: \"y\" }\n")
         .text();
     assert!(rendered.is_empty(), "an empty session prints nothing");
@@ -660,8 +658,8 @@ fn a_directory_is_rendered_file_by_file() {
             "fact F_B { claim: \"y\" }\n".to_string(),
         ),
     ];
-    let mut session = engine_core::session::Session::new("dir").with_sources(&sources);
-    session.emit(engine_core::check::Diagnostic {
+    let mut session = cogent::session::Session::new("dir").with_sources(&sources);
+    session.emit(cogent::check::Diagnostic {
         code: "E-TYPE",
         message: "b is wrong".to_string(),
         line: 1,
@@ -670,7 +668,7 @@ fn a_directory_is_rendered_file_by_file() {
         end_col: 21,
         file: "b.mf".to_string(),
     });
-    session.emit(engine_core::check::Diagnostic {
+    session.emit(cogent::check::Diagnostic {
         code: "E-MISSING",
         message: "a is incomplete".to_string(),
         line: 1,
@@ -696,7 +694,7 @@ fn a_directory_is_rendered_file_by_file() {
 fn a_document_can_arrive_on_standard_input() {
     use std::io::Write;
     use std::process::{Command, Stdio};
-    let mut child = Command::new(env!("CARGO_BIN_EXE_engine-core"))
+    let mut child = Command::new(env!("CARGO_BIN_EXE_cogent"))
         .args(["check", "-"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -763,13 +761,13 @@ fn every_code_the_compiler_prints_has_an_explanation() {
     );
     let missing: Vec<&String> = codes
         .iter()
-        .filter(|code| engine_core::explain::explain(code).is_none())
+        .filter(|code| cogent::explain::explain(code).is_none())
         .collect();
     assert!(missing.is_empty(), "no explanation for {missing:?}");
     // and the table itself must answer for every code it lists
-    for code in engine_core::explain::CODES {
+    for code in cogent::explain::CODES {
         assert!(
-            engine_core::explain::explain(code).is_some(),
+            cogent::explain::explain(code).is_some(),
             "{code} is listed but unexplained"
         );
     }
@@ -796,19 +794,16 @@ fn a_declaration_keeps_its_positions() {
 #[test]
 fn the_content_hash_is_a_function_of_the_bytes() {
     assert_eq!(
-        engine_core::hash::hex(b"abc"),
+        cogent::hash::hex(b"abc"),
         "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
     );
-    assert_ne!(
-        engine_core::hash::hex(b"abc"),
-        engine_core::hash::hex(b"abd")
-    );
+    assert_ne!(cogent::hash::hex(b"abc"), cogent::hash::hex(b"abd"));
 }
 
 #[test]
 fn the_store_reader_reads_the_records_it_wrote() {
-    let line = r#"{"doc": "a.mf", "codes": ["E-UNDEFINED", "W-HOLE"], "action": "mechanical", "before": {"errors": 2, "cost": 1}, "after": {"errors": 1, "cost": 1}, "checker": "engine-core-0.1"}"#;
-    let entry = engine_core::json::parse(line).expect("parse");
+    let line = r#"{"doc": "a.mf", "codes": ["E-UNDEFINED", "W-HOLE"], "action": "mechanical", "before": {"errors": 2, "cost": 1}, "after": {"errors": 1, "cost": 1}, "checker": "cogent-0.1"}"#;
+    let entry = cogent::json::parse(line).expect("parse");
     assert_eq!(
         entry
             .get("codes")
@@ -816,13 +811,13 @@ fn the_store_reader_reads_the_records_it_wrote() {
             .unwrap_or_default(),
         vec!["E-UNDEFINED", "W-HOLE"]
     );
-    assert!(engine_core::cases::improved(&entry));
+    assert!(cogent::cases::improved(&entry));
     assert_eq!(
-        engine_core::json::serialize(&entry),
-        r#"{"doc": "a.mf", "codes": ["E-UNDEFINED", "W-HOLE"], "action": "mechanical", "before": {"errors": 2, "cost": 1}, "after": {"errors": 1, "cost": 1}, "checker": "engine-core-0.1"}"#
+        cogent::json::serialize(&entry),
+        r#"{"doc": "a.mf", "codes": ["E-UNDEFINED", "W-HOLE"], "action": "mechanical", "before": {"errors": 2, "cost": 1}, "after": {"errors": 1, "cost": 1}, "checker": "cogent-0.1"}"#
     );
     assert_eq!(
-        engine_core::cases::list_repr(&["A".to_string(), "B".to_string()]),
+        cogent::cases::list_repr(&["A".to_string(), "B".to_string()]),
         "['A', 'B']"
     );
 }

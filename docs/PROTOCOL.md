@@ -1,6 +1,6 @@
 # engine — one implementation, one contract
 
-This repository is the compiler. `rust/engine-core` is a single, dependency-free binary: no
+This repository is the compiler. `rust/cogent` is a single, dependency-free binary: no
 interpreter, no runtime beyond the OS, no Python, no second code path to keep in step.
 
 `obligo` (tag `v1`) is the frozen reference: it holds the original Python implementation and
@@ -218,7 +218,7 @@ discharge anything. `SELF.mf` records that as a blind spot rather than guessing 
 ## Acceptance
 
 ```powershell
-cd rust/engine-core
+cd rust/cogent
 cargo test            # semantics + golden snapshots for every command
 cargo build --release # the binary
 ```
@@ -230,3 +230,4 @@ agreed with v1 byte for byte. `UPDATE_GOLDEN=1 cargo test` rewrites them; read t
 The port itself is recorded by `scripts/diff_text.py`, which compares the binary with the
 frozen Python in `obligo`: 760 comparisons across 32 documents, no mismatch, one document the
 reference cannot process (item 6 above).
+

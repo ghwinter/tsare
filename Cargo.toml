@@ -1,5 +1,5 @@
 [package]
-name = "engine-core"
+name = "cogent"
 version = "0.2.0"
 edition = "2021"
 rust-version = "1.85"
@@ -23,5 +23,6 @@ codegen-units = 1
 strip = true
 
 [dependencies]
+
 
 

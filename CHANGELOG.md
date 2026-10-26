@@ -30,7 +30,7 @@ The version that can be published: one crate, no dependencies, MIT.
 
 ### Changed
 
-- The crate lives at the repository root; `rust/engine-core` is gone.
+- The crate lives at the repository root; `rust/cogent` is gone.
 - Documentation moved under `docs/`.
 
 ### Fixed
@@ -38,3 +38,4 @@ The version that can be published: one crate, no dependencies, MIT.
 - A comma between fields is required; it had been optional, so a whole class of typos parsed.
 - `E-COLLAPSE` no longer fires for a concept with no positive example.
 - `at all` is not treated as a universal claim.
+

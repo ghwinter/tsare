@@ -3,7 +3,7 @@
 # The code is one kind of claim.  Everything else in the repository also claims something
 # about the code, and each of those claims has a checker or it does not.
 #
-#     engine-core check docs/REPO.mf
+#     cogent check docs/REPO.mf
 
 layer L_REPO {
   name: "the repository itself",
@@ -15,7 +15,7 @@ layer L_REPO {
 fact F_PROTOCOL {
   claim: "PROTOCOL.md fixes every command, its options and its JSON",
   evidence: doc("docs/PROTOCOL.md"),
-  scope: "every command engine-core implements",
+  scope: "every command cogent implements",
   attrs: { checker: automated }
 }
 
@@ -132,4 +132,5 @@ hypothesis H_KEEP_PROSE {
   predicts: "prose that nobody checks still earns its place by being read, and compiling it would cost more than it pays",
   rival: H_COMPILE_README
 }
+
 

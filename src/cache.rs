@@ -12,7 +12,7 @@ use crate::hash::hex;
 use crate::json::{self, Json};
 
 /// Part of every key: a cache built by another checker must never be replayed.
-pub const SALT: &str = "engine-core-0.1";
+pub const SALT: &str = "cogent-0.1";
 
 pub fn store_path() -> PathBuf {
     PathBuf::from(".metaform").join("check-cache.json")

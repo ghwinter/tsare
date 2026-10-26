@@ -23,6 +23,7 @@ pub mod impact;
 pub mod induce;
 pub mod json;
 pub mod mapping;
+pub mod mcp;
 pub mod moves;
 pub mod paths;
 pub mod patterns;
