@@ -532,6 +532,40 @@ fn a_missing_separator_is_an_error() {
 }
 
 #[test]
+fn a_session_owns_order_counts_and_shape() {
+    let mut session = engine_core::session::Session::new("doc.mf");
+    session.emit(engine_core::check::Diagnostic {
+        code: "W-HOLE",
+        message: "later".to_string(),
+        line: 9,
+        col: 1,
+        end_line: 9,
+        end_col: 2,
+        file: String::new(),
+    });
+    session.emit(engine_core::check::Diagnostic {
+        code: "E-TYPE",
+        message: "earlier".to_string(),
+        line: 2,
+        col: 5,
+        end_line: 2,
+        end_col: 9,
+        file: String::new(),
+    });
+    assert_eq!((session.errors(), session.warnings(), session.exit_code()), (1, 1, 1));
+    assert_eq!(session.summary(), "1 error(s), 1 warning(s)");
+    let json = session.json();
+    assert!(json.contains("\"code\": \"E-TYPE\"") && json.contains("\"code\": \"W-HOLE\""));
+    assert!(json.contains("\"errors\": 1") && json.contains("\"warnings\": 1"));
+    assert!(json.find("E-TYPE").unwrap() < json.find("W-HOLE").unwrap(), "sorted by position");
+    // with the source, the text form is the rendered form
+    let rendered = engine_core::session::Session::new("doc.mf")
+        .with_source("x\nfact F { claim: \"y\" }\n")
+        .text();
+    assert!(rendered.is_empty(), "an empty session prints nothing");
+}
+
+#[test]
 fn every_code_the_compiler_prints_has_an_explanation() {
     let golden = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests").join("fixtures").join("golden");
     let mut codes: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();

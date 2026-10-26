@@ -82,7 +82,7 @@ fn fail(error: String) -> i32 {
     1
 }
 
-fn escape(text: &str) -> String {
+pub fn escape(text: &str) -> String {
     let mut out = String::new();
     for ch in text.chars() {
         match ch {
@@ -113,70 +113,6 @@ fn warning_count(diagnostics: &[crate::check::Diagnostic]) -> usize {
 }
 
 /// Diagnostics as JSON records, the contract in PROTOCOL.md.
-fn diagnostics_json(diagnostics: &[crate::check::Diagnostic], fallback: &str) -> String {
-    let mut sorted = diagnostics.to_vec();
-    sorted.sort_by_key(|item| (item.file.clone(), item.line, item.col, item.code));
-    let mut lines: Vec<String> = Vec::new();
-    for item in &sorted {
-        let file = if item.file.is_empty() { fallback.to_string() } else { item.file.clone() };
-        let severity = if item.code.starts_with("E-") { "error" } else { "warning" };
-        lines.push(format!(
-            "    {{\"code\": \"{}\", \"severity\": \"{}\", \"file\": \"{}\", \"line\": {}, \"col\": {}, \"message\": \"{}\"}}",
-            item.code,
-            severity,
-            escape(&file),
-            item.line,
-            item.col,
-            escape(&item.message)
-        ));
-    }
-    let joined = if lines.is_empty() { String::new() } else { format!("\n{}\n", lines.join(",\n")) };
-    format!(
-        "{{\n  \"diagnostics\": [{joined}],\n  \"errors\": {},\n  \"warnings\": {}\n}}",
-        error_count(diagnostics),
-        warning_count(diagnostics)
-    )
-}
-
-fn report(diagnostics: &[crate::check::Diagnostic]) -> i32 {
-    println!("{} error(s), {} warning(s)", error_count(diagnostics), warning_count(diagnostics));
-    if error_count(diagnostics) > 0 {
-        1
-    } else {
-        0
-    }
-}
-
-/// Text output: rendered against the source when there is one, flat otherwise (a directory
-/// has many sources, and each diagnostic already carries its file).
-fn text_diagnostics(
-    diagnostics: &[crate::check::Diagnostic],
-    fallback: &str,
-    source: Option<&str>,
-) -> i32 {
-    match source {
-        Some(text) if !text.is_empty() => {
-            let local: Vec<crate::check::Diagnostic> =
-                diagnostics.iter().filter(|item| item.file.is_empty()).cloned().collect();
-            if !local.is_empty() {
-                print!("{}", crate::render::render(text, fallback, &local));
-            }
-            for item in diagnostics.iter().filter(|item| !item.file.is_empty()) {
-                println!("  {} {}:{} {}", item.code, item.file, item.line, item.message);
-            }
-        }
-        _ => {
-            let mut sorted = diagnostics.to_vec();
-            sorted.sort_by_key(|item| (item.file.clone(), item.line, item.col, item.code));
-            for item in &sorted {
-                let file = if item.file.is_empty() { fallback.to_string() } else { item.file.clone() };
-                println!("  {} {}:{} {}", item.code, file, item.line, item.message);
-            }
-        }
-    }
-    report(diagnostics)
-}
-
 fn collect_holes(decls: &[Decl]) -> Vec<(String, String)> {
     let mut out = Vec::new();
     for decl in decls {
@@ -222,93 +158,58 @@ fn cmd_check(
             Err(error) => return fail(error),
         }
     };
-    if !loaded.syntax.is_empty() {
-        // a document that does not parse has one thing to say, and it is the syntax error
-        if json {
-            println!("{}", diagnostics_json(&loaded.syntax, &path.display().to_string()));
-            return 1;
-        }
-        if loaded.text.is_empty() {
-            for item in &loaded.syntax {
-                println!("{}:{}:{}: error[E-SYNTAX]: {}", item.file, item.line, item.col, item.message);
+    let display = path.display().to_string();
+    let mut session = crate::session::Session::new(display).with_source(&loaded.text);
+    session.extend(loaded.syntax.clone());
+    let mut coverage = None;
+    if loaded.syntax.is_empty() {
+        let cacheable = use_cache && !sugar && !path.is_dir();
+        let cache_key = if cacheable { Some(crate::cache::key(&loaded.text)) } else { None };
+        let diagnostics = match cache_key.as_ref().and_then(|key| crate::cache::load().get(key).cloned()) {
+            Some(payload) => crate::cache::restore(&payload),
+            None => {
+                let computed = crate::check::check(&loaded.decls);
+                if let Some(key) = &cache_key {
+                    let payload = match crate::json::parse(&crate::cache::dump(&computed)) {
+                        Ok(payload) => payload,
+                        Err(_) => crate::json::Json::Arr(Vec::new()),
+                    };
+                    let mut entries: Vec<(String, crate::json::Json)> =
+                        crate::cache::load().into_iter().collect();
+                    entries.retain(|(existing, _)| existing != key);
+                    entries.push((key.clone(), payload));
+                    entries.sort_by(|left, right| left.0.cmp(&right.0));
+                    let _ = crate::cache::save(&entries);
+                }
+                computed
             }
-        } else {
-            print!(
-                "{}",
-                crate::render::render(&loaded.text, &path.display().to_string(), &loaded.syntax)
-            );
-        }
-        println!("{} error(s), 0 warning(s)", loaded.syntax.len());
-        return 1;
-    }
-    let cacheable = use_cache && !sugar && !path.is_dir();
-    let cache_key = if cacheable { Some(crate::cache::key(&loaded.text)) } else { None };
-    let mut diagnostics = match cache_key.as_ref().and_then(|key| crate::cache::load().get(key).cloned()) {
-        Some(payload) => crate::cache::restore(&payload),
-        None => {
-            let computed = crate::check::check(&loaded.decls);
-            if let Some(key) = &cache_key {
-                let payload = match crate::json::parse(&crate::cache::dump(&computed)) {
-                    Ok(payload) => payload,
-                    Err(_) => crate::json::Json::Arr(Vec::new()),
-                };
-                let mut entries: Vec<(String, crate::json::Json)> =
-                    crate::cache::load().into_iter().collect();
-                entries.retain(|(existing, _)| existing != key);
-                entries.push((key.clone(), payload));
-                entries.sort_by(|left, right| left.0.cmp(&right.0));
-                let _ = crate::cache::save(&entries);
-            }
-            computed
-        }
-    };
-    if let Some(goals_file) = goals_path {
-        let text = match fs::read_to_string(goals_file) {
-            Ok(text) => text,
-            Err(error) => return fail(format!("{goals_file}: {error}")),
         };
-        let goals = crate::coverage::load_goals(&text);
-        let report = crate::coverage::coverage(&Program::new(&loaded.decls), &goals);
-        diagnostics.extend(crate::coverage::diagnostics(&report));
-    }
-    if json {
-        println!("{}", diagnostics_json(&diagnostics, &path.display().to_string()));
-        return if error_count(&diagnostics) > 0 { 1 } else { 0 };
-    }
-    // A single document is rendered against its own source; a directory is listed flat,
-    // because each diagnostic already carries the file it belongs to.
-    if loaded.text.is_empty() || diagnostics.iter().any(|item| !item.file.is_empty()) {
-        let mut sorted = diagnostics.clone();
-        sorted.sort_by_key(|item| (item.file.clone(), item.line, item.col, item.code));
-        for item in &sorted {
-            let file = if item.file.is_empty() {
-                path.display().to_string()
-            } else {
-                item.file.clone()
+        session.extend(diagnostics);
+        if let Some(goals_file) = goals_path {
+            let text = match fs::read_to_string(goals_file) {
+                Ok(text) => text,
+                Err(error) => return fail(format!("{goals_file}: {error}")),
             };
-            println!("  {} {}:{} {}", item.code, file, item.line, item.message);
-        }
-    } else {
-        print!("{}", crate::render::render(&loaded.text, &path.display().to_string(), &diagnostics));
-    }
-    if let Some(goals_file) = goals_path {
-        if let Ok(text) = fs::read_to_string(goals_file) {
             let goals = crate::coverage::load_goals(&text);
             let report = crate::coverage::coverage(&Program::new(&loaded.decls), &goals);
-            let covered = report.iter().filter(|goal| goal.covered()).count();
-            println!("coverage: {covered}/{} goals addressed", report.len());
+            session.extend(crate::coverage::diagnostics(&report));
+            coverage = Some((report.iter().filter(|goal| goal.covered()).count(), report.len()));
         }
+    }
+    if json {
+        println!("{}", session.json());
+        return session.exit_code();
+    }
+    print!("{}", session.text());
+    if let Some((covered, total)) = coverage {
+        println!("coverage: {covered}/{total} goals addressed");
     }
     let holes = collect_holes(&loaded.decls);
     if !holes.is_empty() {
         println!("holes: {} unknown value(s), listed in OPEN.md after a build", holes.len());
     }
-    println!("{} error(s), {} warning(s)", error_count(&diagnostics), warning_count(&diagnostics));
-    if error_count(&diagnostics) > 0 {
-        1
-    } else {
-        0
-    }
+    println!("{}", session.summary());
+    session.exit_code()
 }
 
 fn cmd_engine(path: &Path, json: bool) -> i32 {
@@ -1037,7 +938,12 @@ fn cmd_build(path: &Path, out: &str, goals_path: Option<&str>) -> i32 {
     }
 
     let diagnostics = crate::check::check(&loaded.decls);
-    text_diagnostics(&diagnostics, &path.display().to_string(), Some(&loaded.text));
+    {
+        let mut session = crate::session::Session::new(path.display().to_string()).with_source(&loaded.text);
+        session.extend(diagnostics.clone());
+        print!("{}", session.text());
+        println!("{}", session.summary());
+    }
     let mut goals = None;
     let mut all = diagnostics.clone();
     if let Some(goals_file) = goals_path {
@@ -1516,6 +1422,8 @@ pub fn run() -> i32 {
         }
     }
 }
+
+
 
 
 
