@@ -1,6 +1,6 @@
 {
   "diagnostics": [
-    {"code": "W-UNWARRANTED-BASIS", "severity": "warning", "file": "D://GitHub//engine//rust//engine-core//tests//fixtures//relational.v2.mf", "line": 59, "col": 10, "message": "warrant W_X states a rule, but nothing makes the rule acceptable"}
+    {"code": "W-UNWARRANTED-BASIS", "severity": "warning", "file": "<fixtures>/relational.v2.mf", "line": 59, "col": 10, "message": "warrant W_X states a rule, but nothing makes the rule acceptable"}
 ],
   "errors": 0,
   "warnings": 1

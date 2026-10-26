@@ -28,13 +28,19 @@ fn documents() -> Vec<PathBuf> {
     out
 }
 
-/// Paths are machine-specific, so the snapshots name the fixture directory instead.
+/// Paths are machine-specific, so the snapshots name the fixture directory instead.  JSON
+/// escapes the separator, so both spellings are replaced before slashes are unified.
 fn normalize(text: &str) -> String {
     let fixtures = fixtures().display().to_string();
     let temp = std::env::temp_dir().display().to_string();
-    text.replace(&fixtures, "<fixtures>")
-        .replace(&temp, "<temp>")
-        .replace('\\', "/")
+    let mut out = text.to_string();
+    for (needle, label) in [(&fixtures, "<fixtures>"), (&temp, "<temp>")] {
+        out = out.replace(needle.as_str(), label);
+        out = out.replace(&needle.replace('\\', "\\\\"), label);
+    }
+    out.replace('\\', "/")
+        .replace("<fixtures>//", "<fixtures>/")
+        .replace("<temp>//", "<temp>/")
 }
 
 fn run(args: &[&str]) -> String {
