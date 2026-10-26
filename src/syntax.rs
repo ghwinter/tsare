@@ -102,6 +102,7 @@ fn lex(src: &str) -> (Vec<Token>, Vec<ParseError>) {
                     message: "unterminated string literal".to_string(),
                     line,
                     col: start_col,
+                    code: "E-SYNTAX",
                 });
             }
             out.push(Token {
@@ -206,6 +207,7 @@ impl Parser {
             message,
             line: line.max(1),
             col: col.max(1),
+            code: "E-SYNTAX",
         }
     }
 
@@ -216,6 +218,7 @@ impl Parser {
                 message: format!("expected {want}, got {:?}", token.text),
                 line: token.line,
                 col: token.col,
+                code: "E-SYNTAX",
             }),
             None => Err(self.fail(format!("expected {want}, reached the end"))),
         }
@@ -316,6 +319,10 @@ pub struct ParseError {
     pub message: String,
     pub line: usize,
     pub col: usize,
+    /// The diagnostic code this error reports.  Almost everything is `E-SYNTAX`; a document
+    /// that declares a format this build does not speak is `E-VERSION`, because the document
+    /// is well formed -- it is the compiler that cannot read it.
+    pub code: &'static str,
 }
 
 impl std::fmt::Display for ParseError {
@@ -395,11 +402,78 @@ impl Parser {
     }
 }
 
+/// The format this build speaks.  A document declares a version only when it is newer than the
+/// first one: an absent header means format 1, so a document written before the header existed
+/// is not a document of unknown version.  The number changes only when the grammar does, never
+/// when the crate does.
+pub const FORMAT_VERSION: u32 = 1;
+
+/// The optional first line, `tsare <n>`.  `None` means no header.  `Ok(n)` is the number of
+/// bytes the header occupies, including its newline.  `Err` means the document declares a
+/// format this build cannot read, and the caller must stop before parsing: reading a newer
+/// syntax as this one would produce a page of nonsense errors instead of one true one.
+fn header(src: &str) -> Option<Result<usize, ParseError>> {
+    let line_end = src.find('\n').unwrap_or(src.len());
+    let line = src[..line_end].trim_end_matches('\r');
+    let mut words = line.split_whitespace();
+    if words.next()? != "tsare" {
+        return None;
+    }
+    let rest: Vec<&str> = words.collect();
+    let Some(first) = rest.first() else {
+        return Some(Err(version_error(
+            "the first line says `tsare` and no version number",
+        )));
+    };
+    let Ok(version) = first.parse::<u32>() else {
+        return Some(Err(version_error(&format!(
+            "`{first}` is not a format version; the first line reads `tsare <number>`"
+        ))));
+    };
+    if let Some(trailing) = rest.get(1) {
+        if !trailing.starts_with('#') {
+            return Some(Err(version_error(&format!(
+                "unexpected `{trailing}` after the format version"
+            ))));
+        }
+    }
+    if version != FORMAT_VERSION {
+        return Some(Err(version_error(&format!(
+            "this document is format {version}; this build speaks format {FORMAT_VERSION}, so \
+             it cannot read this one"
+        ))));
+    }
+    Some(Ok(line_end + usize::from(line_end < src.len())))
+}
+
+fn version_error(message: &str) -> ParseError {
+    ParseError {
+        message: message.to_string(),
+        line: 1,
+        col: 1,
+        code: "E-VERSION",
+    }
+}
+
 /// Parse, keeping every error: after one declaration fails the parser restarts at the next
 /// line-initial identifier, so one typo does not hide the rest of the file.  The lexer fails
 /// only on an unterminated string, which it reports and then ends at the newline.
 pub fn parse_recovering(src: &str) -> (Vec<Decl>, Vec<ParseError>) {
-    let (tokens, lex_errors) = lex(src);
+    let body = match header(src) {
+        None => src.to_string(),
+        Some(Err(error)) => return (Vec::new(), vec![error]),
+        Some(Ok(consumed)) => {
+            // blank the header line but keep its newline, so every line number stays absolute
+            let mut text = String::with_capacity(src.len());
+            if consumed > 0 {
+                text.extend(std::iter::repeat_n(' ', consumed - 1));
+                text.push('\n');
+            }
+            text.push_str(&src[consumed..]);
+            text
+        }
+    };
+    let (tokens, lex_errors) = lex(&body);
     let mut parser = Parser {
         toks: tokens,
         pos: 0,

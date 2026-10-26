@@ -1,0 +1,34 @@
+name: release
+
+# A tag is the release.  Nothing here runs on a branch, so a version number is created by an
+# act that is visible in the repository, not by a workflow deciding it is time.
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      # The tag and the manifest are the same number, or this release does not happen.
+      - name: the tag is the version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          manifest=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          test "$tag" = "$manifest" || { echo "tag $tag != Cargo.toml $manifest"; exit 1; }
+
+      - run: cargo test --release
+
+      # Builds the exact package that would ship, from its include list, and compiles it.
+      - run: cargo package --locked
+
+      - name: publish to crates.io
+        if: env.CARGO_REGISTRY_TOKEN != ''
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: cargo publish --locked

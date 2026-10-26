@@ -5,8 +5,35 @@ binary: no interpreter, no runtime beyond the OS, no Python, no second code path
 step.
 
 `obligo` (tag `v1`) is the frozen reference: it holds the original Python implementation and
-every experiment behind it. It is no longer the live compiler. `scripts/diff_text.py` can still
-compare the two, and its output is the record of the port.
+every experiment behind it. It is no longer the live compiler. The differential script that
+compared the two stays in the working copies rather than in this tree, and its output is the
+record of the port.
+
+## Two numbers, and only two
+
+| number | where it lives | what it promises | when it moves |
+| --- | --- | --- | --- |
+| **format** | the first line of a document, `tsare <n>`; absent means `1` | the grammar: what a document is allowed to say | only when the grammar changes, and only with a migration |
+| **crate** | `Cargo.toml`, `tsare --version` | behaviour: which checks, commands and outputs exist | semver, below |
+
+The format number is the one that must not inflate. It is written in every document, so a new
+number means every document needs rewriting. It stays `1` while `2` does not exist, and the
+line may be omitted -- which is why the documents written before the line existed still compile
+unchanged. A document that declares a format this build does not speak gets `E-VERSION` and
+stops: one true error instead of a page of parse noise.
+
+The crate number may move as often as the work needs:
+
+- **major** -- a document that compiled now compiles differently, a command's output changes
+  shape, or an existing diagnostic moves or changes meaning. Before `1.0.0` this may happen
+  without notice; after it, this is the only thing permitted to break a promise.
+- **minor** -- a new check, command or field. Adding a diagnostic is minor: no document becomes
+  invalid, some documents gain a line of advice.
+- **patch** -- nothing observable: a message, a fix, a speedup.
+
+`1.0.0` ships when the **format** is frozen, not when the features are done. Features keep
+arriving afterwards; what stops is the rewriting of documents. A version is not a date and not a
+count of work: a number that rises because a week passed says nothing about what changed.
 
 ## Commands
 

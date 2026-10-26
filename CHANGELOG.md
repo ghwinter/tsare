@@ -6,6 +6,24 @@ All notable changes are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `W-COLLIDE`: two facts that record the same evidence and the same attributes are reported,
+  because nothing a machine can read tells them apart. A fact with no attributes never collides.
+- A document may declare its format on the first line, `tsare 1`. The line is optional and its
+  absence means format 1, so every existing document compiles unchanged. A document that
+  declares a newer format stops with `E-VERSION` instead of producing parse noise.
+- `--version` prints the crate version and the document format it speaks.
+- A release workflow: a `v*` tag whose number differs from `Cargo.toml` fails before anything is
+  published; `cargo package --locked` builds the exact package; publishing needs a token.
+
+### Changed
+
+- The tree tracks what the build, the tests or the package need, and nothing else: `src/`,
+  `tests/`, four root documents, `docs/PROTOCOL.md`, `docs/REPO.mf` and `SELF.mf`. The rounds of
+  documents, the examples, the experiment harness and the integration notes stay out of git.
+- `cargo package` carries the same list, so the published crate contains no stray README.
+
 ## [0.2.0] - 2026-10-26
 
 The version that can be published: one crate, no dependencies, MIT.

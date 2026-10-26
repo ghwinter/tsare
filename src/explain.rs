@@ -41,6 +41,7 @@ pub const CODES: &[&str] = &[
     "E-UNFALSIFIABLE",
     "E-UNGROUNDED",
     "E-VACUOUS",
+    "E-VERSION",
     "E-WARRANT-MODE",
     "E-WITNESS",
     "W-BY-MISMATCH",
@@ -147,6 +148,10 @@ pub fn explain(code: &str) -> Option<&'static str> {
             Fix: ground it in at least one fact.",
         "E-VACUOUS" => "A proposition names no concept and cites no premise, so it is anchored in nothing.\n\
             Fix: name the concepts it talks about, or the premises it rests on.",
+        "E-VERSION" => "The first line declares a document format this build cannot read.\n\
+            The document is not broken; the compiler is behind it.  A file with no such line is\n\
+            format 1, which is what every document written before the line existed is.\n\
+            Fix: use a build that speaks that format, or the format's migration command.",
         "E-WARRANT-MODE" => "A warrant must conclude exactly one of a named proposition or a class of them.\n\
             Fix: use `to:` for one conclusion, or `concludes:` for every match.",
         "E-WITNESS" => "A blind spot needs exactly two witnesses.\n\

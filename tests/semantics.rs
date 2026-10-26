@@ -534,6 +534,30 @@ fn a_warrant_is_ready_only_with_a_basis() {
 }
 
 #[test]
+fn a_document_declares_a_format_only_when_it_must() {
+    // no header: the first format, which is every document written before the line existed
+    assert!(parse("fact F { claim: \"x\", evidence: user }").is_ok());
+
+    // the header is read and consumed, and it does not shift a single line number
+    let declared = parse("tsare 1\nfact F { claim: \"x\", evidence: user }").expect("parse");
+    assert_eq!(declared.len(), 1);
+    assert_eq!(declared[0].line, 2);
+
+    // a newer format stops parsing: one true error beats a page of nonsense
+    let error = parse("tsare 2\nfact F { claim: \"x\", evidence: user }").unwrap_err();
+    assert_eq!(error.code, "E-VERSION");
+    assert!(error.message.contains("format 2"), "{}", error.message);
+    assert_eq!((error.line, error.col), (1, 1));
+
+    // a header with no number is still a header
+    let error = parse("tsare\nfact F { claim: \"x\", evidence: user }").unwrap_err();
+    assert_eq!(error.code, "E-VERSION");
+
+    // and a trailing comment on the line is allowed
+    assert!(parse("tsare 1 # the current format\nfact F { claim: \"x\", evidence: user }").is_ok());
+}
+
+#[test]
 fn the_self_document_compiles_without_errors() {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("SELF.mf");
     let text =

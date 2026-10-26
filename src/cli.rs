@@ -24,7 +24,7 @@ pub struct Loaded {
 
 fn syntax_diagnostic(file: &str, error: &syntax::ParseError) -> crate::check::Diagnostic {
     crate::check::Diagnostic {
-        code: "E-SYNTAX",
+        code: error.code,
         message: error.message.clone(),
         line: error.line,
         col: error.col,
@@ -1494,8 +1494,9 @@ fn cmd_kinds() -> i32 {
 
 fn usage() {
     println!(
-        "tsare {} — thought structure-assisted reasoning engine",
-        env!("CARGO_PKG_VERSION")
+        "tsare {} — thought structure-assisted reasoning engine (document format {})",
+        env!("CARGO_PKG_VERSION"),
+        crate::syntax::FORMAT_VERSION
     );
     println!();
     println!("usage: tsare [COMMAND] PATH [options]");
@@ -1687,8 +1688,9 @@ pub fn run() -> i32 {
     }
     if raw.iter().any(|arg| arg == "--version" || arg == "-V") {
         println!(
-            "tsare {} — thought structure-assisted reasoning engine",
-            env!("CARGO_PKG_VERSION")
+            "tsare {} (document format {})",
+            env!("CARGO_PKG_VERSION"),
+            crate::syntax::FORMAT_VERSION
         );
         return 0;
     }
