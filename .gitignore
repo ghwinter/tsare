@@ -2,38 +2,41 @@
 #
 # The rule is one sentence: **tracked iff the build, the tests or the published package need
 # it.** Prose, rounds of documents, experiment harnesses and their results stay on disk and in
-# history, not in the tree.  git will not remind you -- .github/workflows/ci.yml runs
-# `git status --porcelain` and fails on anything that is neither committed nor ignored.
+# history, not in the tree.
 #
-# Every allowlist line is anchored with a leading slash: an unanchored `!README.md` would also
-# un-ignore `docs/rounds/README.md`.
-*
-!*/
+# `/*` ignores the top level only.  That is deliberate: `*` would also ignore `src/check/`, and
+# git never descends into an ignored directory, so a new file two levels down would vanish
+# instead of showing up as untracked.  The `.github/workflows/ci.yml` step `git status
+# --porcelain` catches additions under an allowed tree; nothing can catch a file that git was
+# told not to look at.
+/*
+!/.gitattributes
+!/.gitignore
+!/.editorconfig
+!/rustfmt.toml
 
-/.gitattributes
-/.gitignore
-/.editorconfig
-/rustfmt.toml
+!/.cargo
+!/.github
+!/src
+!/tests
 
-/.cargo/
-/.github/
-
-/Cargo.toml
-/Cargo.lock
-
-/src/
-/tests/
+!/Cargo.toml
+!/Cargo.lock
 
 # The package front page and its licence, plus the documents code or tests read.
-/LICENSE
-/README.md
-/CHANGELOG.md
-/CONTRIBUTING.md
-/SELF.mf
-/docs/PROTOCOL.md
-/docs/REPO.mf
+!/LICENSE
+!/README.md
+!/CHANGELOG.md
+!/CONTRIBUTING.md
+!/SELF.mf
+!/docs
 
-# What the allowlist above would otherwise let through.
+# Inside docs/, only the two files a test or a code comment points at.
+/docs/*
+!/docs/PROTOCOL.md
+!/docs/REPO.mf
+
+# Junk, wherever it appears.
 __pycache__/
 *.pyc
 .venv/

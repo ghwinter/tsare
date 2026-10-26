@@ -1,5 +1,17 @@
+<fixtures>/relational.v2.mf:9:10: warning[W-COLLIDE]: F_A1 and F_A2 and F_B1 record the same evidence and the same attributes, so this vocabulary cannot tell them apart
+ 9 |   attrs: { strength: 1 }
+   |          ^^^^^^^^^^^^^^^
+
+<fixtures>/relational.v2.mf:15:10: warning[W-COLLIDE]: F_A2 and F_A1 and F_B1 record the same evidence and the same attributes, so this vocabulary cannot tell them apart
+ 15 |   attrs: { strength: 1 }
+    |          ^^^^^^^^^^^^^^^
+
+<fixtures>/relational.v2.mf:21:10: warning[W-COLLIDE]: F_B1 and F_A1 and F_A2 record the same evidence and the same attributes, so this vocabulary cannot tell them apart
+ 21 |   attrs: { strength: 1 }
+    |          ^^^^^^^^^^^^^^^
+
 <fixtures>/relational.v2.mf:59:10: warning[W-UNWARRANTED-BASIS]: warrant W_X states a rule, but nothing makes the rule acceptable
  59 |   claim: "B1 支持这条规则",
     |          ^^^^^^^^^^^
 
-0 error(s), 1 warning(s)
+0 error(s), 4 warning(s)

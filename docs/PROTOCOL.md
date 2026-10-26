@@ -171,6 +171,12 @@ These are decisions, not drift:
    reason when it is closed. The checks are `E-PARTITION-EMPTY`, `E-PARTITION-DUPLICATE`,
    `E-PARTITION-ELEMENT`, `E-PARTITION-CLOSED-CONTRADICTED`, `W-PARTITION-CLOSED-UNJUSTIFIED`
    and `W-PARTITION-OPEN-USED`.
+9. **Two facts can collide.** A fact records `evidence` and `attrs`; two facts that record the
+   same evidence and the same attributes are reported as `W-COLLIDE`, because nothing a machine
+   can read tells them apart -- the difference lives only in prose. It is a warning, not an
+   error: the tool does not decide that they must be merged, only that this vocabulary cannot
+   separate them. A fact with no attributes never collides, since the attribute table then says
+   nothing about it.
 
 ## What a partition does and does not check
 

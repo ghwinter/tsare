@@ -2,6 +2,7 @@
 
 use std::collections::{HashMap, HashSet};
 
+mod collide;
 mod confidence;
 mod partition;
 
@@ -261,6 +262,7 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
     check_semantics(decls, &mut out);
     check_remaining(decls, &mut out);
     confidence::check_confidence_flow(decls, &mut out);
+    collide::check_collide(decls, &mut out);
     check_tension(decls, &mut out);
     check_layer(decls, &mut out);
     let result = closure::closure(decls);

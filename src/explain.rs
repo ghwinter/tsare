@@ -45,6 +45,7 @@ pub const CODES: &[&str] = &[
     "E-WITNESS",
     "W-BY-MISMATCH",
     "W-COARSE",
+    "W-COLLIDE",
     "W-CONDITIONAL",
     "W-CONFIDENCE-ASSERTED",
     "W-CONFIDENCE-INFLATED",
@@ -154,6 +155,9 @@ pub fn explain(code: &str) -> Option<&'static str> {
             Fix: change `by`, or add the rule the declaration claims.",
         "W-COARSE" => "A question has fewer answers than the hypotheses it separates.\n\
             Fix: give each hypothesis an answer.",
+        "W-COLLIDE" => "Two facts record the same attributes, so this vocabulary cannot tell them apart.\n\
+            The document believes it holds two observations and the predicate table holds one.\n\
+            Fix: merge them, or record an attribute only one of them has.",
         "W-CONDITIONAL" => "A conclusion is supported only through a premise that never reaches a fact.\n\
             Fix: discharge the premise, or state the conclusion as conditional.",
         "W-CONFIDENCE-ASSERTED" => "A proposition carries a confidence but no rule computes it.\n\
