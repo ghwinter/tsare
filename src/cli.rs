@@ -540,6 +540,70 @@ fn cmd_next(path: &Path) -> i32 {
     0
 }
 
+fn cmd_ask(path: &Path) -> i32 {
+    let loaded = match load(path) {
+        Ok(loaded) => loaded,
+        Err(error) => return fail(error),
+    };
+    let program = Program::new(&loaded.decls);
+    let rows = crate::ask::plan(&program);
+    if rows.is_empty() {
+        println!("nothing to ask: no open list, and no pile");
+        return 0;
+    }
+    for row in &rows {
+        match row {
+            crate::ask::Row::Pile { partition, asks } => {
+                println!("{partition} (no dimension)");
+                if asks.is_empty() {
+                    println!("  nothing would ever type it: no question is attached");
+                } else {
+                    println!(
+                        "  ask: which concept do its elements share? -> {}",
+                        crate::ask::and_list(asks)
+                    );
+                }
+            }
+            crate::ask::Row::Open {
+                partition,
+                dimension,
+                listed,
+                extent,
+                gaps,
+            } => {
+                println!("{partition} (dimension {dimension}, lists {listed} of {extent})");
+                if gaps.is_empty() {
+                    println!("  nothing is missing; closing it needs a basis, not a question");
+                    continue;
+                }
+                for gap in gaps {
+                    println!("  {} is in the extent and not in the list", gap.fact);
+                    if gap.separates.is_empty() {
+                        println!(
+                            "    no recorded attribute separates it from {}",
+                            crate::ask::and_list(&gap.twins)
+                        );
+                        println!(
+                            "    the vocabulary is insufficient here; a new attribute is what would decide it"
+                        );
+                        continue;
+                    }
+                    for (key, value) in &gap.separates {
+                        if value == "(not recorded)" {
+                            println!("    ask: does it record {key}?  every listed element does");
+                        } else {
+                            println!(
+                                "    ask: does it record {key} = {value}?  no listed element does"
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+    0
+}
+
 fn cmd_cost(path: &Path, top: usize) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
@@ -1517,6 +1581,7 @@ fn usage() {
     println!("  debt PATH [--all]            which facts transitively gate a conclusion");
     println!("  impact PATH                  dead facts, single support, load-bearing nodes");
     println!("  next PATH                    open decisions, ranked by what they touch");
+    println!("  ask PATH                     the attribute that would decide an open list");
     println!("  cost PATH [--top N]          external confirmations the document demands");
     println!("  weigh PATH [--threshold X]   confidence propagated by min/max");
     println!("  fca PATH                     what a concept's examples share, and what they imply");
@@ -1569,6 +1634,7 @@ fn is_command(name: &str) -> bool {
             | "apply"
             | "impact"
             | "next"
+            | "ask"
             | "cost"
             | "weigh"
             | "cat"
@@ -1740,6 +1806,7 @@ pub fn run() -> i32 {
         "debt" => cmd_debt(&path, args.has("--all")),
         "impact" => cmd_impact(&path),
         "next" => cmd_next(&path),
+        "ask" => cmd_ask(&path),
         "cost" => cmd_cost(&path, args.count("--top", 8)),
         "weigh" => cmd_weigh(&path, args.number("--threshold", 0.7)),
         "cat" => cmd_cat(&path),

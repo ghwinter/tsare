@@ -116,6 +116,9 @@ const COMMANDS: &[(&str, &[&str])] = &[
     ("debt-all", &["--all"]),
     ("impact", &[]),
     ("next", &[]),
+    // `ask` is not in this matrix: no fixture has a gap or a pile, so its snapshot would be the
+    // same six times.  The test below pins the interesting case; the module's unit tests pin
+    // the rest.
     ("cost", &[]),
     ("weigh", &[]),
     ("cat", &[]),
@@ -228,4 +231,66 @@ fn map_aligns_every_pair() {
             golden(&format!("{}-{}.map", stem(left), stem(right)), &produced);
         }
     }
+}
+
+/// The help screen and the dispatch table are two lists, and a command that is only in the
+/// first is treated as a path: `tsare ask doc.mf` then says the file `ask` does not exist.
+/// This walks the help screen and fails on exactly that message.
+#[test]
+fn every_command_in_the_help_screen_is_dispatched() {
+    let help = run(&["--help"]);
+    let fixture = documents()[0].display().to_string();
+    // `mcp` speaks a protocol on standard input and would wait for a client here
+    let skip = ["mcp"];
+    let mut names: Vec<String> = Vec::new();
+    for line in help.lines() {
+        // command lines are indented exactly two spaces; the usage block is indented further
+        if !line.starts_with("  ") || line.starts_with("   ") {
+            continue;
+        }
+        let name = line.split_whitespace().next().unwrap_or("");
+        let shaped = !name.is_empty()
+            && name.chars().all(|c| c.is_ascii_lowercase() || c == '-')
+            && !skip.contains(&name);
+        if shaped {
+            names.push(name.to_string());
+        }
+    }
+    assert!(names.len() > 20, "the help screen lists the commands");
+    for name in names {
+        let output = Command::new(binary())
+            .args([name.as_str(), fixture.as_str()])
+            .output()
+            .expect("run the binary");
+        let text = format!(
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(
+            !text.contains("cannot find the file"),
+            "`{name}` is in --help but the dispatcher treated it as a path:\n{text}"
+        );
+    }
+}
+
+/// `ask` needs a document with a gap, and no fixture has one: the six fixtures all list a
+/// complete extent.  So the gap case is written here rather than added as a seventh fixture,
+/// which would multiply the snapshots of every other command.
+#[test]
+fn ask_names_the_attribute_that_would_decide_a_missing_element() {
+    let dir = std::env::temp_dir().join("engine-golden-ask");
+    std::fs::create_dir_all(&dir).expect("temp dir");
+    let path = dir.join("ask.mf");
+    std::fs::write(
+        &path,
+        r#"fact F_A { claim: "a", evidence: tool("t"), attrs: { kind: first } }
+fact F_B { claim: "b", evidence: tool("t"), attrs: { kind: first } }
+fact F_GAP { claim: "g", evidence: tool("t"), attrs: { kind: second } }
+concept C_THINGS { name: "things", grounded_by: [F_A, F_B, F_GAP] }
+partition P_SOME { dimension: C_THINGS, elements: [F_A, F_B], closure: open }
+"#,
+    )
+    .expect("write the document");
+    golden("ask.missing", &run(&["ask", &path.display().to_string()]));
 }

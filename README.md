@@ -92,6 +92,7 @@ Exit codes: `0` no errors, `1` errors found or a proposal refused, `2` a usage o
 | which conclusions survive attack, and which reach a fact? | `argue`, `derive`, `engine` |
 | which facts gate a conclusion, and how much external work does the document demand? | `debt`, `cost` |
 | what does a concept's examples share, and what do the attributes imply? | `fca` |
+| which attribute would decide the elements an open list does not cover? | `ask` |
 | which diagnostics have a machine repair, and which need a value only the author can choose? | `fix` |
 | are two documents the same argument? | `map` |
 | what does the checked document oblige, and what did it learn? | `build` |

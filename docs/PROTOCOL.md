@@ -49,6 +49,7 @@ answers `--json`.
 | `debt FILE [--all]` | which facts transitively gate a conclusion | |
 | `impact FILE` | dead facts, single support, load-bearing nodes | |
 | `next FILE` | open decisions ranked by what they touch | |
+| `ask FILE` | the recorded attribute that would decide an open list's missing elements | |
 | `cost FILE` | external confirmations the document demands, and its longest chain | |
 | `weigh FILE` | confidence propagated by min/max, with no probability | |
 | `kinds` | the obligation table: what each kind owes | |
