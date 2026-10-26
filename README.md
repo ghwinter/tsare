@@ -23,6 +23,11 @@ The binary is 0.6 MB, links no runtime beyond the OS, and needs no interpreter:
 ```
 
 `check`, `engine`, `suggest` answer `--json` for machines; every other command prints text.
+A path may be `-`: the document arrives on standard input, which is what an editor or a CI
+step passes.
+
+Exit codes: `0` no errors (warnings are allowed), `1` errors found or a proposal refused,
+`2` a usage problem or a file that could not be read. `--help` lists every command.
 
 ## Explain a diagnostic
 
