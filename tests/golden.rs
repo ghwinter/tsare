@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 fn binary() -> &'static str {
-    env!("CARGO_BIN_EXE_cogent")
+    env!("CARGO_BIN_EXE_tsare")
 }
 
 fn fixtures() -> PathBuf {

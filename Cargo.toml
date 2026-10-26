@@ -1,5 +1,5 @@
 [package]
-name = "cogent-lang"
+name = "tsare"
 version = "0.2.0"
 edition = "2021"
 rust-version = "1.85"
@@ -19,11 +19,11 @@ include = [
 ]
 
 [lib]
-# the library keeps the short name, so `cogent::check` reads as it should
-name = "cogent"
+# the library keeps the short name, so `tsare::check` reads as it should
+name = "tsare"
 
 [[bin]]
-name = "cogent"
+name = "tsare"
 path = "src/main.rs"
 
 
@@ -41,6 +41,7 @@ codegen-units = 1
 strip = true
 
 [dependencies]
+
 
 
 

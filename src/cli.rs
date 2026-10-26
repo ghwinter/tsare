@@ -1494,12 +1494,12 @@ fn cmd_kinds() -> i32 {
 
 fn usage() {
     println!(
-        "cogent {} — an external reasoning engine for AI agents",
+        "tsare {} — thought structure-assisted reasoning engine",
         env!("CARGO_PKG_VERSION")
     );
     println!();
-    println!("usage: cogent [COMMAND] PATH [options]");
-    println!("       cogent kinds | mem | --explain CODE | --version | --help");
+    println!("usage: tsare [COMMAND] PATH [options]");
+    println!("       tsare kinds | mem | --explain CODE | --version | --help");
     println!();
     println!("PATH is a .mf document, a directory of them, or - for standard input.");
     println!();
@@ -1670,7 +1670,7 @@ pub fn run() -> i32 {
     let raw: Vec<String> = std::env::args().skip(1).collect();
     if let Some(position) = raw.iter().position(|arg| arg == "--explain") {
         let Some(code) = raw.get(position + 1) else {
-            println!("usage: cogent --explain CODE");
+            println!("usage: tsare --explain CODE");
             return 2;
         };
         return match crate::explain::explain(code) {
@@ -1687,7 +1687,7 @@ pub fn run() -> i32 {
     }
     if raw.iter().any(|arg| arg == "--version" || arg == "-V") {
         println!(
-            "cogent {} — an external reasoning engine for AI agents",
+            "tsare {} — thought structure-assisted reasoning engine",
             env!("CARGO_PKG_VERSION")
         );
         return 0;
@@ -1718,7 +1718,7 @@ pub fn run() -> i32 {
         return cmd_mem(recall, args.count("--k", 3));
     }
     let Some(target) = args.at(0) else {
-        println!("usage: cogent {command} FILE");
+        println!("usage: tsare {command} FILE");
         return 2;
     };
     let path = PathBuf::from(target);
@@ -1747,7 +1747,7 @@ pub fn run() -> i32 {
         "egraph" => cmd_egraph(&path, args.option("--write")),
         "whatif" => {
             let Some(name) = args.at(1) else {
-                println!("usage: cogent whatif FILE NAME");
+                println!("usage: tsare whatif FILE NAME");
                 return 2;
             };
             cmd_whatif(&path, name)
@@ -1756,7 +1756,7 @@ pub fn run() -> i32 {
         "fix" => cmd_fix(&path, args.option("--apply")),
         "map" => {
             let Some(right) = args.at(1) else {
-                println!("usage: cogent map LEFT RIGHT");
+                println!("usage: tsare map LEFT RIGHT");
                 return 2;
             };
             cmd_map(&path, Path::new(right), args.count("--top", 8))
@@ -1764,7 +1764,7 @@ pub fn run() -> i32 {
         "induce" => cmd_induce(&path),
         "propose" => {
             let Some(proposals) = args.option("--proposals") else {
-                println!("usage: cogent propose FILE --proposals FILE.json [--apply]");
+                println!("usage: tsare propose FILE --proposals FILE.json [--apply]");
                 return 2;
             };
             cmd_propose(
@@ -1777,7 +1777,7 @@ pub fn run() -> i32 {
         "fca" => cmd_fca(&path),
         "pattern" => {
             let Some(name) = args.at(1) else {
-                println!("usage: cogent pattern FILE CONCEPT");
+                println!("usage: tsare pattern FILE CONCEPT");
                 return 2;
             };
             cmd_pattern(&path, name, args.has("--vars"))
@@ -1794,5 +1794,3 @@ pub fn run() -> i32 {
         }
     }
 }
-
-

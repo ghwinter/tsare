@@ -1,5 +1,5 @@
-use cogent::check;
-use cogent::syntax::parse;
+use tsare::check;
+use tsare::syntax::parse;
 
 #[test]
 fn parses_a_fact() {

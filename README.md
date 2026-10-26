@@ -13,7 +13,7 @@ It does not judge truth. It judges whether a claim is checkable, and prints the 
 that would make it so.
 
 ```powershell
-$ cogent check SELF.mf
+$ tsare check SELF.mf
 
 SELF.mf:13:13: warning[W-UNCONFIRMED]: fact F_ENUM_FORM was supplied by a model, not by the user or a tool
  13 |   evidence: model
@@ -31,9 +31,9 @@ installs is one line long: write the claim, compile it, report only what compile
 the refusals with the corrected version.
 
 ```powershell
-cogent check claim.mf        # what is wrong with it
-cogent fix claim.mf          # the smallest edits that would fix it
-cogent --explain E-VACUOUS   # what a diagnostic means
+tsare check claim.mf        # what is wrong with it
+tsare fix claim.mf          # the smallest edits that would fix it
+tsare --explain E-VACUOUS   # what a diagnostic means
 ```
 
 Nothing model-shaped is inside the binary: proposal is the agent's job, verification is the
@@ -44,10 +44,10 @@ confirms.
 
 ```powershell
 cargo install --path .
-cogent --help
+tsare --help
 ```
 
-One binary, no dependencies, no runtime beyond the OS. `cogent --version` reports the
+One binary, no dependencies, no runtime beyond the OS. `tsare --version` reports the
 release; `--explain CODE` explains any diagnostic it prints.
 
 ## First document
@@ -76,9 +76,9 @@ warrant W_FAST {
 ```
 
 ```powershell
-cogent check examples\hello.mf      # 0 error(s), 0 warning(s)
-cogent engine examples\inquiry.mf   # held, conditional, blocked
-Get-Content SELF.mf | cogent check -   # a document may arrive on stdin
+tsare check examples\hello.mf      # 0 error(s), 0 warning(s)
+tsare engine examples\inquiry.mf   # held, conditional, blocked
+Get-Content SELF.mf | tsare check -   # a document may arrive on stdin
 ```
 
 `check`, `engine` and `suggest` answer `--json` for machines; every other command prints text.
@@ -140,6 +140,8 @@ SELF.mf         the repository, written as declarations
 ## License
 
 MIT.
+
+
 
 
 

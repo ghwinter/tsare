@@ -1,3 +1,3 @@
 fn main() {
-    std::process::exit(cogent::cli::run());
+    std::process::exit(tsare::cli::run());
 }

@@ -152,7 +152,7 @@ pub fn serve() -> i32 {
             "initialize" => reply(
                 &id,
                 format!(
-                    "{{\"protocolVersion\":\"2025-06-18\",\"capabilities\":{{\"tools\":{{}}}},\"serverInfo\":{{\"name\":\"cogent\",\"version\":\"{}\"}}}}",
+                    "{{\"protocolVersion\":\"2025-06-18\",\"capabilities\":{{\"tools\":{{}}}},\"serverInfo\":{{\"name\":\"tsare\",\"version\":\"{}\"}}}}",
                     env!("CARGO_PKG_VERSION")
                 ),
             ),
