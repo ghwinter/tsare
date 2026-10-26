@@ -10,18 +10,26 @@ pub struct Session {
     diagnostics: Vec<Diagnostic>,
     /// The document being reported on, when there is exactly one.
     source: Option<String>,
+    /// One entry per file, when there are several: a directory is reported file by file.
+    sources: Vec<(String, String)>,
     display: String,
 }
 
 impl Session {
     pub fn new(display: impl Into<String>) -> Self {
-        Session { diagnostics: Vec::new(), source: None, display: display.into() }
+        Session { diagnostics: Vec::new(), source: None, sources: Vec::new(), display: display.into() }
     }
 
     pub fn with_source(mut self, source: &str) -> Self {
         if !source.is_empty() {
             self.source = Some(source.to_string());
         }
+        self
+    }
+
+    /// Report a directory: each file is rendered against its own text.
+    pub fn with_sources(mut self, sources: &[(String, String)]) -> Self {
+        self.sources = sources.to_vec();
         self
     }
 
@@ -84,6 +92,31 @@ impl Session {
 
     /// Text output: rendered against the source when the session has one, flat otherwise.
     pub fn text(&self) -> String {
+        if !self.sources.is_empty() {
+            let mut out = String::new();
+            for (name, text) in &self.sources {
+                let mine: Vec<Diagnostic> =
+                    self.sorted().into_iter().filter(|item| &item.file == name).cloned().collect();
+                if mine.is_empty() {
+                    continue;
+                }
+                out.push_str(&crate::render::render(text, name, &mine));
+            }
+            // a diagnostic that belongs to no loaded file still gets printed
+            let inside = |item: &Diagnostic| self.sources.iter().any(|(name, _)| &item.file == name);
+            for item in self.sorted() {
+                if !inside(item) {
+                    out.push_str(&format!(
+                        "  {} {}:{} {}\n",
+                        item.code,
+                        self.file_of(item),
+                        item.line,
+                        item.message
+                    ));
+                }
+            }
+            return out;
+        }
         match &self.source {
             Some(text) if self.diagnostics.iter().all(|item| item.file.is_empty()) => {
                 crate::render::render(text, &self.display, &self.diagnostics)

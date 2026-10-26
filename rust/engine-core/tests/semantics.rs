@@ -566,6 +566,38 @@ fn a_session_owns_order_counts_and_shape() {
 }
 
 #[test]
+fn a_directory_is_rendered_file_by_file() {
+    let sources = vec![
+        ("a.mf".to_string(), "fact F_A { claim: \"x\" }\n".to_string()),
+        ("b.mf".to_string(), "fact F_B { claim: \"y\" }\n".to_string()),
+    ];
+    let mut session = engine_core::session::Session::new("dir").with_sources(&sources);
+    session.emit(engine_core::check::Diagnostic {
+        code: "E-TYPE",
+        message: "b is wrong".to_string(),
+        line: 1,
+        col: 18,
+        end_line: 1,
+        end_col: 21,
+        file: "b.mf".to_string(),
+    });
+    session.emit(engine_core::check::Diagnostic {
+        code: "E-MISSING",
+        message: "a is incomplete".to_string(),
+        line: 1,
+        col: 1,
+        end_line: 1,
+        end_col: 4,
+        file: "a.mf".to_string(),
+    });
+    let text = session.text();
+    assert!(text.contains("b.mf:1:18: error[E-TYPE]"), "{text}");
+    assert!(text.contains("a.mf:1:1: error[E-MISSING]"), "{text}");
+    assert!(text.contains("claim"), "the source line is printed for each file: {text}");
+    assert!(text.find("a.mf").unwrap() < text.find("b.mf").unwrap(), "files in load order");
+}
+
+#[test]
 fn every_code_the_compiler_prints_has_an_explanation() {
     let golden = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests").join("fixtures").join("golden");
     let mut codes: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();

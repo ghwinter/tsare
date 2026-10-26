@@ -16,6 +16,9 @@ pub struct Loaded {
     pub path: PathBuf,
     /// A document that does not parse has no declarations, but it does have a diagnostic.
     pub syntax: Vec<crate::check::Diagnostic>,
+    /// One entry per file when the path is a directory, so each diagnostic can be rendered
+    /// against its own source.
+    pub sources: Vec<(String, String)>,
 }
 
 fn syntax_diagnostic(file: &str, error: &syntax::ParseError) -> crate::check::Diagnostic {
@@ -42,9 +45,11 @@ pub fn load_for_check(path: &Path) -> Result<Loaded, String> {
         files.sort();
         let mut decls = Vec::new();
         let mut syntax_errors = Vec::new();
+        let mut sources: Vec<(String, String)> = Vec::new();
         for file in &files {
             let source = fs::read_to_string(file).map_err(|error| format!("{}: {error}", file.display()))?;
             let name = file.file_name().unwrap_or_default().to_string_lossy().to_string();
+            sources.push((name.clone(), source.clone()));
             let (mut parsed, errors) = syntax::parse_recovering(&source);
             for decl in &mut parsed {
                 decl.file = name.clone();
@@ -54,13 +59,13 @@ pub fn load_for_check(path: &Path) -> Result<Loaded, String> {
                 syntax_errors.push(syntax_diagnostic(&name, error));
             }
         }
-        return Ok(Loaded { decls, text: String::new(), path: path.to_path_buf(), syntax: syntax_errors });
+        return Ok(Loaded { decls, text: String::new(), path: path.to_path_buf(), syntax: syntax_errors, sources });
     }
     let text = fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
     let (decls, errors) = syntax::parse_recovering(&text);
     let syntax_errors: Vec<crate::check::Diagnostic> =
         errors.iter().map(|error| syntax_diagnostic("", error)).collect();
-    Ok(Loaded { decls, text, path: path.to_path_buf(), syntax: syntax_errors })
+    Ok(Loaded { decls, text, path: path.to_path_buf(), syntax: syntax_errors, sources: Vec::new() })
 }
 
 pub fn load(path: &Path) -> Result<Loaded, String> {
@@ -149,7 +154,7 @@ fn cmd_check(
         };
         let expanded = crate::sugar::expand(&raw);
         match syntax::parse(&expanded) {
-            Ok(decls) => Loaded { decls, text: expanded, path: path.to_path_buf(), syntax: Vec::new() },
+            Ok(decls) => Loaded { decls, text: expanded, path: path.to_path_buf(), syntax: Vec::new(), sources: Vec::new() },
             Err(error) => return fail(format!("{}: {error}", path.display())),
         }
     } else {
@@ -159,7 +164,9 @@ fn cmd_check(
         }
     };
     let display = path.display().to_string();
-    let mut session = crate::session::Session::new(display).with_source(&loaded.text);
+    let mut session = crate::session::Session::new(display)
+        .with_source(&loaded.text)
+        .with_sources(&loaded.sources);
     session.extend(loaded.syntax.clone());
     let mut coverage = None;
     if loaded.syntax.is_empty() {
@@ -1422,6 +1429,8 @@ pub fn run() -> i32 {
         }
     }
 }
+
+
 
 
 
