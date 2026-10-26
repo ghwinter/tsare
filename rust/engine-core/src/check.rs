@@ -630,6 +630,44 @@ fn check_semantics(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                         out,
                     );
                 }
+                // `by` is a claim about the inference, so the structure has to support it:
+                // a rule makes it deduction, concepts without a rule make it induction.
+                if let Some(declared) = id_field(decl, "by") {
+                    let concluded = decls.iter().any(|other| {
+                        other.kind == "warrant" && id_field(other, "to") == Some(decl.name.as_str())
+                    });
+                    let explained = decls.iter().any(|other| {
+                        other.kind == "hypothesis"
+                            && list_field(other, "assumes").iter().any(|name| name == &decl.name)
+                    });
+                    let derived = if concluded {
+                        "deductive"
+                    } else if !uses.is_empty() {
+                        "inductive"
+                    } else if explained {
+                        "abductive"
+                    } else {
+                        "none"
+                    };
+                    if derived != declared {
+                        sem(
+                            decl,
+                            "W-BY-MISMATCH",
+                            format!(
+                                "proposition {} is declared {declared}, but its structure is {derived}: {}",
+                                decl.name,
+                                match derived {
+                                    "deductive" => "a warrant concludes it, which is deduction",
+                                    "inductive" => "it generalises concepts and no rule concludes it",
+                                    "abductive" => "a hypothesis takes it as an assumption and no rule concludes it",
+                                    _ => "nothing concludes it and it generalises nothing",
+                                }
+                            ),
+                            Some("by"),
+                            out,
+                        );
+                    }
+                }
                 if decl.fields.iter().any(|(key, _)| key == "confidence") && !warranty_targets.contains(&decl.name) {
                     sem(
                         decl,

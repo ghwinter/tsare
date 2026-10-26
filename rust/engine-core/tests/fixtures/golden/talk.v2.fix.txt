@@ -1,7 +1,6 @@
-before: 0 errors, 6 warnings (holes not counted)
-no verified candidate reduces this
+before: 0 errors, 7 warnings (holes not counted)
+  + P_IMPORTANT: add a warrant over its premises  (+0 errors, -1 warnings)
 candidates that do not pay:
   - F_MULTI: add `scope: ?`  (no gain: +0 errors, +0 warnings)
   - F_COMP: add `scope: ?`  (no gain: +0 errors, +0 warnings)
-  - P_IMPORTANT: add a warrant over its premises  (no gain: +0 errors, +0 warnings)
-  - P_ELEGANT: add a warrant over its premises  (no gain: +0 errors, +0 warnings)
+  - P_ELEGANT: add a warrant over its premises  (no gain: +0 errors, +1 warnings)
