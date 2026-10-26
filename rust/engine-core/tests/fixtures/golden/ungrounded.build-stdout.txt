@@ -1,4 +1,7 @@
-  W-CONDITIONAL <fixtures>/ungrounded.mf:21 P_SMOOTH is supported only through an ungrounded premise: W_RENDER needs P_THRESHOLD (asserted)
+<fixtures>/ungrounded.mf:21:1: warning[W-CONDITIONAL]: P_SMOOTH is supported only through an ungrounded premise: W_RENDER needs P_THRESHOLD (asserted)
+ 21 | proposition P_SMOOTH {
+    | ^
+
 0 error(s), 1 warning(s)
 emitted <temp>engine-golden-build-ungrounded/OBLIGATIONS.md
 emitted <temp>engine-golden-build-ungrounded/LEARNED.md

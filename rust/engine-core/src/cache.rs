@@ -58,6 +58,8 @@ pub fn restore(payload: &Json) -> Vec<Diagnostic> {
                         message: message.to_string(),
                         line,
                         col,
+                        end_line: line,
+                        end_col: col,
                         file: String::new(),
                     })
                 })
@@ -84,3 +86,4 @@ pub fn save(entries: &[(String, Json)]) -> std::io::Result<()> {
     let fields: Vec<(String, Json)> = entries.to_vec();
     std::fs::write(path, json::serialize(&Json::Obj(fields)))
 }
+

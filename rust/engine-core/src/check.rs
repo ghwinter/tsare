@@ -21,11 +21,21 @@ pub struct Diagnostic {
     pub message: String,
     pub line: usize,
     pub col: usize,
+    pub end_line: usize,
+    pub end_col: usize,
     pub file: String,
 }
 
 fn diag(code: &'static str, message: String, decl: &Decl) -> Diagnostic {
-    Diagnostic { code, message, line: decl.line, col: decl.col, file: decl.file.clone() }
+    Diagnostic {
+        code,
+        message,
+        line: decl.line,
+        col: decl.col,
+        end_line: decl.end_line,
+        end_col: decl.end_col,
+        file: decl.file.clone(),
+    }
 }
 
 /// Codes live as `&'static str` so comparisons are cheap; a replayed code is interned here.
@@ -109,11 +119,11 @@ fn check_record(decl: &Decl, out: &mut Vec<Diagnostic>) {
         return;
     };
     for (index, (key, value)) in decl.fields.iter().enumerate() {
-        let (line, col) = decl
+        let (line, col, end_line, end_col) = decl
             .field_span
             .get(index)
-            .map(|span| (span.0, span.1))
-            .unwrap_or((decl.line, decl.col));
+            .copied()
+            .unwrap_or((decl.line, decl.col, decl.end_line, decl.end_col));
         match fields.iter().find(|(name, _, _)| name == key) {
             Some((_, ftype, _)) => {
                 if matches!(value, Val::Hole) {
@@ -122,6 +132,8 @@ fn check_record(decl: &Decl, out: &mut Vec<Diagnostic>) {
                         message: format!("{}.{key} is a hole: it compiles, but nothing can check it yet", decl.name),
                         line,
                         col,
+                        end_line,
+                        end_col,
                         file: decl.file.clone(),
                     });
                 }
@@ -131,6 +143,8 @@ fn check_record(decl: &Decl, out: &mut Vec<Diagnostic>) {
                         message: format!("{}.{key}: expected {ftype}", decl.name),
                         line,
                         col,
+                        end_line,
+                        end_col,
                         file: decl.file.clone(),
                     });
                 }
@@ -140,6 +154,8 @@ fn check_record(decl: &Decl, out: &mut Vec<Diagnostic>) {
                 message: format!("{} has no field {key}", decl.kind),
                 line,
                 col,
+                end_line,
+                end_col,
                 file: decl.file.clone(),
             }),
         }
@@ -162,6 +178,8 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
             message: "the document declares nothing, so there is nothing to check".to_string(),
             line: 1,
             col: 1,
+            end_line: 1,
+            end_col: 1,
             file: String::new(),
         });
     }
@@ -266,13 +284,24 @@ fn expected_kind(decl: &Decl, key: &str) -> Option<String> {
 }
 
 fn diag_ref(code: &'static str, message: String, decl: &Decl, key: &str, name: &str) -> Diagnostic {
-    let (line, col) = decl
+    let (line, col, end_col) = decl
         .ref_pos
         .iter()
         .find(|(item, _, _, _)| item == name)
-        .map(|(_, line, col, _)| (*line, *col))
-        .unwrap_or_else(|| field_pos(decl, key));
-    Diagnostic { code, message, line, col, file: decl.file.clone() }
+        .map(|(_, line, col, end_col)| (*line, *col, *end_col))
+        .unwrap_or_else(|| {
+            let (line, col) = field_pos(decl, key);
+            (line, col, col + name.chars().count())
+        });
+    Diagnostic {
+        code,
+        message,
+        line,
+        col,
+        end_line: line,
+        end_col,
+        file: decl.file.clone(),
+    }
 }
 
 fn check_cycles(decls: &[Decl], out: &mut Vec<Diagnostic>) {
@@ -509,11 +538,24 @@ fn attr_keys(decl: &Decl) -> HashSet<String> {
 }
 
 fn sem(decl: &Decl, code: &'static str, message: String, key: Option<&str>, out: &mut Vec<Diagnostic>) {
-    let (line, col) = match key {
-        Some(name) => field_pos(decl, name),
-        None => (decl.line, decl.col),
+    let (line, col, end_line, end_col) = match key {
+        Some(name) => decl
+            .fields
+            .iter()
+            .position(|(field, _)| field == name)
+            .and_then(|index| decl.field_span.get(index).copied())
+            .unwrap_or((decl.line, decl.col, decl.end_line, decl.end_col)),
+        None => (decl.line, decl.col, decl.end_line, decl.end_col),
     };
-    out.push(Diagnostic { code, message, line, col, file: decl.file.clone() });
+    out.push(Diagnostic {
+        code,
+        message,
+        line,
+        col,
+        end_line,
+        end_col,
+        file: decl.file.clone(),
+    });
 }
 
 fn is_incomplete(decl: &Decl) -> bool {

@@ -1,10 +1,31 @@
-  W-OVERCLAIM <fixtures>/talk.v2.mf:12 fact F_MULTI is a universal claim with no scope
-  W-OVERCLAIM <fixtures>/talk.v2.mf:24 fact F_COMP is a universal claim with no scope
-  W-UNWARRANTED <fixtures>/talk.v2.mf:80 proposition P_IMPORTANT cites premises, but no rule connects them to it
-  W-BY-MISMATCH <fixtures>/talk.v2.mf:81 proposition P_IMPORTANT is declared deductive, but its structure is inductive: it generalises concepts and no rule concludes it
-  W-UNWARRANTED <fixtures>/talk.v2.mf:92 proposition P_ELEGANT cites premises, but no rule connects them to it
-  W-NO-EXIT <fixtures>/talk.v2.mf:129 blindspot B_PLAN closes no question, so nothing will ever resolve it
-  W-NO-EXIT <fixtures>/talk.v2.mf:135 blindspot B_IS_OUGHT closes no question, so nothing will ever resolve it
+<fixtures>/talk.v2.mf:12:10: warning[W-OVERCLAIM]: fact F_MULTI is a universal claim with no scope
+ 12 |   claim: "40 人里的 12 人点名多选，竞品都没有做",
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^
+
+<fixtures>/talk.v2.mf:24:10: warning[W-OVERCLAIM]: fact F_COMP is a universal claim with no scope
+ 24 |   claim: "三个竞品都有暗色模式",
+    |          ^^^^^^^^^^^^
+
+<fixtures>/talk.v2.mf:80:9: warning[W-UNWARRANTED]: proposition P_IMPORTANT cites premises, but no rule connects them to it
+ 80 |   from: [F_DARK],
+    |         ^^^^^^^^
+
+<fixtures>/talk.v2.mf:81:7: warning[W-BY-MISMATCH]: proposition P_IMPORTANT is declared deductive, but its structure is inductive: it generalises concepts and no rule concludes it
+ 81 |   by: deductive
+    |       ^^^^^^^^^
+
+<fixtures>/talk.v2.mf:92:9: warning[W-UNWARRANTED]: proposition P_ELEGANT cites premises, but no rule connects them to it
+ 92 |   from: [F_CONTRAST_OK, F_THEME_FAST],
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+<fixtures>/talk.v2.mf:129:19: warning[W-NO-EXIT]: blindspot B_PLAN closes no question, so nothing will ever resolve it
+ 129 |   cannot_express: "先做哪个：两个功能都有人点名，谁先谁后没有词能表达",
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+<fixtures>/talk.v2.mf:135:19: warning[W-NO-EXIT]: blindspot B_IS_OUGHT closes no question, so nothing will ever resolve it
+ 135 |   cannot_express: "从竞品有推出我们应该有",
+     |                   ^^^^^^^^^^^^^
+
 0 error(s), 7 warning(s)
 emitted <temp>engine-golden-build-talk.v2/OBLIGATIONS.md
 emitted <temp>engine-golden-build-talk.v2/LEARNED.md

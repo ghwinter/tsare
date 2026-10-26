@@ -1,4 +1,5 @@
-declarations: 12
-diagnostics: 1
-  W-UNWARRANTED-BASIS <fixtures>/relational.v2.mf:59 warrant W_X states a rule, but nothing makes the rule acceptable
+<fixtures>/relational.v2.mf:59:10: warning[W-UNWARRANTED-BASIS]: warrant W_X states a rule, but nothing makes the rule acceptable
+ 59 |   claim: "B1 支持这条规则",
+    |          ^^^^^^^^^^^
+
 0 error(s), 1 warning(s)

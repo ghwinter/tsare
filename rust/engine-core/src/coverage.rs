@@ -103,6 +103,9 @@ pub fn diagnostics(goals: &[Goal]) -> Vec<Diagnostic> {
         ),
         line: 1,
         col: 1,
+        end_line: 1,
+        end_col: 1,
         file: String::new(),
     }]
 }
+

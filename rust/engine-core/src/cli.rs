@@ -112,12 +112,32 @@ fn report(diagnostics: &[crate::check::Diagnostic]) -> i32 {
     }
 }
 
-fn text_diagnostics(diagnostics: &[crate::check::Diagnostic], fallback: &str) -> i32 {
-    let mut sorted = diagnostics.to_vec();
-    sorted.sort_by_key(|item| (item.file.clone(), item.line, item.col, item.code));
-    for item in &sorted {
-        let file = if item.file.is_empty() { fallback.to_string() } else { item.file.clone() };
-        println!("  {} {}:{} {}", item.code, file, item.line, item.message);
+/// Text output: rendered against the source when there is one, flat otherwise (a directory
+/// has many sources, and each diagnostic already carries its file).
+fn text_diagnostics(
+    diagnostics: &[crate::check::Diagnostic],
+    fallback: &str,
+    source: Option<&str>,
+) -> i32 {
+    match source {
+        Some(text) if !text.is_empty() => {
+            let local: Vec<crate::check::Diagnostic> =
+                diagnostics.iter().filter(|item| item.file.is_empty()).cloned().collect();
+            if !local.is_empty() {
+                print!("{}", crate::render::render(text, fallback, &local));
+            }
+            for item in diagnostics.iter().filter(|item| !item.file.is_empty()) {
+                println!("  {} {}:{} {}", item.code, item.file, item.line, item.message);
+            }
+        }
+        _ => {
+            let mut sorted = diagnostics.to_vec();
+            sorted.sort_by_key(|item| (item.file.clone(), item.line, item.col, item.code));
+            for item in &sorted {
+                let file = if item.file.is_empty() { fallback.to_string() } else { item.file.clone() };
+                println!("  {} {}:{} {}", item.code, file, item.line, item.message);
+            }
+        }
     }
     report(diagnostics)
 }
@@ -201,17 +221,21 @@ fn cmd_check(
         println!("{}", diagnostics_json(&diagnostics, &path.display().to_string()));
         return if error_count(&diagnostics) > 0 { 1 } else { 0 };
     }
-    println!("declarations: {}", loaded.decls.len());
-    println!("diagnostics: {}", diagnostics.len());
-    let mut sorted = diagnostics.clone();
-    sorted.sort_by_key(|item| (item.file.clone(), item.line, item.col, item.code));
-    for item in &sorted {
-        let file = if item.file.is_empty() {
-            path.display().to_string()
-        } else {
-            item.file.clone()
-        };
-        println!("  {} {}:{} {}", item.code, file, item.line, item.message);
+    // A single document is rendered against its own source; a directory is listed flat,
+    // because each diagnostic already carries the file it belongs to.
+    if loaded.text.is_empty() || diagnostics.iter().any(|item| !item.file.is_empty()) {
+        let mut sorted = diagnostics.clone();
+        sorted.sort_by_key(|item| (item.file.clone(), item.line, item.col, item.code));
+        for item in &sorted {
+            let file = if item.file.is_empty() {
+                path.display().to_string()
+            } else {
+                item.file.clone()
+            };
+            println!("  {} {}:{} {}", item.code, file, item.line, item.message);
+        }
+    } else {
+        print!("{}", crate::render::render(&loaded.text, &path.display().to_string(), &diagnostics));
     }
     if let Some(goals_file) = goals_path {
         if let Ok(text) = fs::read_to_string(goals_file) {
@@ -959,7 +983,7 @@ fn cmd_build(path: &Path, out: &str, goals_path: Option<&str>) -> i32 {
     }
 
     let diagnostics = crate::check::check(&loaded.decls);
-    text_diagnostics(&diagnostics, &path.display().to_string());
+    text_diagnostics(&diagnostics, &path.display().to_string(), Some(&loaded.text));
     let mut goals = None;
     let mut all = diagnostics.clone();
     if let Some(goals_file) = goals_path {
@@ -1332,6 +1356,10 @@ impl Args {
 
 pub fn run() -> i32 {
     let raw: Vec<String> = std::env::args().skip(1).collect();
+    if raw.iter().any(|arg| arg == "--version" || arg == "-V") {
+        println!("engine-core {} — a compiler for checkable claims", env!("CARGO_PKG_VERSION"));
+        return 0;
+    }
     if raw.is_empty() || raw.iter().any(|arg| arg == "--help" || arg == "-h") {
         usage();
         return 0;
@@ -1417,6 +1445,8 @@ pub fn run() -> i32 {
         }
     }
 }
+
+
 
 
 
