@@ -20,7 +20,18 @@ pub struct Proposal {
 pub enum Verdict {
     /// Nothing got worse and the hole is gone. `errors` below zero means an error went too.
     Admitted { errors: isize, warnings: isize, text: String },
+    /// No error was added, but the fill introduced a diagnostic that was not there before.
+    /// A human should look: the compiler can say "new problem", not "which of the two is right".
+    NeedsReview { codes: Vec<&'static str>, text: String },
     Rejected { reason: String },
+}
+
+fn code_counts(decls: &[Decl]) -> std::collections::HashMap<&'static str, usize> {
+    let mut counts = std::collections::HashMap::new();
+    for item in crate::check::check(decls) {
+        *counts.entry(item.code).or_insert(0) += 1;
+    }
+    counts
 }
 
 pub fn verify(text: &str, decls: &[Decl], proposal: &Proposal) -> Verdict {
@@ -60,6 +71,20 @@ pub fn verify(text: &str, decls: &[Decl], proposal: &Proposal) -> Verdict {
     }
     if candidate == text {
         return Verdict::Rejected { reason: "changes nothing".to_string() };
+    }
+
+    let Ok(updated) = crate::syntax::parse(&candidate) else {
+        return Verdict::Rejected { reason: "the value does not parse".to_string() };
+    };
+    let old = code_counts(decls);
+    let new = code_counts(&updated);
+    let introduced: Vec<&'static str> = new
+        .iter()
+        .filter(|(code, count)| **count > old.get(*code).copied().unwrap_or(0))
+        .map(|(code, _)| *code)
+        .collect();
+    if !introduced.is_empty() {
+        return Verdict::NeedsReview { codes: introduced, text: candidate };
     }
     Verdict::Admitted { errors, warnings, text: candidate }
 }

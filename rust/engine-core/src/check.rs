@@ -80,14 +80,24 @@ fn type_ok(ftype: &str, value: &Val) -> bool {
     match ftype {
         "str" => matches!(value, Val::Str(_)),
         "num" => matches!(value, Val::Num(_)),
-        "attrs" | "rec:any" => matches!(value, Val::Rec(_)),
+        "rec:any" => matches!(value, Val::Rec(_)),
+        "attrs" => match value {
+            Val::Rec(fields) => fields
+                .iter()
+                .all(|(_, item)| matches!(item, Val::Str(_) | Val::Num(_) | Val::Id(_))),
+            _ => false,
+        },
         "instrument" => is_instrument(value),
         "evidence" => is_evidence(value),
         _ if ftype.starts_with("enum:") => match value {
             Val::Id(name) => ftype[5..].split(',').any(|option| option == name),
             _ => false,
         },
-        _ if ftype.starts_with("list:") => matches!(value, Val::List(_)),
+        // an element that does not have the element type makes the list a different type
+        _ if ftype.starts_with("list:") => match value {
+            Val::List(items) => items.iter().all(|item| type_ok(&ftype[5..], item)),
+            _ => false,
+        },
         _ if ftype.starts_with("ref:") => matches!(value, Val::Id(_)),
         _ => true,
     }
@@ -487,6 +497,14 @@ fn field_pos(decl: &Decl, key: &str) -> (usize, usize) {
 
 fn list_field(decl: &Decl, key: &str) -> Vec<String> {
     field_ids(decl, key)
+}
+
+/// The attribute keys a fact records.  Two facts are comparable only over a shared key.
+fn attr_keys(decl: &Decl) -> HashSet<String> {
+    match decl.fields.iter().find(|(name, _)| name == "attrs").map(|(_, value)| value) {
+        Some(Val::Rec(fields)) => fields.iter().map(|(key, _)| key.clone()).collect(),
+        _ => HashSet::new(),
+    }
 }
 
 fn sem(decl: &Decl, code: &'static str, message: String, key: Option<&str>, out: &mut Vec<Diagnostic>) {
@@ -914,6 +932,33 @@ fn check_remaining(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                         None,
                         out,
                     );
+                }
+
+                // An example is only an example if it can be compared with the others: it
+                // must share at least one recorded attribute with the positives.  Without
+                // this, the learner reports "identical attributes" and nobody knows why.
+                let positives_share: HashSet<String> = positives
+                    .iter()
+                    .filter_map(|name| by_name.get(name.as_str()))
+                    .flat_map(|fact| attr_keys(fact))
+                    .collect();
+                if !positives_share.is_empty() {
+                    for example in positives.iter().chain(negatives.iter()) {
+                        let Some(fact) = by_name.get(example.as_str()) else { continue };
+                        let keys = attr_keys(fact);
+                        if !keys.is_empty() && keys.intersection(&positives_share).next().is_none() {
+                            sem(
+                                decl,
+                                "W-EXAMPLE-SHAPE",
+                                format!(
+                                    "concept {}: {example} shares no recorded attribute with the positives, so it cannot be compared with them",
+                                    decl.name
+                                ),
+                                None,
+                                out,
+                            );
+                        }
+                    }
                 }
                 let both: Vec<&String> = positives.iter().filter(|name| negatives.contains(name)).collect();
                 if !both.is_empty() {

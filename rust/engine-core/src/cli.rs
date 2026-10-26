@@ -1097,6 +1097,7 @@ fn cmd_propose(path: &Path, proposals_path: &str, apply: bool) -> i32 {
 
     let mut current = loaded.text.clone();
     let mut admitted = 0;
+    let mut needs_review = 0;
     for item in &items {
         let decl = item.get("decl").and_then(|value| value.as_str()).unwrap_or("");
         let field = item.get("field").and_then(|value| value.as_str()).unwrap_or("");
@@ -1119,6 +1120,15 @@ fn cmd_propose(path: &Path, proposals_path: &str, apply: bool) -> i32 {
                 );
                 current = text;
             }
+            crate::propose::Verdict::NeedsReview { codes, text } => {
+                needs_review += 1;
+                println!(
+                    "{} review    introduced {}",
+                    pad(&format!("{decl}.{field}"), 34),
+                    codes.join(", ")
+                );
+                current = text;
+            }
             crate::propose::Verdict::Rejected { reason } => {
                 println!("{} rejected  {reason}", pad(&format!("{decl}.{field}"), 34));
             }
@@ -1127,7 +1137,7 @@ fn cmd_propose(path: &Path, proposals_path: &str, apply: bool) -> i32 {
     if apply {
         fs::write(path, &current).expect("write file");
     }
-    println!("{admitted}/{} proposal(s) admitted", items.len());
+    println!("{admitted} admitted, {needs_review} review, {} rejected", items.len() - admitted - needs_review);
     0
 }
 
