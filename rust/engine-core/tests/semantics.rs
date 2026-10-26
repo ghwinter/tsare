@@ -598,6 +598,28 @@ fn a_directory_is_rendered_file_by_file() {
 }
 
 #[test]
+fn a_document_can_arrive_on_standard_input() {
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+    let mut child = Command::new(env!("CARGO_BIN_EXE_engine-core"))
+        .args(["check", "-"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("spawn the compiler");
+    child
+        .stdin
+        .as_mut()
+        .expect("stdin")
+        .write_all("fact F { claim: \"x\", evidence: user }\n".as_bytes())
+        .expect("write to stdin");
+    let output = child.wait_with_output().expect("wait");
+    let text = String::from_utf8_lossy(&output.stdout);
+    assert!(text.contains("0 error(s), 0 warning(s)"), "{text}");
+    assert_eq!(output.status.code(), Some(0));
+}
+
+#[test]
 fn every_code_the_compiler_prints_has_an_explanation() {
     let golden = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests").join("fixtures").join("golden");
     let mut codes: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();

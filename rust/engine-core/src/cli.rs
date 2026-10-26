@@ -5,6 +5,7 @@
 //! `engine`, `suggest`) the same command also answers `--json`.
 
 use std::fs;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 
 use crate::program::{self, Program};
@@ -36,6 +37,22 @@ fn syntax_diagnostic(file: &str, error: &syntax::ParseError) -> crate::check::Di
 /// Load and parse, keeping syntax errors as diagnostics.  Callers that cannot analyse a
 /// broken document use `load`, which turns the first one into a printed message.
 pub fn load_for_check(path: &Path) -> Result<Loaded, String> {
+    if path.as_os_str() == "-" {
+        // a document from a pipe: editors and CI both want this
+        let mut text = String::new();
+        std::io::stdin()
+            .read_to_string(&mut text)
+            .map_err(|error| format!("standard input: {error}"))?;
+        let (decls, errors) = syntax::parse_recovering(&text);
+        let syntax = errors.iter().map(|error| syntax_diagnostic("-", error)).collect();
+        return Ok(Loaded {
+            decls,
+            text,
+            path: path.to_path_buf(),
+            syntax,
+            sources: Vec::new(),
+        });
+    }
     if path.is_dir() {
         let mut files: Vec<PathBuf> = fs::read_dir(path)
             .map_err(|error| format!("{}: {error}", path.display()))?
@@ -1214,18 +1231,55 @@ fn cmd_kinds() -> i32 {
 }
 
 fn usage() {
-    println!("engine-core — a checker for structured arguments");
+    println!("engine-core {} — a compiler for checkable claims", env!("CARGO_PKG_VERSION"));
     println!();
-    println!("usage:");
-    println!("  engine-core FILE|DIR [--json]        check, text or JSON");
-    println!("  engine-core check FILE|DIR           same as above");
-    println!("  engine-core engine FILE|DIR [--json] held, conditional, blocked, chains, gates");
-    println!("  engine-core argue FILE               which conclusions survive attack");
-    println!("  engine-core derive FILE              which conclusions are grounded in facts");
-    println!("  engine-core debt FILE [--all]        which facts transitively gate a conclusion");
-    println!("  engine-core kinds                    the obligation table");
-    println!("  engine-core suggest FILE [--json]    verified repairs with an applicability");
-    println!("  engine-core apply FILE [--dry-run]   apply machine repairs and recompile");
+    println!("usage: engine-core [COMMAND] PATH [options]");
+    println!("       engine-core kinds | mem | --explain CODE | --version | --help");
+    println!();
+    println!("PATH is a .mf document, a directory of them, or - for standard input.");
+    println!();
+    println!("checking");
+    println!("  check PATH [--json] [--goals F] [--sugar] [--cache]   parse and check (the default)");
+    println!("  project DIR                                          the same, grouped by file");
+    println!();
+    println!("reasoning");
+    println!("  engine PATH [--json]         held, conditional, blocked, chains, gates");
+    println!("  argue PATH                   which conclusions survive attack");
+    println!("  derive PATH                  which conclusions are grounded in facts");
+    println!("  debt PATH [--all]            which facts transitively gate a conclusion");
+    println!("  impact PATH                  dead facts, single support, load-bearing nodes");
+    println!("  next PATH                    open decisions, ranked by what they touch");
+    println!("  cost PATH [--top N]          external confirmations the document demands");
+    println!("  weigh PATH [--threshold X]   confidence propagated by min/max");
+    println!("  fca PATH                     what a concept's examples share, and what they imply");
+    println!("  cat PATH                     the pipeline read as a category");
+    println!("  moves PATH                   six representation moves as candidates");
+    println!("  assumptions PATH [--top N]   load-bearing declarations without support");
+    println!("  whatif PATH NAME             what falls when one assumption is removed");
+    println!("  kinds                        the obligation table: what each kind owes");
+    println!();
+    println!("repairing");
+    println!("  fix PATH [--apply OUT]          verified repair candidates, and applying them");
+    println!("  suggest PATH [--json]           repairs with an applicability");
+    println!("  apply PATH [--dry-run]          splice machine repairs and recompile");
+    println!("  propose PATH --proposals F [--policy P] [--apply]");
+    println!("                                  gate values an outside model wants to fill in");
+    println!("                                  policies: harmless (default), strict, improve");
+    println!();
+    println!("emitting");
+    println!("  build PATH [--out DIR] [--goals F]   obligations, clauses, open items, predicates");
+    println!("  graph PATH [--out FILE]             the relation net as Mermaid");
+    println!("  map LEFT RIGHT [--top N]            structure mapping between two documents");
+    println!("  induce PATH                         the clause each concept's examples support");
+    println!("  pattern PATH CONCEPT [--vars]       the structure that separates the examples");
+    println!("  audit PATH                          can a kind be written with a smaller vocabulary");
+    println!("  egraph PATH [--write OUT]           merge equivalent declarations, rewrite references");
+    println!("  mem [--recall CODE...] [--k N]      the case store: audit it, or recall situations");
+    println!();
+    println!("exit codes");
+    println!("  0  no errors (warnings are allowed)");
+    println!("  1  errors found, or a proposal refused");
+    println!("  2  usage problem, or a file could not be read");
 }
 
 fn is_command(name: &str) -> bool {
@@ -1429,6 +1483,7 @@ pub fn run() -> i32 {
         }
     }
 }
+
 
 
 
