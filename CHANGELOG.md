@@ -6,6 +6,15 @@ All notable changes are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `ask`: for an open list, the recorded attribute that would decide the elements its dimension
+  covers and it does not. When no attribute separates a missing element from the listed ones,
+  it says so and names them -- that is the answer that tells you to record something new.
+- A test that walks the `--help` screen and fails when a command is listed there but missing
+  from the dispatcher. Without it the command word is taken as a path and the error is
+  `cannot find the file ask`, which says nothing about what is actually wrong.
+
 ## [0.3.0] - 2026-10-26
 
 The version that learns to say what it cannot tell apart, and to say which format it speaks.
