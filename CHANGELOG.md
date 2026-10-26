@@ -6,6 +6,10 @@ All notable changes are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-26
+
+The version that learns to say what it cannot tell apart, and to say which format it speaks.
+
 ### Added
 
 - `W-COLLIDE`: two facts that record the same evidence and the same attributes are reported,
