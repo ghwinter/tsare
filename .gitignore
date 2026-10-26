@@ -1,37 +1,48 @@
-# Default deny: nothing is tracked unless it is named here.
+# Default deny: a file is tracked only if a line below names it, so adding a top-level
+# directory means adding a line here.  git will not remind you -- .github/workflows/ci.yml
+# runs `git status --porcelain` and fails on anything that is neither committed nor ignored.
 *
 !*/
-!.gitignore
+
 !.gitattributes
+!.gitignore
+!.editorconfig
+!rustfmt.toml
+
 !LICENSE
 !README.md
 !CHANGELOG.md
+!CONTRIBUTING.md
 !Cargo.toml
 !Cargo.lock
+!SELF.mf
+
 !.cargo/
 !.cargo/**
+!.github/
+!.github/**
+
 !src/
 !src/**
 !tests/
 !tests/**
 !docs/
 !docs/**
+!examples/
+!examples/**
 !agent/
+!agent/**
 !dsh/
 !dsh/**
-!agent/
-!dsh/
-!dsh/****
 !experiments/
-!agent/
-!dsh/
-!dsh/**
-!agent/
-!dsh/
-!dsh/****
 !experiments/**
 !scripts/
 !scripts/**
-!SELF.mf
 
-
+# What the allowlist above would otherwise let through.
+__pycache__/
+*.pyc
+.venv/
+target/
+.DS_Store
+Thumbs.db
