@@ -33,11 +33,15 @@ pub struct Lit {
 
 impl Lit {
     pub fn holds(&self, attrs: &HashMap<String, Rhs>) -> bool {
-        let Some(value) = attrs.get(&self.key) else { return false };
+        let Some(value) = attrs.get(&self.key) else {
+            return false;
+        };
         match self.op {
             "=" => value == &self.rhs,
             _ => {
-                let (Rhs::Num(left), Rhs::Num(right)) = (value, &self.rhs) else { return false };
+                let (Rhs::Num(left), Rhs::Num(right)) = (value, &self.rhs) else {
+                    return false;
+                };
                 if self.op == "<=" {
                     left <= right
                 } else {
@@ -70,7 +74,11 @@ pub struct Learning {
 
 pub fn attrs_of(fact: &Decl) -> HashMap<String, Rhs> {
     let mut out = HashMap::new();
-    let Some(Val::Rec(fields)) = fact.fields.iter().find(|(key, _)| key == "attrs").map(|(_, value)| value)
+    let Some(Val::Rec(fields)) = fact
+        .fields
+        .iter()
+        .find(|(key, _)| key == "attrs")
+        .map(|(_, value)| value)
     else {
         return out;
     };
@@ -108,16 +116,24 @@ fn examples<'a>(prog: &Program<'a>, decl: &Decl) -> (Vec<&'a Decl>, Vec<&'a Decl
 
 /// Ordered from most specific to most general, per key.
 pub fn candidates(positive: &[&Decl], negative: &[&Decl]) -> Vec<Lit> {
-    let facts: Vec<HashMap<String, Rhs>> =
-        positive.iter().chain(negative.iter()).map(|fact| attrs_of(fact)).collect();
-    let mut keys: Vec<String> = facts.iter().flat_map(|attrs| attrs.keys().cloned()).collect();
+    let facts: Vec<HashMap<String, Rhs>> = positive
+        .iter()
+        .chain(negative.iter())
+        .map(|fact| attrs_of(fact))
+        .collect();
+    let mut keys: Vec<String> = facts
+        .iter()
+        .flat_map(|attrs| attrs.keys().cloned())
+        .collect();
     keys.sort();
     keys.dedup();
 
     let mut raw: Vec<Lit> = Vec::new();
     for key in &keys {
-        let values: Vec<Rhs> =
-            facts.iter().filter_map(|attrs| attrs.get(key).cloned()).collect();
+        let values: Vec<Rhs> = facts
+            .iter()
+            .filter_map(|attrs| attrs.get(key).cloned())
+            .collect();
         let numeric = values.iter().all(|value| matches!(value, Rhs::Num(_)));
         if numeric {
             let mut numbers: Vec<f64> = values
@@ -127,13 +143,23 @@ pub fn candidates(positive: &[&Decl], negative: &[&Decl]) -> Vec<Lit> {
                     _ => None,
                 })
                 .collect();
-            numbers.sort_by(|left, right| left.partial_cmp(right).unwrap_or(std::cmp::Ordering::Equal));
+            numbers.sort_by(|left, right| {
+                left.partial_cmp(right).unwrap_or(std::cmp::Ordering::Equal)
+            });
             numbers.dedup();
             for value in &numbers {
-                raw.push(Lit { key: key.clone(), op: "<=", rhs: Rhs::Num(*value) });
+                raw.push(Lit {
+                    key: key.clone(),
+                    op: "<=",
+                    rhs: Rhs::Num(*value),
+                });
             }
             for value in numbers.iter().rev() {
-                raw.push(Lit { key: key.clone(), op: ">=", rhs: Rhs::Num(*value) });
+                raw.push(Lit {
+                    key: key.clone(),
+                    op: ">=",
+                    rhs: Rhs::Num(*value),
+                });
             }
         } else {
             let mut texts: Vec<String> = values
@@ -146,7 +172,11 @@ pub fn candidates(positive: &[&Decl], negative: &[&Decl]) -> Vec<Lit> {
             texts.sort();
             texts.dedup();
             for text in texts {
-                raw.push(Lit { key: key.clone(), op: "=", rhs: Rhs::Text(text) });
+                raw.push(Lit {
+                    key: key.clone(),
+                    op: "=",
+                    rhs: Rhs::Text(text),
+                });
             }
         }
     }
@@ -158,8 +188,14 @@ pub fn candidates(positive: &[&Decl], negative: &[&Decl]) -> Vec<Lit> {
         negative.iter().map(|fact| attrs_of(fact)).collect();
     raw.into_iter()
         .filter(|lit| {
-            let covers = positive_attrs.iter().filter(|attrs| lit.holds(attrs)).count();
-            let excludes = negative_attrs.iter().filter(|attrs| !lit.holds(attrs)).count();
+            let covers = positive_attrs
+                .iter()
+                .filter(|attrs| lit.holds(attrs))
+                .count();
+            let excludes = negative_attrs
+                .iter()
+                .filter(|attrs| !lit.holds(attrs))
+                .count();
             covers > 0 && excludes > 0
         })
         .collect()
@@ -243,7 +279,11 @@ pub fn induce_concept(prog: &Program, decl: &Decl) -> Learning {
                 .all(|attrs| !combo.iter().all(|lit| lit.holds(attrs)));
             if covers && excludes {
                 let score: usize = indices.iter().sum();
-                if best.as_ref().map(|(best_score, _)| score < *best_score).unwrap_or(true) {
+                if best
+                    .as_ref()
+                    .map(|(best_score, _)| score < *best_score)
+                    .unwrap_or(true)
+                {
                     best = Some((score, combo));
                 }
             }
@@ -263,7 +303,11 @@ pub fn induce_concept(prog: &Program, decl: &Decl) -> Learning {
 }
 
 pub fn clause_text(clause: &[Lit]) -> String {
-    clause.iter().map(|lit| lit.text()).collect::<Vec<_>>().join(" and ")
+    clause
+        .iter()
+        .map(|lit| lit.text())
+        .collect::<Vec<_>>()
+        .join(" and ")
 }
 
 pub fn auto_question(learning: &Learning) -> (String, Vec<String>) {
@@ -294,5 +338,9 @@ pub fn example_names(prog: &Program, decl: &Decl) -> (Vec<String>, Vec<String>) 
 }
 
 pub fn learned_names(learnings: &[Learning]) -> HashSet<&str> {
-    learnings.iter().filter(|item| item.clause.is_some()).map(|item| item.concept.as_str()).collect()
+    learnings
+        .iter()
+        .filter(|item| item.clause.is_some())
+        .map(|item| item.concept.as_str())
+        .collect()
 }

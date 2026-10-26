@@ -22,13 +22,21 @@ pub fn store_path() -> PathBuf {
 }
 
 pub fn load() -> Vec<Json> {
-    std::fs::read_to_string(store_path()).map(|text| json::parse_lines(&text)).unwrap_or_default()
+    std::fs::read_to_string(store_path())
+        .map(|text| json::parse_lines(&text))
+        .unwrap_or_default()
 }
 
 fn pair(entry: &Json, side: &str) -> (f64, f64) {
     let block = entry.get(side);
-    let errors = block.and_then(|item| item.get("errors")).and_then(|item| item.as_f64()).unwrap_or(0.0);
-    let cost = block.and_then(|item| item.get("cost")).and_then(|item| item.as_f64()).unwrap_or(0.0);
+    let errors = block
+        .and_then(|item| item.get("errors"))
+        .and_then(|item| item.as_f64())
+        .unwrap_or(0.0);
+    let cost = block
+        .and_then(|item| item.get("cost"))
+        .and_then(|item| item.as_f64())
+        .unwrap_or(0.0);
     (errors, cost)
 }
 
@@ -40,11 +48,18 @@ pub fn improved(entry: &Json) -> bool {
 }
 
 fn codes_of(entry: &Json) -> Vec<String> {
-    entry.get("codes").map(|value| value.strings()).unwrap_or_default()
+    entry
+        .get("codes")
+        .map(|value| value.strings())
+        .unwrap_or_default()
 }
 
 fn action_of(entry: &Json) -> String {
-    entry.get("action").and_then(|value| value.as_str()).unwrap_or("").to_string()
+    entry
+        .get("action")
+        .and_then(|value| value.as_str())
+        .unwrap_or("")
+        .to_string()
 }
 
 pub fn overlap(left: &[String], right: &[String]) -> f64 {
@@ -77,7 +92,11 @@ pub fn recall(codes: &[String], k: usize) -> Vec<Recalled> {
             .unwrap_or(std::cmp::Ordering::Equal)
             .then_with(|| right.1.cmp(&left.1))
     });
-    scored.into_iter().take(k).map(|(_, improved, entry)| Recalled { entry, improved }).collect()
+    scored
+        .into_iter()
+        .take(k)
+        .map(|(_, improved, entry)| Recalled { entry, improved })
+        .collect()
 }
 
 pub struct Audit {
@@ -114,7 +133,8 @@ pub fn audit() -> Audit {
         })
         .count();
 
-    let mut groups: Vec<((Vec<String>, String), HashSet<bool>)> = Vec::new();
+    type GroupKey = (Vec<String>, String);
+    let mut groups: Vec<(GroupKey, HashSet<bool>)> = Vec::new();
     for entry in &entries {
         let key = (codes_of(entry), action_of(entry));
         let improved = improved(entry);
@@ -131,11 +151,21 @@ pub fn audit() -> Audit {
     }
     let conflicting = groups.iter().filter(|(_, set)| set.len() > 1).count();
 
-    Audit { entries: entries.len(), expired, conflicting, noop, unchanged, orphans }
+    Audit {
+        entries: entries.len(),
+        expired,
+        conflicting,
+        noop,
+        unchanged,
+        orphans,
+    }
 }
 
 /// Python's list repr, because the store prints its code list the way it was written.
 pub fn list_repr(items: &[String]) -> String {
-    let quoted: Vec<String> = items.iter().map(|item| format!("'{}'", item.replace('\'', "\\'"))).collect();
+    let quoted: Vec<String> = items
+        .iter()
+        .map(|item| format!("'{}'", item.replace('\'', "\\'")))
+        .collect();
     format!("[{}]", quoted.join(", "))
 }

@@ -88,8 +88,22 @@ pub fn signatures(prog: &Program, depth: usize) -> Vec<(String, Signature)> {
         let mut labels: Vec<String> = Vec::new();
         let mut seen: HashSet<String> = HashSet::new();
         seen.insert(decl.name.clone());
-        walk(&forward, &reverse, &decl.name, &mut labels, &mut seen, depth, &mut paths);
-        out.push((decl.name.clone(), Signature { kind: decl.kind.clone(), paths }));
+        walk(
+            &forward,
+            &reverse,
+            &decl.name,
+            &mut labels,
+            &mut seen,
+            depth,
+            &mut paths,
+        );
+        out.push((
+            decl.name.clone(),
+            Signature {
+                kind: decl.kind.clone(),
+                paths,
+            },
+        ));
     }
     out
 }
@@ -106,8 +120,12 @@ fn compare(left: &Signature, right: &Signature) -> (f64, usize, Vec<Vec<String>>
     if left.kind != right.kind {
         return (0.0, 0, Vec::new());
     }
-    let common: Vec<Vec<String>> =
-        left.paths.keys().filter(|path| right.paths.contains_key(*path)).cloned().collect();
+    let common: Vec<Vec<String>> = left
+        .paths
+        .keys()
+        .filter(|path| right.paths.contains_key(*path))
+        .cloned()
+        .collect();
     let mut union: HashSet<Vec<String>> = left.paths.keys().cloned().collect();
     union.extend(right.paths.keys().cloned());
     if union.is_empty() {
@@ -116,9 +134,7 @@ fn compare(left: &Signature, right: &Signature) -> (f64, usize, Vec<Vec<String>>
     let shared_weight: usize = common.iter().map(|path| path.len()).sum();
     let total: usize = union.iter().map(|path| path.len()).sum();
     let mut sorted = common;
-    sorted.sort_by(|left, right| {
-        right.len().cmp(&left.len()).then_with(|| left.cmp(right))
-    });
+    sorted.sort_by(|left, right| right.len().cmp(&left.len()).then_with(|| left.cmp(right)));
     (shared_weight as f64 / total as f64, shared_weight, sorted)
 }
 

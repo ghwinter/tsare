@@ -18,7 +18,14 @@ pub fn unsupported(prog: &Program, name: &str) -> Option<String> {
 pub fn reachable(prog: &Program) -> HashMap<String, HashSet<String>> {
     let mut adj: HashMap<String, Vec<String>> = HashMap::new();
     for (source, targets) in dependents(prog).items() {
-        adj.insert(source, targets.iter().filter(|(dst, _)| prog.has(dst)).map(|(dst, _)| dst.clone()).collect());
+        adj.insert(
+            source,
+            targets
+                .iter()
+                .filter(|(dst, _)| prog.has(dst))
+                .map(|(dst, _)| dst.clone())
+                .collect(),
+        );
     }
     let claims = ["proposition", "hypothesis", "question"];
     let mut out = HashMap::new();
@@ -56,14 +63,26 @@ pub fn report(prog: &Program, top: usize) -> Vec<Assumption> {
     let impact = reachable(prog);
     let mut rows = Vec::new();
     for decl in prog.decls {
-        let Some(why) = unsupported(prog, &decl.name) else { continue };
+        let Some(why) = unsupported(prog, &decl.name) else {
+            continue;
+        };
         let count = impact.get(&decl.name).map(|names| names.len()).unwrap_or(0);
         if count == 0 {
             continue;
         }
-        rows.push(Assumption { name: decl.name.clone(), kind: decl.kind.clone(), why, count });
+        rows.push(Assumption {
+            name: decl.name.clone(),
+            kind: decl.kind.clone(),
+            why,
+            count,
+        });
     }
-    rows.sort_by(|left, right| right.count.cmp(&left.count).then_with(|| left.name.cmp(&right.name)));
+    rows.sort_by(|left, right| {
+        right
+            .count
+            .cmp(&left.count)
+            .then_with(|| left.name.cmp(&right.name))
+    });
     rows.truncate(top);
     rows
 }

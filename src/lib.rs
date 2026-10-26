@@ -14,8 +14,8 @@ pub mod coverage;
 pub mod debt;
 pub mod derive;
 pub mod egraph;
-pub mod fca;
 pub mod explain;
+pub mod fca;
 pub mod fix;
 pub mod graph;
 pub mod hash;
@@ -27,14 +27,11 @@ pub mod moves;
 pub mod paths;
 pub mod patterns;
 pub mod program;
-pub mod render;
 pub mod propose;
+pub mod render;
 pub mod session;
 pub mod specs;
 pub mod sugar;
 pub mod syntax;
 pub mod weigh;
 pub mod whatif;
-
-
-

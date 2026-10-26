@@ -69,7 +69,11 @@ pub fn applications(decls: &[Decl]) -> Vec<Rule> {
     for decl in decls.iter().filter(|decl| decl.kind == "warrant") {
         let premises = field_ids(decl, "from");
         if let Some(target) = id_field(decl, "to") {
-            out.push(Rule { warrant: decl.name.clone(), premises, target: target.to_string() });
+            out.push(Rule {
+                warrant: decl.name.clone(),
+                premises,
+                target: target.to_string(),
+            });
             continue;
         }
         let record = decl.fields.iter().find(|(name, _)| name == "concludes");
@@ -129,12 +133,17 @@ pub fn grounded_sets(decls: &[Decl]) -> (HashSet<String>, HashSet<String>) {
         let new_outside: HashSet<String> = invalid
             .iter()
             .cloned()
-            .chain(names.iter().filter(|name| {
-                attackers
-                    .get(*name)
-                    .map(|list| list.iter().any(|attacker| new_inside.contains(attacker)))
-                    .unwrap_or(false)
-            }).cloned())
+            .chain(
+                names
+                    .iter()
+                    .filter(|name| {
+                        attackers
+                            .get(*name)
+                            .map(|list| list.iter().any(|attacker| new_inside.contains(attacker)))
+                            .unwrap_or(false)
+                    })
+                    .cloned(),
+            )
             .collect();
         if new_inside == inside && new_outside == outside {
             break;
@@ -149,7 +158,10 @@ pub fn statuses(decls: &[Decl], inside: &HashSet<String>) -> HashMap<String, Str
     let mut by_conclusion: HashMap<String, Vec<String>> = HashMap::new();
     for decl in decls.iter().filter(|decl| decl.kind == "warrant") {
         if let Some(target) = id_field(decl, "to") {
-            by_conclusion.entry(target.to_string()).or_default().push(decl.name.clone());
+            by_conclusion
+                .entry(target.to_string())
+                .or_default()
+                .push(decl.name.clone());
         }
     }
     let mut out = HashMap::new();
@@ -173,8 +185,11 @@ pub struct Closure {
 
 pub fn closure(decls: &[Decl]) -> Closure {
     let inside = grounded(decls);
-    let facts: HashSet<String> =
-        decls.iter().filter(|decl| decl.kind == "fact").map(|decl| decl.name.clone()).collect();
+    let facts: HashSet<String> = decls
+        .iter()
+        .filter(|decl| decl.kind == "fact")
+        .map(|decl| decl.name.clone())
+        .collect();
     let mut held = facts.clone();
     let rules: Vec<Rule> = applications(decls)
         .into_iter()
@@ -187,7 +202,9 @@ pub fn closure(decls: &[Decl]) -> Closure {
             if held.contains(&rule.target) {
                 continue;
             }
-            if !rule.premises.is_empty() && rule.premises.iter().all(|premise| held.contains(premise)) {
+            if !rule.premises.is_empty()
+                && rule.premises.iter().all(|premise| held.contains(premise))
+            {
                 held.insert(rule.target.clone());
                 changed = true;
             }
@@ -204,8 +221,15 @@ pub fn closure(decls: &[Decl]) -> Closure {
         for rule in rules.iter().filter(|rule| &rule.target == name) {
             for premise in &rule.premises {
                 if !held.contains(premise) {
-                    let premise_state = state.get(premise).cloned().unwrap_or_else(|| "fact".to_string());
-                    let label = if premise_state == "defeated" { "defeated".to_string() } else { premise_state };
+                    let premise_state = state
+                        .get(premise)
+                        .cloned()
+                        .unwrap_or_else(|| "fact".to_string());
+                    let label = if premise_state == "defeated" {
+                        "defeated".to_string()
+                    } else {
+                        premise_state
+                    };
                     reasons.push(format!("{} needs {premise} ({label})", rule.warrant));
                 }
             }
@@ -216,9 +240,12 @@ pub fn closure(decls: &[Decl]) -> Closure {
         reasons.truncate(2);
         conditional.push((name.clone(), reasons.join("; ")));
     }
-    Closure { facts, held, conditional }
+    Closure {
+        facts,
+        held,
+        conditional,
+    }
 }
-
 
 pub struct EngineResult {
     pub held: Vec<String>,
@@ -246,10 +273,8 @@ fn evidence_status(decl: &Decl) -> String {
                     _ => "asserted".to_string(),
                 }
             }
-            Val::Call(call, _) => {
-                if call == "tool" || call == "doc" || call == "code" {
-                    return "measured".to_string();
-                }
+            Val::Call(call, _) if (call == "tool" || call == "doc" || call == "code") => {
+                return "measured".to_string();
             }
             _ => {}
         }
@@ -263,14 +288,23 @@ fn support_edges(decls: &[Decl]) -> HashMap<String, Vec<String>> {
         match decl.kind.as_str() {
             "warrant" => {
                 if let Some(target) = id_field(decl, "to") {
-                    edges.entry(target.to_string()).or_default().extend(field_ids(decl, "from"));
+                    edges
+                        .entry(target.to_string())
+                        .or_default()
+                        .extend(field_ids(decl, "from"));
                 }
             }
             "proposition" => {
-                edges.entry(decl.name.clone()).or_default().extend(field_ids(decl, "from"));
+                edges
+                    .entry(decl.name.clone())
+                    .or_default()
+                    .extend(field_ids(decl, "from"));
             }
             "hypothesis" => {
-                edges.entry(decl.name.clone()).or_default().extend(field_ids(decl, "assumes"));
+                edges
+                    .entry(decl.name.clone())
+                    .or_default()
+                    .extend(field_ids(decl, "assumes"));
             }
             _ => {}
         }
@@ -280,8 +314,11 @@ fn support_edges(decls: &[Decl]) -> HashMap<String, Vec<String>> {
 
 pub fn engine(decls: &[Decl]) -> EngineResult {
     let inside = grounded(decls);
-    let facts: HashSet<String> =
-        decls.iter().filter(|decl| decl.kind == "fact").map(|decl| decl.name.clone()).collect();
+    let facts: HashSet<String> = decls
+        .iter()
+        .filter(|decl| decl.kind == "fact")
+        .map(|decl| decl.name.clone())
+        .collect();
     let rules: Vec<Rule> = applications(decls)
         .into_iter()
         .filter(|rule| inside.contains(&rule.warrant))
@@ -304,7 +341,10 @@ pub fn engine(decls: &[Decl]) -> EngineResult {
                 applied.insert((rule.warrant.clone(), rule.target.clone()));
                 if !held.contains(&rule.target) {
                     held.insert(rule.target.clone());
-                    parent.insert(rule.target.clone(), (rule.warrant.clone(), rule.premises.clone()));
+                    parent.insert(
+                        rule.target.clone(),
+                        (rule.warrant.clone(), rule.premises.clone()),
+                    );
                     changed = true;
                 }
             }
@@ -321,8 +361,15 @@ pub fn engine(decls: &[Decl]) -> EngineResult {
         for rule in rules.iter().filter(|rule| &rule.target == name) {
             for premise in &rule.premises {
                 if !held.contains(premise) {
-                    let premise_state = state.get(premise).cloned().unwrap_or_else(|| "fact".to_string());
-                    let label = if premise_state == "defeated" { "defeated".to_string() } else { premise_state };
+                    let premise_state = state
+                        .get(premise)
+                        .cloned()
+                        .unwrap_or_else(|| "fact".to_string());
+                    let label = if premise_state == "defeated" {
+                        "defeated".to_string()
+                    } else {
+                        premise_state
+                    };
                     reasons.push(format!("{} needs {premise} ({label})", rule.warrant));
                 }
             }
@@ -338,8 +385,12 @@ pub fn engine(decls: &[Decl]) -> EngineResult {
         if held.contains(&rule.target) {
             continue;
         }
-        let missing: Vec<String> =
-            rule.premises.iter().filter(|premise| !held.contains(*premise)).cloned().collect();
+        let missing: Vec<String> = rule
+            .premises
+            .iter()
+            .filter(|premise| !held.contains(*premise))
+            .cloned()
+            .collect();
         if !missing.is_empty() {
             blocked.push((rule.warrant.clone(), missing));
         }
@@ -356,8 +407,10 @@ pub fn engine(decls: &[Decl]) -> EngineResult {
         }
         match parent.get(name) {
             Some((warrant, premises)) if !premises.is_empty() => {
-                let parts: Vec<String> =
-                    premises.iter().map(|premise| chain(premise, facts, parent, depth + 1)).collect();
+                let parts: Vec<String> = premises
+                    .iter()
+                    .map(|premise| chain(premise, facts, parent, depth + 1))
+                    .collect();
                 format!("{name} <- {warrant} <- {}", parts.join(" & "))
             }
             _ => name.to_string(),
@@ -365,14 +418,21 @@ pub fn engine(decls: &[Decl]) -> EngineResult {
     }
 
     let mut chains = Vec::new();
-    let mut held_names: Vec<String> = held.iter().filter(|name| !facts.contains(*name)).cloned().collect();
+    let mut held_names: Vec<String> = held
+        .iter()
+        .filter(|name| !facts.contains(*name))
+        .cloned()
+        .collect();
     held_names.sort();
     for name in &held_names {
         chains.push((name.clone(), chain(name, &facts, &parent, 0)));
     }
 
     let edges = support_edges(decls);
-    let by_name: HashMap<&str, &Decl> = decls.iter().map(|decl| (decl.name.as_str(), decl)).collect();
+    let by_name: HashMap<&str, &Decl> = decls
+        .iter()
+        .map(|decl| (decl.name.as_str(), decl))
+        .collect();
     let mut gates = Vec::new();
     for name in &held_names {
         let mut seen: HashSet<String> = HashSet::new();
@@ -398,5 +458,11 @@ pub fn engine(decls: &[Decl]) -> EngineResult {
         gates.push((name.clone(), weak));
     }
 
-    EngineResult { held: held_names, conditional, blocked, chains, gates }
+    EngineResult {
+        held: held_names,
+        conditional,
+        blocked,
+        chains,
+        gates,
+    }
 }

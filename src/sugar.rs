@@ -31,7 +31,11 @@ fn identifier(text: &str) -> Option<&str> {
 }
 
 fn identifiers(text: &str) -> Vec<String> {
-    text.split(',').map(|part| part.trim()).filter(|part| !part.is_empty()).map(|part| part.to_string()).collect()
+    text.split(',')
+        .map(|part| part.trim())
+        .filter(|part| !part.is_empty())
+        .map(|part| part.to_string())
+        .collect()
 }
 
 /// `16ms` -> ("16", "ms", rest of the line).
@@ -142,5 +146,10 @@ pub fn expand_line(line: &str, number: usize) -> String {
 }
 
 pub fn expand(source: &str) -> String {
-    source.lines().enumerate().map(|(index, line)| expand_line(line, index + 1)).collect::<Vec<_>>().join("\n")
+    source
+        .lines()
+        .enumerate()
+        .map(|(index, line)| expand_line(line, index + 1))
+        .collect::<Vec<_>>()
+        .join("\n")
 }

@@ -56,10 +56,16 @@ pub fn report(prog: &Program) -> Cost {
         *by_kind.entry(decl.kind.clone()).or_insert(0) += found.len();
         rows.push((decl.name.clone(), found));
     }
-    rows.sort_by(|left, right| right.1.len().cmp(&left.1.len()));
+    rows.sort_by_key(|row| std::cmp::Reverse(row.1.len()));
     let mut pairs: Vec<(String, usize)> = by_kind.into_iter().collect();
     pairs.sort();
     let total = pairs.iter().map(|(_, count)| count).sum();
     let (depth, path) = chain(prog);
-    Cost { total, by_kind: pairs, rows, depth, chain: path }
+    Cost {
+        total,
+        by_kind: pairs,
+        rows,
+        depth,
+        chain: path,
+    }
 }

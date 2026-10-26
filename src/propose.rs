@@ -40,12 +40,21 @@ impl Policy {
 
 pub enum Verdict {
     /// Nothing got worse and the hole is gone. `errors` below zero means an error went too.
-    Admitted { errors: isize, warnings: isize, text: String },
+    Admitted {
+        errors: isize,
+        warnings: isize,
+        text: String,
+    },
     /// No error was added, but the fill introduced a diagnostic that was not there before,
     /// or (under `Improve`) it changed nothing except the hole.  A human should look: the
     /// compiler can say "this needs attention", not "which of the two is right".
-    NeedsReview { reason: String, text: String },
-    Rejected { reason: String },
+    NeedsReview {
+        reason: String,
+        text: String,
+    },
+    Rejected {
+        reason: String,
+    },
 }
 
 fn code_counts(decls: &[Decl]) -> std::collections::HashMap<&'static str, usize> {
@@ -58,16 +67,28 @@ fn code_counts(decls: &[Decl]) -> std::collections::HashMap<&'static str, usize>
 
 pub fn verify(text: &str, decls: &[Decl], proposal: &Proposal, policy: Policy) -> Verdict {
     let Some(decl) = decls.iter().find(|decl| decl.name == proposal.decl) else {
-        return Verdict::Rejected { reason: "no such declaration".to_string() };
+        return Verdict::Rejected {
+            reason: "no such declaration".to_string(),
+        };
     };
-    let Some(index) = decl.fields.iter().position(|(name, _)| name == &proposal.field) else {
-        return Verdict::Rejected { reason: "no such field".to_string() };
+    let Some(index) = decl
+        .fields
+        .iter()
+        .position(|(name, _)| name == &proposal.field)
+    else {
+        return Verdict::Rejected {
+            reason: "no such field".to_string(),
+        };
     };
     if !matches!(decl.fields[index].1, Val::Hole) {
-        return Verdict::Rejected { reason: "the field is not a hole".to_string() };
+        return Verdict::Rejected {
+            reason: "the field is not a hole".to_string(),
+        };
     }
     let Some(&(line, col, end_line, end_col)) = decl.field_span.get(index) else {
-        return Verdict::Rejected { reason: "the hole has no span".to_string() };
+        return Verdict::Rejected {
+            reason: "the hole has no span".to_string(),
+        };
     };
 
     let suggestion = Suggestion {
@@ -84,19 +105,27 @@ pub fn verify(text: &str, decls: &[Decl], proposal: &Proposal, policy: Policy) -
     let candidate = splice(text, &suggestion);
     let after = score(&candidate);
     if after.0 == usize::MAX {
-        return Verdict::Rejected { reason: "the value does not parse".to_string() };
+        return Verdict::Rejected {
+            reason: "the value does not parse".to_string(),
+        };
     }
     let errors = after.0 as isize - before.0 as isize;
     let warnings = after.1 as isize - before.1 as isize;
     if errors > 0 {
-        return Verdict::Rejected { reason: format!("adds {errors} error(s)") };
+        return Verdict::Rejected {
+            reason: format!("adds {errors} error(s)"),
+        };
     }
     if candidate == text {
-        return Verdict::Rejected { reason: "changes nothing".to_string() };
+        return Verdict::Rejected {
+            reason: "changes nothing".to_string(),
+        };
     }
 
     let Ok(updated) = crate::syntax::parse(&candidate) else {
-        return Verdict::Rejected { reason: "the value does not parse".to_string() };
+        return Verdict::Rejected {
+            reason: "the value does not parse".to_string(),
+        };
     };
     let old = code_counts(decls);
     let new = code_counts(&updated);
@@ -107,22 +136,32 @@ pub fn verify(text: &str, decls: &[Decl], proposal: &Proposal, policy: Policy) -
         .collect();
     if !introduced.is_empty() {
         return match policy {
-            Policy::Strict => {
-                Verdict::Rejected { reason: format!("introduces {}", introduced.join(", ")) }
-            }
-            _ => Verdict::NeedsReview { reason: format!("introduced {}", introduced.join(", ")), text: candidate },
+            Policy::Strict => Verdict::Rejected {
+                reason: format!("introduces {}", introduced.join(", ")),
+            },
+            _ => Verdict::NeedsReview {
+                reason: format!("introduced {}", introduced.join(", ")),
+                text: candidate,
+            },
         };
     }
     if policy == Policy::Improve {
         // something other than the hole has to get better: W-HOLE leaving is not progress
-        let better = new
-            .iter()
-            .any(|(code, count)| *code != "W-HOLE" && *count < old.get(*code).copied().unwrap_or(0));
+        let better = new.iter().any(|(code, count)| {
+            *code != "W-HOLE" && *count < old.get(*code).copied().unwrap_or(0)
+        });
         if !better {
-            return Verdict::NeedsReview { reason: "removes only the hole; nothing else improved".to_string(), text: candidate };
+            return Verdict::NeedsReview {
+                reason: "removes only the hole; nothing else improved".to_string(),
+                text: candidate,
+            };
         }
     }
-    Verdict::Admitted { errors, warnings, text: candidate }
+    Verdict::Admitted {
+        errors,
+        warnings,
+        text: candidate,
+    }
 }
 
 #[cfg(test)]
@@ -133,18 +172,32 @@ mod tests {
     const DOC: &str = "fact F { claim: \"x\", evidence: ? }\n";
 
     fn proposal(field: &str, value: &str) -> Proposal {
-        Proposal { decl: "F".to_string(), field: field.to_string(), value: value.to_string() }
+        Proposal {
+            decl: "F".to_string(),
+            field: field.to_string(),
+            value: value.to_string(),
+        }
     }
 
     #[test]
     fn a_well_typed_value_is_admitted_and_a_type_error_is_not() {
         let decls = parse(DOC).unwrap();
         assert!(matches!(
-            verify(DOC, &decls, &proposal("evidence", "tool(\"t\")"), Policy::Harmless),
+            verify(
+                DOC,
+                &decls,
+                &proposal("evidence", "tool(\"t\")"),
+                Policy::Harmless
+            ),
             Verdict::Admitted { .. }
         ));
         assert!(matches!(
-            verify(DOC, &decls, &proposal("evidence", "nonsense"), Policy::Harmless),
+            verify(
+                DOC,
+                &decls,
+                &proposal("evidence", "nonsense"),
+                Policy::Harmless
+            ),
             Verdict::Rejected { .. }
         ));
     }
@@ -153,7 +206,12 @@ mod tests {
     fn a_field_that_is_not_a_hole_is_refused() {
         let text = "fact F { claim: \"x\", evidence: user }\n";
         let decls = parse(text).unwrap();
-        let verdict = verify(text, &decls, &proposal("evidence", "model"), Policy::Harmless);
+        let verdict = verify(
+            text,
+            &decls,
+            &proposal("evidence", "model"),
+            Policy::Harmless,
+        );
         assert!(matches!(verdict, Verdict::Rejected { reason } if reason.contains("not a hole")));
     }
 
@@ -161,9 +219,8 @@ mod tests {
     fn a_value_that_leaves_the_document_unchanged_is_refused() {
         let decls = parse(DOC).unwrap();
         let verdict = verify(DOC, &decls, &proposal("evidence", "?"), Policy::Harmless);
-        assert!(matches!(verdict, Verdict::Rejected { reason } if reason.contains("changes nothing")));
+        assert!(
+            matches!(verdict, Verdict::Rejected { reason } if reason.contains("changes nothing"))
+        );
     }
 }
-
-
-

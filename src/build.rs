@@ -26,11 +26,20 @@ pub const ACTIONS: &[(&str, &str)] = &[
 ];
 
 pub fn action_of(kind: &str) -> &'static str {
-    ACTIONS.iter().find(|(name, _)| *name == kind).map(|(_, action)| *action).unwrap_or("?")
+    ACTIONS
+        .iter()
+        .find(|(name, _)| *name == kind)
+        .map(|(_, action)| *action)
+        .unwrap_or("?")
 }
 
 fn evidence_name(decl: &Decl) -> Option<String> {
-    match decl.fields.iter().find(|(key, _)| key == "evidence").map(|(_, value)| value) {
+    match decl
+        .fields
+        .iter()
+        .find(|(key, _)| key == "evidence")
+        .map(|(_, value)| value)
+    {
         Some(Val::Id(name)) => Some(name.clone()),
         Some(Val::Call(name, _)) => Some(name.clone()),
         _ => None,
@@ -43,7 +52,11 @@ pub struct Obligation {
     pub note: String,
 }
 
-pub fn obligation(decl: &Decl, _prog: &Program, learnings: &HashMap<String, Learning>) -> Obligation {
+pub fn obligation(
+    decl: &Decl,
+    _prog: &Program,
+    learnings: &HashMap<String, Learning>,
+) -> Obligation {
     let action = action_of(&decl.kind);
     match decl.kind.as_str() {
         "fact" => {
@@ -71,10 +84,18 @@ pub fn obligation(decl: &Decl, _prog: &Program, learnings: &HashMap<String, Lear
         }
         "concept" => {
             if pos(decl).is_empty() {
-                return Obligation { action, state: "blocked", note: "no positive example".to_string() };
+                return Obligation {
+                    action,
+                    state: "blocked",
+                    note: "no positive example".to_string(),
+                };
             }
             if crate::program::neg(decl).is_empty() {
-                return Obligation { action, state: "blocked", note: "no counterexample".to_string() };
+                return Obligation {
+                    action,
+                    state: "blocked",
+                    note: "no counterexample".to_string(),
+                };
             }
             match learnings.get(&decl.name) {
                 Some(learning) if learning.clause.is_some() => Obligation {
@@ -91,7 +112,11 @@ pub fn obligation(decl: &Decl, _prog: &Program, learnings: &HashMap<String, Lear
         }
         "proposition" => {
             if !f_ids(decl, "from").is_empty() {
-                Obligation { action, state: "ready", note: "premises given".to_string() }
+                Obligation {
+                    action,
+                    state: "ready",
+                    note: "premises given".to_string(),
+                }
             } else {
                 Obligation {
                     action,
@@ -179,7 +204,8 @@ pub fn obligation(decl: &Decl, _prog: &Program, learnings: &HashMap<String, Lear
                 Obligation {
                     action,
                     state: "blocked",
-                    note: "closed with no reason, so the list asserts more than it shows".to_string(),
+                    note: "closed with no reason, so the list asserts more than it shows"
+                        .to_string(),
                 }
             } else {
                 Obligation {
@@ -198,7 +224,11 @@ pub fn obligation(decl: &Decl, _prog: &Program, learnings: &HashMap<String, Lear
                     note: "rule with no basis: why should it be acceptable?".to_string(),
                 }
             } else {
-                Obligation { action, state: "ready", note: format!("basis: {}", basis.join(", ")) }
+                Obligation {
+                    action,
+                    state: "ready",
+                    note: format!("basis: {}", basis.join(", ")),
+                }
             }
         }
         "law" => {
@@ -210,7 +240,11 @@ pub fn obligation(decl: &Decl, _prog: &Program, learnings: &HashMap<String, Lear
                     note: "nothing would break if it were false".to_string(),
                 }
             } else {
-                Obligation { action, state: "ready", note: format!("checked by {}", checked.join(", ")) }
+                Obligation {
+                    action,
+                    state: "ready",
+                    note: format!("checked by {}", checked.join(", ")),
+                }
             }
         }
         "layer" => {
@@ -234,7 +268,11 @@ pub fn obligation(decl: &Decl, _prog: &Program, learnings: &HashMap<String, Lear
             state: "none",
             note: "not a commitment".to_string(),
         },
-        _ => Obligation { action, state: "?", note: String::new() },
+        _ => Obligation {
+            action,
+            state: "?",
+            note: String::new(),
+        },
     }
 }
 
@@ -287,8 +325,10 @@ pub fn render_learned(learnings: &[Learning], structurals: &[(String, Option<Pat
         ));
     }
     lines.push(String::new());
-    let structural: Vec<&(String, Option<Pattern>)> =
-        structurals.iter().filter(|(_, rule)| rule.is_some()).collect();
+    let structural: Vec<&(String, Option<Pattern>)> = structurals
+        .iter()
+        .filter(|(_, rule)| rule.is_some())
+        .collect();
     if !structural.is_empty() {
         lines.push("## Structural clauses".to_string());
         lines.push(String::new());
@@ -297,11 +337,17 @@ pub fn render_learned(learnings: &[Learning], structurals: &[(String, Option<Pat
         lines.push("| concept | structure |".to_string());
         lines.push("| --- | --- |".to_string());
         for (name, rule) in structural {
-            lines.push(format!("| {name} | {} |", render_pattern(rule.as_ref().unwrap())));
+            lines.push(format!(
+                "| {name} | {} |",
+                render_pattern(rule.as_ref().unwrap())
+            ));
         }
         lines.push(String::new());
     }
-    let failed: Vec<&Learning> = learnings.iter().filter(|item| item.clause.is_none()).collect();
+    let failed: Vec<&Learning> = learnings
+        .iter()
+        .filter(|item| item.clause.is_none())
+        .collect();
     if !failed.is_empty() {
         lines.push("## Failures".to_string());
         lines.push(String::new());
@@ -321,8 +367,10 @@ pub fn render_notes(prog: &Program) -> String {
     let mut lines = vec![
         "# Notes".to_string(),
         String::new(),
-        "Not commitments. Nothing may depend on them; they exist so a thought can be written".to_string(),
-        "before it is judged. Promote one to a typed declaration when it starts doing work.".to_string(),
+        "Not commitments. Nothing may depend on them; they exist so a thought can be written"
+            .to_string(),
+        "before it is judged. Promote one to a typed declaration when it starts doing work."
+            .to_string(),
         String::new(),
     ];
     if notes.is_empty() {
@@ -332,17 +380,17 @@ pub fn render_notes(prog: &Program) -> String {
         let tag = f_id(decl, "tag").unwrap_or("note");
         let text = f_str(decl, "text").unwrap_or("");
         let about = f_ids(decl, "about").join(", ");
-        let suffix = if about.is_empty() { String::new() } else { format!(" (about: {about})") };
+        let suffix = if about.is_empty() {
+            String::new()
+        } else {
+            format!(" (about: {about})")
+        };
         lines.push(format!("- **{tag}** `{}`: {text}{suffix}", decl.name));
     }
     lines.join("\n")
 }
 
-pub fn render_open(
-    prog: &Program,
-    learnings: &[Learning],
-    holes: &[(String, String)],
-) -> String {
+pub fn render_open(prog: &Program, learnings: &[Learning], holes: &[(String, String)]) -> String {
     let mut lines = vec!["# Open".to_string(), String::new()];
     if !holes.is_empty() {
         lines.push("## Holes".to_string());
@@ -362,7 +410,12 @@ pub fn render_open(
     }
     for decl in &questions {
         let asks = f_str(decl, "asks").unwrap_or("");
-        let answers: Vec<String> = match decl.fields.iter().find(|(key, _)| key == "answers").map(|(_, value)| value) {
+        let answers: Vec<String> = match decl
+            .fields
+            .iter()
+            .find(|(key, _)| key == "answers")
+            .map(|(_, value)| value)
+        {
             Some(Val::List(items)) => items
                 .iter()
                 .filter_map(|item| match item {
@@ -372,7 +425,11 @@ pub fn render_open(
                 .collect(),
             _ => Vec::new(),
         };
-        lines.push(format!("**{}** (to {}): {asks}", decl.name, f_id(decl, "to").unwrap_or("user")));
+        lines.push(format!(
+            "**{}** (to {}): {asks}",
+            decl.name,
+            f_id(decl, "to").unwrap_or("user")
+        ));
         lines.push(String::new());
         for (index, answer) in answers.iter().enumerate() {
             lines.push(format!("{}. {answer}", index + 1));
@@ -388,7 +445,11 @@ pub fn render_open(
     }
     for decl in &spots {
         let witness = f_ids(decl, "witness");
-        lines.push(format!("**{}**: {}", decl.name, f_str(decl, "cannot_express").unwrap_or("")));
+        lines.push(format!(
+            "**{}**: {}",
+            decl.name,
+            f_str(decl, "cannot_express").unwrap_or("")
+        ));
         lines.push(String::new());
         lines.push(if witness.len() == 2 {
             format!("- witness: `{}` vs `{}`", witness[0], witness[1])
@@ -399,9 +460,18 @@ pub fn render_open(
         lines.push(String::new());
     }
 
-    let failures: Vec<&Learning> = learnings.iter().filter(|item| item.clause.is_none()).collect();
-    let blocked: Vec<&&Learning> = failures.iter().filter(|item| item.witness.is_none()).collect();
-    let collisions: Vec<&&Learning> = failures.iter().filter(|item| item.witness.is_some()).collect();
+    let failures: Vec<&Learning> = learnings
+        .iter()
+        .filter(|item| item.clause.is_none())
+        .collect();
+    let blocked: Vec<&&Learning> = failures
+        .iter()
+        .filter(|item| item.witness.is_none())
+        .collect();
+    let collisions: Vec<&&Learning> = failures
+        .iter()
+        .filter(|item| item.witness.is_some())
+        .collect();
     lines.push("## Blocked concepts".to_string());
     lines.push(String::new());
     if blocked.is_empty() {
@@ -434,7 +504,8 @@ pub fn render_coverage(goals: &[crate::coverage::Goal]) -> String {
     let mut lines = vec![
         "# Coverage".to_string(),
         String::new(),
-        "Which line of the brief is answered by a commitment rather than an observation.".to_string(),
+        "Which line of the brief is answered by a commitment rather than an observation."
+            .to_string(),
         String::new(),
         "| goal | addressed by |".to_string(),
         "| --- | --- |".to_string(),
@@ -513,8 +584,12 @@ pub fn predicates_source(
 ) -> String {
     let mut parts: Vec<String> = Vec::new();
     for decl in prog.of_kind("concept") {
-        let Some(learning) = learnings.get(&decl.name) else { continue };
-        let Some(clause) = &learning.clause else { continue };
+        let Some(learning) = learnings.get(&decl.name) else {
+            continue;
+        };
+        let Some(clause) = &learning.clause else {
+            continue;
+        };
         let mut terms: Vec<String> = Vec::new();
         for lit in clause {
             let rhs = match (&lit.rhs, lit.op) {
@@ -541,7 +616,10 @@ pub fn predicates_source(
         ));
     }
     for decl in prog.of_kind("concept") {
-        let Some(rule) = structurals.iter().find(|(name, _)| name == &decl.name).and_then(|(_, rule)| rule.clone())
+        let Some(rule) = structurals
+            .iter()
+            .find(|(name, _)| name == &decl.name)
+            .and_then(|(_, rule)| rule.clone())
         else {
             continue;
         };
@@ -554,7 +632,11 @@ pub fn predicates_source(
             decl.name
         ));
     }
-    format!("{}\n\n{}", PRED_HEADER.replace("{source}", filename), parts.join("\n\n"))
+    format!(
+        "{}\n\n{}",
+        PRED_HEADER.replace("{source}", filename),
+        parts.join("\n\n")
+    )
 }
 
 /// Verify the generated definitions by evaluating them, not by running Python.
@@ -565,8 +647,12 @@ pub fn verify_predicates(
 ) -> Vec<String> {
     let mut problems = Vec::new();
     for decl in prog.of_kind("concept") {
-        let Some(learning) = learnings.get(&decl.name) else { continue };
-        let Some(clause) = &learning.clause else { continue };
+        let Some(learning) = learnings.get(&decl.name) else {
+            continue;
+        };
+        let Some(clause) = &learning.clause else {
+            continue;
+        };
         for name in &learning.positives {
             let Some(fact) = prog.get(name) else { continue };
             let attrs = attrs_of(fact);
@@ -600,5 +686,8 @@ pub fn verify_predicates(
 }
 
 pub fn learnings_of(prog: &Program) -> Vec<Learning> {
-    prog.of_kind("concept").iter().map(|concept| induce_concept(prog, concept)).collect()
+    prog.of_kind("concept")
+        .iter()
+        .map(|concept| induce_concept(prog, concept))
+        .collect()
 }

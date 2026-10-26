@@ -23,8 +23,10 @@ pub fn report(prog: &Program, only_gated: bool) -> Vec<Debt> {
         }
         let facts = walk(prog, &decl.name, &edges);
         let total = facts.len();
-        let weak: Vec<&crate::program::Step> =
-            facts.iter().filter(|step| step.status != "measured").collect();
+        let weak: Vec<&crate::program::Step> = facts
+            .iter()
+            .filter(|step| step.status != "measured")
+            .collect();
         if only_gated && weak.is_empty() {
             continue;
         }
@@ -38,7 +40,12 @@ pub fn report(prog: &Program, only_gated: bool) -> Vec<Debt> {
         let lines = weak
             .iter()
             .map(|step| {
-                format!("{} ({}) via {}", step.fact, step.status, step.path.join(" <- "))
+                format!(
+                    "{} ({}) via {}",
+                    step.fact,
+                    step.status,
+                    step.path.join(" <- ")
+                )
             })
             .collect();
         rows.push(Debt {
@@ -50,7 +57,10 @@ pub fn report(prog: &Program, only_gated: bool) -> Vec<Debt> {
         });
     }
     rows.sort_by(|left, right| {
-        right.weak.cmp(&left.weak).then_with(|| left.name.cmp(&right.name))
+        right
+            .weak
+            .cmp(&left.weak)
+            .then_with(|| left.name.cmp(&right.name))
     });
     rows
 }

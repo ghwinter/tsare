@@ -9,12 +9,21 @@ use crate::check::Diagnostic;
 pub fn render(source: &str, file: &str, diagnostics: &[Diagnostic]) -> String {
     let mut sorted: Vec<&Diagnostic> = diagnostics.iter().collect();
     sorted.sort_by(|left, right| {
-        (left.line, left.col, left.code, &left.message).cmp(&(right.line, right.col, right.code, &right.message))
+        (left.line, left.col, left.code, &left.message).cmp(&(
+            right.line,
+            right.col,
+            right.code,
+            &right.message,
+        ))
     });
     let lines: Vec<&str> = source.lines().collect();
     let mut out = String::new();
     for item in sorted {
-        let severity = if item.code.starts_with('E') { "error" } else { "warning" };
+        let severity = if item.code.starts_with('E') {
+            "error"
+        } else {
+            "warning"
+        };
         out.push_str(&format!(
             "{file}:{}:{}: {severity}[{}]: {}\n",
             item.line, item.col, item.code, item.message
@@ -29,7 +38,11 @@ pub fn render(source: &str, file: &str, diagnostics: &[Diagnostic]) -> String {
             } else {
                 1
             };
-            out.push_str(&format!(" {gutter} | {}{}\n", " ".repeat(start - 1), "^".repeat(width)));
+            out.push_str(&format!(
+                " {gutter} | {}{}\n",
+                " ".repeat(start - 1),
+                "^".repeat(width)
+            ));
         }
         out.push('\n');
     }

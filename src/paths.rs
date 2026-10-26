@@ -16,7 +16,11 @@ fn adjacency(prog: &Program) -> std::collections::HashMap<String, Vec<(String, S
     for (source, targets) in dependents(prog).items() {
         let list = out.entry(source).or_default();
         for (dst, kind) in targets {
-            if prog.has(&dst) && !list.iter().any(|(name, edge)| name == &dst && edge == &kind) {
+            if prog.has(&dst)
+                && !list
+                    .iter()
+                    .any(|(name, edge)| name == &dst && edge == &kind)
+            {
                 list.push((dst, kind));
             }
         }
@@ -25,7 +29,12 @@ fn adjacency(prog: &Program) -> std::collections::HashMap<String, Vec<(String, S
 }
 
 /// Edge-label paths from a node. Membership edges are ignored: they encode the label.
-pub fn features(prog: &Program, node: &str, depth: usize, exclude: &HashSet<String>) -> HashSet<String> {
+pub fn features(
+    prog: &Program,
+    node: &str,
+    depth: usize,
+    exclude: &HashSet<String>,
+) -> HashSet<String> {
     let adj = adjacency(prog);
     let mut found: HashSet<String> = HashSet::new();
     let mut frontier: Vec<(String, String)> = vec![(node.to_string(), String::new())];
@@ -36,7 +45,11 @@ pub fn features(prog: &Program, node: &str, depth: usize, exclude: &HashSet<Stri
                 if kind == "positive" || kind == "negative" || exclude.contains(&target) {
                     continue;
                 }
-                let label = if prefix.is_empty() { kind.clone() } else { format!("{prefix}>{kind}") };
+                let label = if prefix.is_empty() {
+                    kind.clone()
+                } else {
+                    format!("{prefix}>{kind}")
+                };
                 found.insert(label.clone());
                 next.push((target, label));
             }
@@ -56,7 +69,8 @@ pub fn learn(
     if positives.is_empty() || negatives.is_empty() {
         return None;
     }
-    let mut feats: std::collections::HashMap<String, HashSet<String>> = std::collections::HashMap::new();
+    let mut feats: std::collections::HashMap<String, HashSet<String>> =
+        std::collections::HashMap::new();
     for name in positives.iter().chain(negatives.iter()) {
         feats.insert(name.clone(), features(prog, name, 2, exclude));
     }
@@ -75,8 +89,13 @@ pub fn learn(
             continue;
         }
         for indices in crate::induce::combinations(candidates.len(), size) {
-            let combo: Vec<String> = indices.iter().map(|index| candidates[*index].clone()).collect();
-            if positives.iter().all(|name| combo.iter().all(|feature| feats[name].contains(feature)))
+            let combo: Vec<String> = indices
+                .iter()
+                .map(|index| candidates[*index].clone())
+                .collect();
+            if positives
+                .iter()
+                .all(|name| combo.iter().all(|feature| feats[name].contains(feature)))
                 && negative_ok(&feats, negatives, &combo)
             {
                 return Some(combo);
@@ -91,5 +110,7 @@ fn negative_ok(
     negatives: &[String],
     combo: &[String],
 ) -> bool {
-    !negatives.iter().any(|name| combo.iter().all(|feature| feats[name].contains(feature)))
+    !negatives
+        .iter()
+        .any(|name| combo.iter().all(|feature| feats[name].contains(feature)))
 }

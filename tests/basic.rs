@@ -11,8 +11,9 @@ fn parses_a_fact() {
 
 #[test]
 fn reports_a_duplicate() {
-    let decls = parse("fact F { claim: \"a\", evidence: user }\nfact F { claim: \"b\", evidence: user }\n")
-        .unwrap();
+    let decls =
+        parse("fact F { claim: \"a\", evidence: user }\nfact F { claim: \"b\", evidence: user }\n")
+            .unwrap();
     let diagnostics = check::check(&decls);
     assert!(diagnostics.iter().any(|d| d.code == "E-DUP-ID"));
 }

@@ -63,10 +63,7 @@ pub fn spec(kind: &str) -> Option<&'static [Field]> {
             ("confidence", "num", false),
             ("layer", "ref:layer", false),
         ],
-        "layer" => &[
-            ("name", "str", true),
-            ("exposes", "list:ref:any", true),
-        ],
+        "layer" => &[("name", "str", true), ("exposes", "list:ref:any", true)],
         "law" => &[
             ("statement", "str", true),
             ("holds_in", "ref:layer", true),

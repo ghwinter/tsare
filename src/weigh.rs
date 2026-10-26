@@ -49,8 +49,10 @@ pub fn weights(prog: &Program) -> Vec<Weight> {
             });
             continue;
         }
-        let admissible: Vec<&&crate::syntax::Decl> =
-            rules.iter().filter(|rule| inside.contains(&rule.name)).collect();
+        let admissible: Vec<&&crate::syntax::Decl> = rules
+            .iter()
+            .filter(|rule| inside.contains(&rule.name))
+            .collect();
         if admissible.is_empty() {
             rows.push(Weight {
                 name: proposition.name.clone(),
@@ -72,14 +74,19 @@ pub fn weights(prog: &Program) -> Vec<Weight> {
             let floor = facts
                 .iter()
                 .map(|fact| confidence(fact, 1.0))
-                .fold(None::<f64>, |low, value| Some(match low {
-                    None => value,
-                    Some(current) => current.min(value),
-                }))
+                .fold(None::<f64>, |low, value| {
+                    Some(match low {
+                        None => value,
+                        Some(current) => current.min(value),
+                    })
+                })
                 .unwrap_or(1.0);
             per_rule.push((rule.name.clone(), confidence(rule, 1.0).min(floor)));
         }
-        let value = per_rule.iter().map(|(_, value)| *value).fold(f64::MIN, f64::max);
+        let value = per_rule
+            .iter()
+            .map(|(_, value)| *value)
+            .fold(f64::MIN, f64::max);
         rows.push(Weight {
             name: proposition.name.clone(),
             value: Some(value),

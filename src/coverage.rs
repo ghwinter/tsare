@@ -11,8 +11,14 @@ use crate::check::Diagnostic;
 use crate::program::Program;
 use crate::syntax::{Decl, Val};
 
-pub const CLAIM_KINDS: &[&str] =
-    &["value", "question", "hypothesis", "concept", "proposition", "blindspot"];
+pub const CLAIM_KINDS: &[&str] = &[
+    "value",
+    "question",
+    "hypothesis",
+    "concept",
+    "proposition",
+    "blindspot",
+];
 
 /// Goal file: one goal per line, `name<TAB>keyword,keyword,...`.
 pub fn load_goals(text: &str) -> Vec<(String, Vec<String>)> {
@@ -78,18 +84,27 @@ pub fn coverage(prog: &Program, goals: &[(String, Vec<String>)]) -> Vec<Goal> {
         let mut hits = Vec::new();
         for decl in &claims {
             let text = strings(decl).join(" ").to_lowercase();
-            if keywords.iter().any(|keyword| text.contains(&keyword.to_lowercase())) {
+            if keywords
+                .iter()
+                .any(|keyword| text.contains(&keyword.to_lowercase()))
+            {
                 hits.push(decl.name.clone());
             }
         }
-        out.push(Goal { name: name.clone(), hits });
+        out.push(Goal {
+            name: name.clone(),
+            hits,
+        });
     }
     out
 }
 
 pub fn diagnostics(goals: &[Goal]) -> Vec<Diagnostic> {
-    let missing: Vec<String> =
-        goals.iter().filter(|goal| !goal.covered()).map(|goal| goal.name.clone()).collect();
+    let missing: Vec<String> = goals
+        .iter()
+        .filter(|goal| !goal.covered())
+        .map(|goal| goal.name.clone())
+        .collect();
     if missing.is_empty() {
         return Vec::new();
     }
@@ -108,4 +123,3 @@ pub fn diagnostics(goals: &[Goal]) -> Vec<Diagnostic> {
         file: String::new(),
     }]
 }
-

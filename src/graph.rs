@@ -8,7 +8,12 @@ use crate::program::{f_id, f_ids, Program};
 pub fn nodes(prog: &Program) -> Vec<String> {
     prog.decls
         .iter()
-        .map(|decl| format!("  {}[\"{}<br/><i>{}</i>\"]", decl.name, decl.name, decl.kind))
+        .map(|decl| {
+            format!(
+                "  {}[\"{}<br/><i>{}</i>\"]",
+                decl.name, decl.name, decl.kind
+            )
+        })
         .collect()
 }
 
@@ -35,7 +40,10 @@ impl EdgeSet {
 }
 
 pub fn edges(prog: &Program) -> Vec<String> {
-    let mut set = EdgeSet { lines: Vec::new(), seen: std::collections::HashSet::new() };
+    let mut set = EdgeSet {
+        lines: Vec::new(),
+        seen: std::collections::HashSet::new(),
+    };
     for decl in prog.decls {
         match decl.kind.as_str() {
             "concept" => {

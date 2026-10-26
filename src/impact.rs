@@ -22,7 +22,10 @@ impl Deps {
         if !self.map.contains_key(from) {
             self.keys.push(from.to_string());
         }
-        self.map.entry(from.to_string()).or_default().push((to.to_string(), kind.to_string()));
+        self.map
+            .entry(from.to_string())
+            .or_default()
+            .push((to.to_string(), kind.to_string()));
     }
 
     pub fn get(&self, key: &str) -> Option<&Vec<(String, String)>> {
@@ -94,10 +97,14 @@ pub fn supporting_warrants(prog: &Program) -> Vec<(String, Vec<String>)> {
             if !map.contains_key(conclusion) {
                 keys.push(conclusion.to_string());
             }
-            map.entry(conclusion.to_string()).or_default().push(warrant.name.clone());
+            map.entry(conclusion.to_string())
+                .or_default()
+                .push(warrant.name.clone());
         }
     }
-    keys.into_iter().map(|key| (key.clone(), map.remove(&key).unwrap_or_default())).collect()
+    keys.into_iter()
+        .map(|key| (key.clone(), map.remove(&key).unwrap_or_default()))
+        .collect()
 }
 
 pub fn adjacency(prog: &Program) -> HashMap<String, HashSet<String>> {
@@ -131,7 +138,9 @@ pub fn unlocks(prog: &Program, node: &str, depth: usize) -> usize {
     }
     seen.iter()
         .filter(|name| {
-            prog.get(name).map(|decl| claims.contains(&decl.kind.as_str())).unwrap_or(false)
+            prog.get(name)
+                .map(|decl| claims.contains(&decl.kind.as_str()))
+                .unwrap_or(false)
         })
         .count()
 }
@@ -170,7 +179,12 @@ pub fn decisions(prog: &Program) -> Vec<Decision> {
             count: unlocks(prog, &blindspot.name, 2),
         });
     }
-    rows.sort_by(|left, right| right.count.cmp(&left.count).then_with(|| left.label.cmp(&right.label)));
+    rows.sort_by(|left, right| {
+        right
+            .count
+            .cmp(&left.count)
+            .then_with(|| left.label.cmp(&right.label))
+    });
     rows
 }
 
@@ -182,11 +196,18 @@ pub fn report(prog: &Program) -> Vec<String> {
     let dead_facts: Vec<String> = prog
         .of_kind("fact")
         .iter()
-        .filter(|decl| deps.get(&decl.name).map(|list| list.is_empty()).unwrap_or(true))
+        .filter(|decl| {
+            deps.get(&decl.name)
+                .map(|list| list.is_empty())
+                .unwrap_or(true)
+        })
         .map(|decl| decl.name.clone())
         .collect();
     if !dead_facts.is_empty() {
-        lines.push(format!("dead facts (nothing depends on them): {}", dead_facts.join(", ")));
+        lines.push(format!(
+            "dead facts (nothing depends on them): {}",
+            dead_facts.join(", ")
+        ));
     }
 
     let single: Vec<(String, String)> = supports
@@ -195,7 +216,9 @@ pub fn report(prog: &Program) -> Vec<String> {
         .map(|(proposition, warrants)| (proposition.clone(), warrants[0].clone()))
         .collect();
     for (proposition, warrant) in &single {
-        lines.push(format!("single support: {proposition} rests on {warrant} alone"));
+        lines.push(format!(
+            "single support: {proposition} rests on {warrant} alone"
+        ));
     }
 
     let orphan_props: Vec<String> = prog
@@ -205,7 +228,10 @@ pub fn report(prog: &Program) -> Vec<String> {
             let supported = supports.iter().any(|(name, _)| name == &decl.name);
             let assumed = deps
                 .get(&decl.name)
-                .map(|list| list.iter().any(|(name, kind)| kind == "assumes" && !name.is_empty()))
+                .map(|list| {
+                    list.iter()
+                        .any(|(name, kind)| kind == "assumes" && !name.is_empty())
+                })
                 .unwrap_or(false);
             !supported && !assumed
         })
@@ -220,7 +246,9 @@ pub fn report(prog: &Program) -> Vec<String> {
 
     // load-bearing: facts whose removal would leave a single-support proposition alone
     for (proposition, warrant) in &single {
-        let Some(decl) = prog.get(warrant) else { continue };
+        let Some(decl) = prog.get(warrant) else {
+            continue;
+        };
         for premise in f_ids(decl, "from") {
             let users: Vec<String> = deps
                 .get(&premise)
@@ -245,14 +273,25 @@ pub fn report(prog: &Program) -> Vec<String> {
     }
     let mut pairs: Vec<(&str, usize)> = counts.into_iter().collect();
     pairs.sort();
-    let joined: Vec<String> = pairs.iter().map(|(kind, count)| format!("{kind}={count}")).collect();
+    let joined: Vec<String> = pairs
+        .iter()
+        .map(|(kind, count)| format!("{kind}={count}"))
+        .collect();
     lines.push(format!("graph: {}", joined.join(", ")));
     lines
 }
 
 /// The support graph as costs see it: only edges a conclusion is built from.
 pub fn support_adjacency(prog: &Program) -> Vec<(String, Vec<String>)> {
-    let support = ["premise", "basis", "concludes", "assumes", "separates", "from", "closes with"];
+    let support = [
+        "premise",
+        "basis",
+        "concludes",
+        "assumes",
+        "separates",
+        "from",
+        "closes with",
+    ];
     let mut out = Vec::new();
     for (source, targets) in dependents(prog).items() {
         let filtered: Vec<String> = targets

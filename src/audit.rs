@@ -75,7 +75,10 @@ pub fn desugar_value(decls: &[Decl]) -> Vec<Decl> {
             decl,
             "fact",
             fact_name.clone(),
-            vec![("claim".to_string(), Val::Str(claim)), ("evidence".to_string(), evidence)],
+            vec![
+                ("claim".to_string(), Val::Str(claim)),
+                ("evidence".to_string(), evidence),
+            ],
         );
         let bound = format!(
             "{metric} should be {direction} {} {unit}",
@@ -87,10 +90,7 @@ pub fn desugar_value(decls: &[Decl]) -> Vec<Decl> {
             decl.name.clone(),
             vec![
                 ("statement".to_string(), Val::Str(bound)),
-                (
-                    "from".to_string(),
-                    Val::List(vec![Val::Id(fact_name)]),
-                ),
+                ("from".to_string(), Val::List(vec![Val::Id(fact_name)])),
             ],
         );
         out.push(fact);
@@ -107,7 +107,11 @@ pub fn drop_layer(decls: &[Decl]) -> Vec<Decl> {
             continue;
         }
         let drop_layer_field = decl.kind == "law";
-        if decl.fields.iter().any(|(key, _)| key == "layer" || (drop_layer_field && key == "holds_in")) {
+        if decl
+            .fields
+            .iter()
+            .any(|(key, _)| key == "layer" || (drop_layer_field && key == "holds_in"))
+        {
             let fields: Vec<(String, Val)> = decl
                 .fields
                 .iter()
@@ -134,12 +138,21 @@ pub struct Audit {
 pub fn audit(decls: &[Decl]) -> Vec<Audit> {
     let before = codes(decls);
     let mut rows = Vec::new();
-    let rewrites: [(&'static str, fn(&[Decl]) -> Vec<Decl>); 3] =
-        [("law", desugar_law), ("value", desugar_value), ("layer", drop_layer)];
+    type Rewrite = fn(&[Decl]) -> Vec<Decl>;
+    let rewrites: [(&'static str, Rewrite); 3] = [
+        ("law", desugar_law),
+        ("value", desugar_value),
+        ("layer", drop_layer),
+    ];
     for (kind, rewrite) in rewrites {
         let present = decls.iter().any(|decl| decl.kind == kind);
         if !present {
-            rows.push(Audit { kind, present: false, lost: Vec::new(), added: Vec::new() });
+            rows.push(Audit {
+                kind,
+                present: false,
+                lost: Vec::new(),
+                added: Vec::new(),
+            });
             continue;
         }
         let after = codes(&rewrite(decls));
@@ -147,7 +160,12 @@ pub fn audit(decls: &[Decl]) -> Vec<Audit> {
         let mut added: Vec<&'static str> = after.difference(&before).copied().collect();
         lost.sort();
         added.sort();
-        rows.push(Audit { kind, present: true, lost, added });
+        rows.push(Audit {
+            kind,
+            present: true,
+            lost,
+            added,
+        });
     }
     rows
 }

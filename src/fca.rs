@@ -14,10 +14,16 @@ use crate::syntax::{Decl, Val};
 pub type Pair = (String, String);
 
 pub fn attributes(decl: &Decl) -> Vec<Pair> {
-    match decl.fields.iter().find(|(key, _)| key == "attrs").map(|(_, value)| value) {
-        Some(Val::Rec(fields)) => {
-            fields.iter().map(|(key, value)| (key.clone(), render_value(value))).collect()
-        }
+    match decl
+        .fields
+        .iter()
+        .find(|(key, _)| key == "attrs")
+        .map(|(_, value)| value)
+    {
+        Some(Val::Rec(fields)) => fields
+            .iter()
+            .map(|(key, value)| (key.clone(), render_value(value)))
+            .collect(),
         _ => Vec::new(),
     }
 }
@@ -25,7 +31,9 @@ pub fn attributes(decl: &Decl) -> Vec<Pair> {
 /// The attribute pairs every fact in the sample has.  Empty means: nothing recorded is shared.
 pub fn intent(facts: &[&Decl]) -> Vec<Pair> {
     let mut iter = facts.iter();
-    let Some(first) = iter.next() else { return Vec::new() };
+    let Some(first) = iter.next() else {
+        return Vec::new();
+    };
     let mut common = attributes(first);
     for fact in iter {
         let attrs = attributes(fact);
@@ -57,8 +65,10 @@ pub struct Concept {
 pub fn concepts(prog: &Program) -> Vec<Concept> {
     let mut out = Vec::new();
     for concept in prog.of_kind("concept") {
-        let positives: Vec<&Decl> =
-            pos(concept).iter().filter_map(|name| prog.get(name)).collect();
+        let positives: Vec<&Decl> = pos(concept)
+            .iter()
+            .filter_map(|name| prog.get(name))
+            .collect();
         if positives.is_empty() {
             continue;
         }
@@ -72,7 +82,12 @@ pub fn concepts(prog: &Program) -> Vec<Concept> {
                 .map(|fact| fact.name.clone())
                 .collect()
         };
-        out.push(Concept { name: concept.name.clone(), intent: pairs, implied, listed: positives.len() });
+        out.push(Concept {
+            name: concept.name.clone(),
+            intent: pairs,
+            implied,
+            listed: positives.len(),
+        });
     }
     out
 }
@@ -95,7 +110,11 @@ pub fn piles(prog: &Program) -> Vec<Pile> {
             .filter_map(|name| prog.get(name))
             .collect();
         let shared = intent(&elements);
-        out.push(Pile { name: partition.name.clone(), shared, elements: elements.len() });
+        out.push(Pile {
+            name: partition.name.clone(),
+            shared,
+            elements: elements.len(),
+        });
     }
     out
 }
@@ -105,15 +124,22 @@ pub fn piles(prog: &Program) -> Vec<Pile> {
 pub fn incomparable(prog: &Program) -> Vec<(String, String)> {
     let mut out = Vec::new();
     for concept in prog.of_kind("concept") {
-        let positives: Vec<&Decl> =
-            pos(concept).iter().filter_map(|name| prog.get(name)).collect();
-        let keys: std::collections::HashSet<String> =
-            positives.iter().flat_map(|fact| attributes(fact)).map(|pair| pair.0).collect();
+        let positives: Vec<&Decl> = pos(concept)
+            .iter()
+            .filter_map(|name| prog.get(name))
+            .collect();
+        let keys: std::collections::HashSet<String> = positives
+            .iter()
+            .flat_map(|fact| attributes(fact))
+            .map(|pair| pair.0)
+            .collect();
         if keys.is_empty() {
             continue;
         }
         for name in neg(concept) {
-            let Some(fact) = prog.get(&name) else { continue };
+            let Some(fact) = prog.get(&name) else {
+                continue;
+            };
             let attrs = attributes(fact);
             if !attrs.is_empty() && !attrs.iter().any(|pair| keys.contains(&pair.0)) {
                 out.push((concept.name.clone(), name));
@@ -127,7 +153,11 @@ pub fn render_pairs(pairs: &[Pair]) -> String {
     if pairs.is_empty() {
         return "(nothing recorded in common)".to_string();
     }
-    pairs.iter().map(|(key, value)| format!("{key} = {value}")).collect::<Vec<_>>().join(", ")
+    pairs
+        .iter()
+        .map(|(key, value)| format!("{key} = {value}"))
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 pub fn kind_counts(prog: &Program) -> HashMap<String, usize> {

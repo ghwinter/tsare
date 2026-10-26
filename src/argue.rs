@@ -14,7 +14,7 @@
 
 use std::collections::HashMap;
 
-use crate::closure::{grounded_sets, field_ids, id_field};
+use crate::closure::{field_ids, grounded_sets, id_field};
 use crate::program::Program;
 
 pub struct Conclusion {
@@ -28,7 +28,10 @@ pub fn conclusions(prog: &Program) -> Vec<Conclusion> {
     let mut by_conclusion: HashMap<String, Vec<String>> = HashMap::new();
     for warrant in prog.of_kind("warrant") {
         if let Some(conclusion) = id_field(warrant, "to") {
-            by_conclusion.entry(conclusion.to_string()).or_default().push(warrant.name.clone());
+            by_conclusion
+                .entry(conclusion.to_string())
+                .or_default()
+                .push(warrant.name.clone());
         }
     }
 
@@ -43,16 +46,18 @@ pub fn conclusions(prog: &Program) -> Vec<Conclusion> {
                 why: "no rule".to_string(),
             });
         } else if rules.iter().any(|rule| inside.contains(rule)) {
-            let live: Vec<String> =
-                rules.iter().filter(|rule| inside.contains(*rule)).cloned().collect();
+            let live: Vec<String> = rules
+                .iter()
+                .filter(|rule| inside.contains(*rule))
+                .cloned()
+                .collect();
             rows.push(Conclusion {
                 name: proposition.name.clone(),
                 status: "supported",
                 why: live.join(", "),
             });
         } else if rules.iter().all(|rule| outside.contains(rule)) {
-            let dead: Vec<String> =
-                rules.iter().map(|rule| format!("{rule} (out)")).collect();
+            let dead: Vec<String> = rules.iter().map(|rule| format!("{rule} (out)")).collect();
             rows.push(Conclusion {
                 name: proposition.name.clone(),
                 status: "defeated",
@@ -62,7 +67,11 @@ pub fn conclusions(prog: &Program) -> Vec<Conclusion> {
             let mixed: Vec<String> = rules
                 .iter()
                 .map(|rule| {
-                    let label = if inside.contains(rule) { "in" } else { "undecided" };
+                    let label = if inside.contains(rule) {
+                        "in"
+                    } else {
+                        "undecided"
+                    };
                     format!("{rule} ({label})")
                 })
                 .collect();
@@ -77,9 +86,7 @@ pub fn conclusions(prog: &Program) -> Vec<Conclusion> {
     let mut undecided: Vec<String> = prog
         .of_kind("warrant")
         .iter()
-        .filter(|warrant| {
-            !inside.contains(&warrant.name) && !outside.contains(&warrant.name)
-        })
+        .filter(|warrant| !inside.contains(&warrant.name) && !outside.contains(&warrant.name))
         .map(|warrant| warrant.name.clone())
         .collect();
     undecided.sort();
@@ -95,9 +102,14 @@ pub fn conclusions(prog: &Program) -> Vec<Conclusion> {
 
 /// The status of each named item, for the analyses that only need the words.
 pub fn statuses(prog: &Program) -> HashMap<String, &'static str> {
-    conclusions(prog).into_iter().map(|row| (row.name, row.status)).collect()
+    conclusions(prog)
+        .into_iter()
+        .map(|row| (row.name, row.status))
+        .collect()
 }
 
 pub fn premises_of(prog: &Program, warrant: &str) -> Vec<String> {
-    prog.get(warrant).map(|decl| field_ids(decl, "from")).unwrap_or_default()
+    prog.get(warrant)
+        .map(|decl| field_ids(decl, "from"))
+        .unwrap_or_default()
 }

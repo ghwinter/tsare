@@ -15,7 +15,9 @@ fn binary() -> &'static str {
 }
 
 fn fixtures() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("tests").join("fixtures")
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("fixtures")
 }
 
 fn documents() -> Vec<PathBuf> {
@@ -44,7 +46,10 @@ fn normalize(text: &str) -> String {
 }
 
 fn run(args: &[&str]) -> String {
-    let output = Command::new(binary()).args(args).output().expect("run the binary");
+    let output = Command::new(binary())
+        .args(args)
+        .output()
+        .expect("run the binary");
     normalize(&String::from_utf8_lossy(&output.stdout))
 }
 
@@ -71,8 +76,12 @@ fn golden(name: &str, produced: &str) {
         std::fs::write(&path, produced).expect("write golden");
         return;
     }
-    let expected = std::fs::read_to_string(&path)
-        .unwrap_or_else(|_| panic!("missing golden {}: run with UPDATE_GOLDEN=1", path.display()));
+    let expected = std::fs::read_to_string(&path).unwrap_or_else(|_| {
+        panic!(
+            "missing golden {}: run with UPDATE_GOLDEN=1",
+            path.display()
+        )
+    });
     if expected != produced {
         let expected_lines: Vec<&str> = expected.lines().collect();
         let produced_lines: Vec<&str> = produced.lines().collect();
@@ -132,12 +141,23 @@ fn every_command_on_every_fixture() {
 
         // whatif needs a declaration to remove, pattern needs a concept
         let text = std::fs::read_to_string(&path).unwrap_or_default();
-        if let Some(declaration) = first_after(&text, "fact ").or_else(|| first_after(&text, "warrant ")) {
-            golden(&format!("{name}.whatif"), &run(&["whatif", &shown, &declaration]));
+        if let Some(declaration) =
+            first_after(&text, "fact ").or_else(|| first_after(&text, "warrant "))
+        {
+            golden(
+                &format!("{name}.whatif"),
+                &run(&["whatif", &shown, &declaration]),
+            );
         }
         if let Some(concept) = first_after(&text, "concept ") {
-            golden(&format!("{name}.pattern"), &run(&["pattern", &shown, &concept]));
-            golden(&format!("{name}.pattern-vars"), &run(&["pattern", &shown, &concept, "--vars"]));
+            golden(
+                &format!("{name}.pattern"),
+                &run(&["pattern", &shown, &concept]),
+            );
+            golden(
+                &format!("{name}.pattern-vars"),
+                &run(&["pattern", &shown, &concept, "--vars"]),
+            );
         }
     }
 }
@@ -168,9 +188,20 @@ fn build_emits_the_same_files() {
         let out = std::env::temp_dir().join(format!("engine-golden-build-{name}"));
         let _ = std::fs::remove_dir_all(&out);
         std::fs::create_dir_all(&out).unwrap();
-        let produced = run(&["build", &path.display().to_string(), "--out", &out.display().to_string()]);
+        let produced = run(&[
+            "build",
+            &path.display().to_string(),
+            "--out",
+            &out.display().to_string(),
+        ]);
         golden(&format!("{name}.build-stdout"), &produced);
-        for file in ["OBLIGATIONS.md", "LEARNED.md", "OPEN.md", "NOTES.md", "predicates.py"] {
+        for file in [
+            "OBLIGATIONS.md",
+            "LEARNED.md",
+            "OPEN.md",
+            "NOTES.md",
+            "predicates.py",
+        ] {
             let text = std::fs::read_to_string(out.join(file)).unwrap_or_default();
             golden(&format!("{name}.build.{file}"), &normalize(&text));
         }
@@ -186,8 +217,11 @@ fn map_aligns_every_pair() {
             if left >= right {
                 continue;
             }
-            let produced =
-                run(&["map", &left.display().to_string(), &right.display().to_string()]);
+            let produced = run(&[
+                "map",
+                &left.display().to_string(),
+                &right.display().to_string(),
+            ]);
             if produced == "no shared structure\n" {
                 continue;
             }

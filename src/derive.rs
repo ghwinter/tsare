@@ -20,8 +20,11 @@ pub struct Analysis {
 
 pub fn analyze(prog: &Program) -> Analysis {
     let inside = grounded(prog.decls);
-    let mut facts: Vec<String> =
-        prog.of_kind("fact").iter().map(|decl| decl.name.clone()).collect();
+    let mut facts: Vec<String> = prog
+        .of_kind("fact")
+        .iter()
+        .map(|decl| decl.name.clone())
+        .collect();
     facts.sort();
     let mut grounded_names: HashSet<String> = facts.iter().cloned().collect();
     let rules: Vec<crate::closure::Rule> = applications(prog.decls)
@@ -38,7 +41,10 @@ pub fn analyze(prog: &Program) -> Analysis {
                 continue;
             }
             if !rule.premises.is_empty()
-                && rule.premises.iter().all(|premise| grounded_names.contains(premise))
+                && rule
+                    .premises
+                    .iter()
+                    .all(|premise| grounded_names.contains(premise))
             {
                 applied.insert((rule.warrant.clone(), rule.target.clone()));
                 if !grounded_names.contains(&rule.target) {
@@ -60,8 +66,11 @@ pub fn analyze(prog: &Program) -> Analysis {
     let fact_set: HashSet<String> = facts.iter().cloned().collect();
     let mut derived: Vec<String> = grounded_names.difference(&fact_set).cloned().collect();
     derived.sort();
-    let mut conditional: Vec<String> =
-        supported.iter().filter(|name| !grounded_names.contains(*name)).cloned().collect();
+    let mut conditional: Vec<String> = supported
+        .iter()
+        .filter(|name| !grounded_names.contains(*name))
+        .cloned()
+        .collect();
     conditional.sort();
 
     let mut reasons: HashMap<String, Vec<String>> = HashMap::new();
@@ -81,7 +90,12 @@ pub fn analyze(prog: &Program) -> Analysis {
         reasons.insert(name.clone(), missing);
     }
 
-    Analysis { facts, grounded: derived, conditional, reasons }
+    Analysis {
+        facts,
+        grounded: derived,
+        conditional,
+        reasons,
+    }
 }
 
 /// Kept for `check`, which only needs the warning text.
@@ -102,7 +116,11 @@ pub fn conditional_reasons(prog: &Program) -> Vec<(String, String)> {
 pub fn proposition_statuses(prog: &Program) -> HashMap<String, String> {
     let mut out = HashMap::new();
     for row in conclusions(prog) {
-        if prog.get(&row.name).map(|decl| decl.kind == "proposition").unwrap_or(false) {
+        if prog
+            .get(&row.name)
+            .map(|decl| decl.kind == "proposition")
+            .unwrap_or(false)
+        {
             out.insert(row.name, row.status.to_string());
         }
     }

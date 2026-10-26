@@ -7,13 +7,39 @@ use crate::specs::spec;
 use crate::syntax::{Decl, Val};
 
 pub const REF_KEYS: &[&str] = &[
-    "from", "to", "grounded_by", "against", "uses", "assumes", "answers", "separates",
-    "rival", "witness", "basis", "attacks", "checked_by", "holds_in", "exposes",
-    "closes_with", "parent", "questions", "dimension", "elements", "of",
+    "from",
+    "to",
+    "grounded_by",
+    "against",
+    "uses",
+    "assumes",
+    "answers",
+    "separates",
+    "rival",
+    "witness",
+    "basis",
+    "attacks",
+    "checked_by",
+    "holds_in",
+    "exposes",
+    "closes_with",
+    "parent",
+    "questions",
+    "dimension",
+    "elements",
+    "of",
 ];
 
 /// Values that name a procedure rather than a declaration.
-pub const LITERALS: &[&str] = &["tool", "doc", "code", "user", "model", "observation", "experiment"];
+pub const LITERALS: &[&str] = &[
+    "tool",
+    "doc",
+    "code",
+    "user",
+    "model",
+    "observation",
+    "experiment",
+];
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Diagnostic {
@@ -40,15 +66,30 @@ fn diag(code: &'static str, message: String, decl: &Decl) -> Diagnostic {
 
 /// Codes live as `&'static str` so comparisons are cheap; a replayed code is interned here.
 pub fn code_of(code: &str) -> &'static str {
-    KNOWN_CODES.iter().find(|known| **known == code).copied().unwrap_or_else(|| {
-        Box::leak(code.to_string().into_boxed_str())
-    })
+    KNOWN_CODES
+        .iter()
+        .find(|known| **known == code)
+        .copied()
+        .unwrap_or_else(|| Box::leak(code.to_string().into_boxed_str()))
 }
 
 const KNOWN_CODES: &[&str] = &[
-    "E-EMPTY-DOCUMENT", "E-DUP-ID", "E-KIND-UNKNOWN", "E-FIELD", "E-MISSING", "E-TYPE",
-    "E-UNDEFINED", "E-NOTE-REF", "E-KIND", "E-CYCLE", "E-COLLAPSE", "E-TENSION", "E-LAYER-LEAK",
-    "E-UNCOVERED", "W-HOLE", "W-CONDITIONAL",
+    "E-EMPTY-DOCUMENT",
+    "E-DUP-ID",
+    "E-KIND-UNKNOWN",
+    "E-FIELD",
+    "E-MISSING",
+    "E-TYPE",
+    "E-UNDEFINED",
+    "E-NOTE-REF",
+    "E-KIND",
+    "E-CYCLE",
+    "E-COLLAPSE",
+    "E-TENSION",
+    "E-LAYER-LEAK",
+    "E-UNCOVERED",
+    "W-HOLE",
+    "W-CONDITIONAL",
 ];
 
 pub fn refs(value: &Val, out: &mut Vec<String>) {
@@ -115,21 +156,29 @@ fn type_ok(ftype: &str, value: &Val) -> bool {
 
 fn check_record(decl: &Decl, out: &mut Vec<Diagnostic>) {
     let Some(fields) = spec(&decl.kind) else {
-        out.push(diag("E-KIND-UNKNOWN", format!("unknown kind {}", decl.kind), decl));
+        out.push(diag(
+            "E-KIND-UNKNOWN",
+            format!("unknown kind {}", decl.kind),
+            decl,
+        ));
         return;
     };
     for (index, (key, value)) in decl.fields.iter().enumerate() {
-        let (line, col, end_line, end_col) = decl
-            .field_span
-            .get(index)
-            .copied()
-            .unwrap_or((decl.line, decl.col, decl.end_line, decl.end_col));
+        let (line, col, end_line, end_col) = decl.field_span.get(index).copied().unwrap_or((
+            decl.line,
+            decl.col,
+            decl.end_line,
+            decl.end_col,
+        ));
         match fields.iter().find(|(name, _, _)| name == key) {
             Some((_, ftype, _)) => {
                 if matches!(value, Val::Hole) {
                     out.push(Diagnostic {
                         code: "W-HOLE",
-                        message: format!("{}.{key} is a hole: it compiles, but nothing can check it yet", decl.name),
+                        message: format!(
+                            "{}.{key} is a hole: it compiles, but nothing can check it yet",
+                            decl.name
+                        ),
                         line,
                         col,
                         end_line,
@@ -162,7 +211,11 @@ fn check_record(decl: &Decl, out: &mut Vec<Diagnostic>) {
     }
     for &(name, _, required) in fields {
         if required && !decl.fields.iter().any(|(key, _)| key == name) {
-            out.push(diag("E-MISSING", format!("{} needs {name}", decl.name), decl));
+            out.push(diag(
+                "E-MISSING",
+                format!("{} needs {name}", decl.name),
+                decl,
+            ));
         }
     }
 }
@@ -186,7 +239,11 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
     let mut by_name: HashMap<&str, &str> = HashMap::new();
     for decl in decls {
         if by_name.contains_key(decl.name.as_str()) {
-            out.push(diag("E-DUP-ID", format!("{} is declared twice", decl.name), decl));
+            out.push(diag(
+                "E-DUP-ID",
+                format!("{} is declared twice", decl.name),
+                decl,
+            ));
         } else {
             by_name.insert(decl.name.as_str(), decl.kind.as_str());
         }
@@ -232,7 +289,10 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
                     if *target_kind == "note" {
                         out.push(diag_ref(
                             "E-NOTE-REF",
-                            format!("{}.{key} leans on the note {name}, which is not a commitment", decl.name),
+                            format!(
+                                "{}.{key} leans on the note {name}, which is not a commitment",
+                                decl.name
+                            ),
                             decl,
                             key,
                             &name,
@@ -243,7 +303,10 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
                         if expected != "any" && target_kind != &expected {
                             out.push(diag_ref(
                                 "E-KIND",
-                                format!("{}.{key} expects {expected}, but {name} is {target_kind}", decl.name),
+                                format!(
+                                    "{}.{key} expects {expected}, but {name} is {target_kind}",
+                                    decl.name
+                                ),
                                 decl,
                                 key,
                                 &name,
@@ -253,14 +316,17 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
                     continue;
                 }
                 if seen.insert((decl.name.clone(), name.clone())) {
-                    out.push(diag("E-UNDEFINED", format!("{}.{key} refers to {name}", decl.name), decl));
+                    out.push(diag(
+                        "E-UNDEFINED",
+                        format!("{}.{key} refers to {name}", decl.name),
+                        decl,
+                    ));
                 }
             }
         }
     }
     out
 }
-
 
 fn ids(value: &Val) -> Vec<String> {
     let mut out = Vec::new();
@@ -279,7 +345,9 @@ fn field_ids(decl: &Decl, key: &str) -> Vec<String> {
 fn expected_kind(decl: &Decl, key: &str) -> Option<String> {
     let fields = spec(&decl.kind)?;
     let (_, ftype, _) = fields.iter().find(|(name, _, _)| *name == key)?;
-    let kind = ftype.strip_prefix("list:ref:").or_else(|| ftype.strip_prefix("ref:"))?;
+    let kind = ftype
+        .strip_prefix("list:ref:")
+        .or_else(|| ftype.strip_prefix("ref:"))?;
     Some(kind.to_string())
 }
 
@@ -310,7 +378,8 @@ fn check_cycles(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     for decl in decls {
         by_name.insert(decl.name.as_str(), decl);
     }
-    let mut edges: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+    let mut edges: std::collections::HashMap<String, Vec<String>> =
+        std::collections::HashMap::new();
     for decl in decls {
         let mut targets = Vec::new();
         for (key, value) in &decl.fields {
@@ -395,30 +464,39 @@ fn check_collapse(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     }
 }
 
-
 fn string_field<'a>(decl: &'a Decl, key: &str) -> Option<&'a str> {
-    decl.fields.iter().find(|(name, _)| name == key).and_then(|(_, value)| match value {
-        Val::Str(text) => Some(text.as_str()),
-        _ => None,
-    })
+    decl.fields
+        .iter()
+        .find(|(name, _)| name == key)
+        .and_then(|(_, value)| match value {
+            Val::Str(text) => Some(text.as_str()),
+            _ => None,
+        })
 }
 
 fn id_field<'a>(decl: &'a Decl, key: &str) -> Option<&'a str> {
-    decl.fields.iter().find(|(name, _)| name == key).and_then(|(_, value)| match value {
-        Val::Id(text) => Some(text.as_str()),
-        _ => None,
-    })
+    decl.fields
+        .iter()
+        .find(|(name, _)| name == key)
+        .and_then(|(_, value)| match value {
+            Val::Id(text) => Some(text.as_str()),
+            _ => None,
+        })
 }
 
 fn num_field(decl: &Decl, key: &str) -> Option<f64> {
-    decl.fields.iter().find(|(name, _)| name == key).and_then(|(_, value)| match value {
-        Val::Num(text) => text.parse().ok(),
-        _ => None,
-    })
+    decl.fields
+        .iter()
+        .find(|(name, _)| name == key)
+        .and_then(|(_, value)| match value {
+            Val::Num(text) => text.parse().ok(),
+            _ => None,
+        })
 }
 
 fn check_tension(decls: &[Decl], out: &mut Vec<Diagnostic>) {
-    let mut by_metric: std::collections::HashMap<String, Vec<&Decl>> = std::collections::HashMap::new();
+    let mut by_metric: std::collections::HashMap<String, Vec<&Decl>> =
+        std::collections::HashMap::new();
     for decl in decls.iter().filter(|decl| decl.kind == "value") {
         if let Some(metric) = string_field(decl, "metric") {
             by_metric.entry(metric.to_string()).or_default().push(decl);
@@ -427,7 +505,9 @@ fn check_tension(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     for (metric, group) in by_metric {
         for (index, first) in group.iter().enumerate() {
             for second in &group[index + 1..] {
-                let (Some(left), Some(right)) = (id_field(first, "direction"), id_field(second, "direction")) else {
+                let (Some(left), Some(right)) =
+                    (id_field(first, "direction"), id_field(second, "direction"))
+                else {
                     continue;
                 };
                 if left == right {
@@ -461,12 +541,15 @@ fn check_tension(decls: &[Decl], out: &mut Vec<Diagnostic>) {
 }
 
 fn check_layer(decls: &[Decl], out: &mut Vec<Diagnostic>) {
-    let mut exposes: std::collections::HashMap<&str, Vec<String>> = std::collections::HashMap::new();
+    let mut exposes: std::collections::HashMap<&str, Vec<String>> =
+        std::collections::HashMap::new();
     for decl in decls.iter().filter(|decl| decl.kind == "layer") {
         exposes.insert(decl.name.as_str(), field_ids(decl, "exposes"));
     }
-    let by_name: std::collections::HashMap<&str, &Decl> =
-        decls.iter().map(|decl| (decl.name.as_str(), decl)).collect();
+    let by_name: std::collections::HashMap<&str, &Decl> = decls
+        .iter()
+        .map(|decl| (decl.name.as_str(), decl))
+        .collect();
 
     for decl in decls {
         let Some(source) = id_field(decl, "layer") else {
@@ -511,7 +594,6 @@ fn check_layer(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     }
 }
 
-
 fn field_pos(decl: &Decl, key: &str) -> (usize, usize) {
     for (index, (name, _)) in decl.fields.iter().enumerate() {
         if name == key {
@@ -531,13 +613,24 @@ fn list_field(decl: &Decl, key: &str) -> Vec<String> {
 
 /// The attribute keys a fact records.  Two facts are comparable only over a shared key.
 fn attr_keys(decl: &Decl) -> HashSet<String> {
-    match decl.fields.iter().find(|(name, _)| name == "attrs").map(|(_, value)| value) {
+    match decl
+        .fields
+        .iter()
+        .find(|(name, _)| name == "attrs")
+        .map(|(_, value)| value)
+    {
         Some(Val::Rec(fields)) => fields.iter().map(|(key, _)| key.clone()).collect(),
         _ => HashSet::new(),
     }
 }
 
-fn sem(decl: &Decl, code: &'static str, message: String, key: Option<&str>, out: &mut Vec<Diagnostic>) {
+fn sem(
+    decl: &Decl,
+    code: &'static str,
+    message: String,
+    key: Option<&str>,
+    out: &mut Vec<Diagnostic>,
+) {
     let (line, col, end_line, end_col) = match key {
         Some(name) => decl
             .fields
@@ -587,13 +680,21 @@ fn check_semantics(decls: &[Decl], out: &mut Vec<Diagnostic>) {
             "fact" => {
                 if let Some(claim) = string_field(decl, "claim") {
                     if claim.trim().is_empty() {
-                        sem(decl, "E-EMPTY", format!("fact {} has an empty claim", decl.name), Some("claim"), out);
+                        sem(
+                            decl,
+                            "E-EMPTY",
+                            format!("fact {} has an empty claim", decl.name),
+                            Some("claim"),
+                            out,
+                        );
                     }
                     // "at all" is an idiom, not a universal claim: drop it before looking for
                     // the words that do claim universality
                     let lowered = claim.replace("at all", "").replace("after all", "");
                     let universal = ["所有", "都", "全部", "always", "every", "all "];
-                    if universal.iter().any(|word| lowered.contains(word)) && string_field(decl, "scope").is_none() {
+                    if universal.iter().any(|word| lowered.contains(word))
+                        && string_field(decl, "scope").is_none()
+                    {
                         sem(
                             decl,
                             "W-OVERCLAIM",
@@ -603,11 +704,16 @@ fn check_semantics(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                         );
                     }
                 }
-                if id_field(decl, "evidence") == Some("model") && string_field(decl, "confirmed_by").is_none() {
+                if id_field(decl, "evidence") == Some("model")
+                    && string_field(decl, "confirmed_by").is_none()
+                {
                     sem(
                         decl,
                         "W-UNCONFIRMED",
-                        format!("fact {} was supplied by a model, not by the user or a tool", decl.name),
+                        format!(
+                            "fact {} was supplied by a model, not by the user or a tool",
+                            decl.name
+                        ),
                         Some("evidence"),
                         out,
                     );
@@ -668,7 +774,10 @@ fn check_semantics(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                     sem(
                         decl,
                         "W-UNWARRANTED",
-                        format!("proposition {} cites premises, but no rule connects them to it", decl.name),
+                        format!(
+                            "proposition {} cites premises, but no rule connects them to it",
+                            decl.name
+                        ),
                         Some("from"),
                         out,
                     );
@@ -681,7 +790,9 @@ fn check_semantics(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                     });
                     let explained = decls.iter().any(|other| {
                         other.kind == "hypothesis"
-                            && list_field(other, "assumes").iter().any(|name| name == &decl.name)
+                            && list_field(other, "assumes")
+                                .iter()
+                                .any(|name| name == &decl.name)
                     });
                     let derived = if concluded {
                         "deductive"
@@ -711,11 +822,16 @@ fn check_semantics(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                         );
                     }
                 }
-                if decl.fields.iter().any(|(key, _)| key == "confidence") && !warranty_targets.contains(&decl.name) {
+                if decl.fields.iter().any(|(key, _)| key == "confidence")
+                    && !warranty_targets.contains(&decl.name)
+                {
                     sem(
                         decl,
                         "W-CONFIDENCE-ASSERTED",
-                        format!("proposition {} carries a confidence but no rule computes it", decl.name),
+                        format!(
+                            "proposition {} carries a confidence but no rule computes it",
+                            decl.name
+                        ),
                         Some("confidence"),
                         out,
                     );
@@ -726,17 +842,24 @@ fn check_semantics(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                     sem(
                         decl,
                         "E-NO-ASSUMPTION",
-                        format!("hypothesis {} assumes nothing, so nothing could refute it", decl.name),
+                        format!(
+                            "hypothesis {} assumes nothing, so nothing could refute it",
+                            decl.name
+                        ),
                         Some("assumes"),
                         out,
                     );
                 }
-                let test = string_field(decl, "test").map(|text| text.trim().to_string()).unwrap_or_default();
+                let test = string_field(decl, "test")
+                    .map(|text| text.trim().to_string())
+                    .unwrap_or_default();
                 let rival = id_field(decl, "rival");
                 // a hypothesis already settled by a fact does not need a test: the evidence
                 // that refuted it is the observation.
-                let decided = matches!(id_field(decl, "verdict"), Some("supported") | Some("refuted"))
-                    && id_field(decl, "verdict_by").is_some();
+                let decided = matches!(
+                    id_field(decl, "verdict"),
+                    Some("supported") | Some("refuted")
+                ) && id_field(decl, "verdict_by").is_some();
                 if test.is_empty() && rival.is_none() && !decided {
                     sem(
                         decl,
@@ -758,8 +881,10 @@ fn check_semantics(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                         out,
                     );
                 }
-                if matches!(id_field(decl, "verdict"), Some("supported") | Some("refuted"))
-                    && id_field(decl, "verdict_by").is_none()
+                if matches!(
+                    id_field(decl, "verdict"),
+                    Some("supported") | Some("refuted")
+                ) && id_field(decl, "verdict_by").is_none()
                 {
                     sem(
                         decl,
@@ -799,7 +924,10 @@ fn check_semantics(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                     sem(
                         decl,
                         "W-UNWARRANTED-BASIS",
-                        format!("warrant {} states a rule, but nothing makes the rule acceptable", decl.name),
+                        format!(
+                            "warrant {} states a rule, but nothing makes the rule acceptable",
+                            decl.name
+                        ),
                         Some("claim"),
                         out,
                     );
@@ -810,12 +938,12 @@ fn check_semantics(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     }
 }
 
-
 fn separates(concept: &Decl, left: &str, right: &str) -> bool {
     let positives = list_field(concept, "grounded_by");
     let negatives = list_field(concept, "against");
     let has = |names: &[String], name: &str| names.iter().any(|item| item == name);
-    (has(&positives, left) && has(&negatives, right)) || (has(&positives, right) && has(&negatives, left))
+    (has(&positives, left) && has(&negatives, right))
+        || (has(&positives, right) && has(&negatives, left))
 }
 
 fn check_partition(
@@ -829,7 +957,10 @@ fn check_partition(
         sem(
             decl,
             "E-PARTITION-EMPTY",
-            format!("partition {} names no element, so it partitions nothing", decl.name),
+            format!(
+                "partition {} names no element, so it partitions nothing",
+                decl.name
+            ),
             Some("elements"),
             out,
         );
@@ -855,7 +986,9 @@ fn check_partition(
     let unknown = closure == "unknown";
     let referenced = decls.iter().any(|other| {
         (other.kind == "proposition" || other.kind == "warrant")
-            && list_field(other, "from").iter().any(|name| name == &decl.name)
+            && list_field(other, "from")
+                .iter()
+                .any(|name| name == &decl.name)
     });
 
     // naming a dimension and admitting you have none are two different claims, and exactly
@@ -924,9 +1057,7 @@ fn check_partition(
             sem(
                 decl,
                 "E-PARTITION-ELEMENT",
-                format!(
-                    "{name} is not an instance of {dimension}, which is what the list claims"
-                ),
+                format!("{name} is not an instance of {dimension}, which is what the list claims"),
                 Some("elements"),
                 out,
             );
@@ -939,7 +1070,10 @@ fn check_partition(
         let has_negative = !list_field(target, "against").is_empty();
         if has_negative {
             let program = crate::program::Program::new(decls);
-            if crate::induce::induce_concept(&program, target).clause.is_none() {
+            if crate::induce::induce_concept(&program, target)
+                .clause
+                .is_none()
+            {
                 sem(
                     decl,
                     "W-PARTITION-UNLEARNED",
@@ -959,7 +1093,10 @@ fn check_partition(
             sem(
                 decl,
                 "W-PARTITION-CLOSED-UNJUSTIFIED",
-                format!("partition {} claims to be closed without a reason", decl.name),
+                format!(
+                    "partition {} claims to be closed without a reason",
+                    decl.name
+                ),
                 Some("closure"),
                 out,
             );
@@ -1022,7 +1159,9 @@ fn check_confidence_flow(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     let program = crate::program::Program::new(decls);
     let weights = crate::weigh::weights(&program);
     for decl in decls.iter().filter(|decl| decl.kind == "proposition") {
-        let Some(declared) = crate::program::f_num(decl, "confidence") else { continue };
+        let Some(declared) = crate::program::f_num(decl, "confidence") else {
+            continue;
+        };
         if let Some(row) = weights.iter().find(|row| row.name == decl.name) {
             if row.status == "derived" {
                 if let Some(value) = row.value {
@@ -1046,8 +1185,12 @@ fn check_confidence_flow(decls: &[Decl], out: &mut Vec<Diagnostic>) {
         // weakest premise it cites
         let mut floor: Option<f64> = None;
         for name in crate::program::f_ids(decl, "from") {
-            let Some(fact) = program.get(&name) else { continue };
-            let Some(value) = crate::program::f_num(fact, "confidence") else { continue };
+            let Some(fact) = program.get(&name) else {
+                continue;
+            };
+            let Some(value) = crate::program::f_num(fact, "confidence") else {
+                continue;
+            };
             floor = Some(floor.map_or(value, |low: f64| low.min(value)));
         }
         if let Some(floor) = floor {
@@ -1068,10 +1211,14 @@ fn check_confidence_flow(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     // a rule's number is bounded by the numbers it consumes: weigh already takes the minimum,
     // so a higher declared number is a claim its own premises cannot carry
     for decl in decls.iter().filter(|decl| decl.kind == "warrant") {
-        let Some(declared) = crate::program::f_num(decl, "confidence") else { continue };
+        let Some(declared) = crate::program::f_num(decl, "confidence") else {
+            continue;
+        };
         let mut floor: Option<f64> = None;
         for name in crate::program::f_ids(decl, "from") {
-            let Some(premise) = program.get(&name) else { continue };
+            let Some(premise) = program.get(&name) else {
+                continue;
+            };
             let value = crate::program::f_num(premise, "confidence").unwrap_or(1.0);
             floor = Some(floor.map_or(value, |low: f64| low.min(value)));
         }
@@ -1093,8 +1240,10 @@ fn check_confidence_flow(decls: &[Decl], out: &mut Vec<Diagnostic>) {
 }
 
 fn check_remaining(decls: &[Decl], out: &mut Vec<Diagnostic>) {
-    let by_name: std::collections::HashMap<&str, &Decl> =
-        decls.iter().map(|decl| (decl.name.as_str(), decl)).collect();
+    let by_name: std::collections::HashMap<&str, &Decl> = decls
+        .iter()
+        .map(|decl| (decl.name.as_str(), decl))
+        .collect();
 
     for decl in decls {
         if is_incomplete(decl) {
@@ -1109,7 +1258,10 @@ fn check_remaining(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                     sem(
                         decl,
                         "E-UNGROUNDED",
-                        format!("concept {} has no positive example, so it denotes nothing", decl.name),
+                        format!(
+                            "concept {} has no positive example, so it denotes nothing",
+                            decl.name
+                        ),
                         Some("grounded_by"),
                         out,
                     );
@@ -1118,7 +1270,10 @@ fn check_remaining(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                     sem(
                         decl,
                         "W-UNTESTED",
-                        format!("concept {} is never contrasted with a counterexample", decl.name),
+                        format!(
+                            "concept {} is never contrasted with a counterexample",
+                            decl.name
+                        ),
                         None,
                         out,
                     );
@@ -1134,9 +1289,12 @@ fn check_remaining(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                     .collect();
                 if !positives_share.is_empty() {
                     for example in positives.iter().chain(negatives.iter()) {
-                        let Some(fact) = by_name.get(example.as_str()) else { continue };
+                        let Some(fact) = by_name.get(example.as_str()) else {
+                            continue;
+                        };
                         let keys = attr_keys(fact);
-                        if !keys.is_empty() && keys.intersection(&positives_share).next().is_none() {
+                        if !keys.is_empty() && keys.intersection(&positives_share).next().is_none()
+                        {
                             sem(
                                 decl,
                                 "W-EXAMPLE-SHAPE",
@@ -1150,15 +1308,25 @@ fn check_remaining(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                         }
                     }
                 }
-                let both: Vec<&String> = positives.iter().filter(|name| negatives.contains(name)).collect();
+                let both: Vec<&String> = positives
+                    .iter()
+                    .filter(|name| negatives.contains(name))
+                    .collect();
                 if !both.is_empty() {
                     let mut names: Vec<&str> = both.iter().map(|name| name.as_str()).collect();
                     names.sort();
-                    let listed = names.iter().map(|name| format!("'{name}'")).collect::<Vec<_>>().join(", ");
+                    let listed = names
+                        .iter()
+                        .map(|name| format!("'{name}'"))
+                        .collect::<Vec<_>>()
+                        .join(", ");
                     sem(
                         decl,
                         "E-CONTRADICTION",
-                        format!("concept {} counts [{listed}] as both positive and negative", decl.name),
+                        format!(
+                            "concept {} counts [{listed}] as both positive and negative",
+                            decl.name
+                        ),
                         Some("against"),
                         out,
                     );
@@ -1167,12 +1335,19 @@ fn check_remaining(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                     if let Some(upper) = by_name.get(parent) {
                         if upper.kind == "concept" && !positives.is_empty() {
                             let outer = list_field(upper, "grounded_by");
-                            let outside: Vec<&String> =
-                                positives.iter().filter(|name| !outer.contains(name)).collect();
+                            let outside: Vec<&String> = positives
+                                .iter()
+                                .filter(|name| !outer.contains(name))
+                                .collect();
                             if !outside.is_empty() {
-                                let mut names: Vec<&str> = outside.iter().map(|name| name.as_str()).collect();
+                                let mut names: Vec<&str> =
+                                    outside.iter().map(|name| name.as_str()).collect();
                                 names.sort();
-                                let listed = names.iter().map(|name| format!("'{name}'")).collect::<Vec<_>>().join(", ");
+                                let listed = names
+                                    .iter()
+                                    .map(|name| format!("'{name}'"))
+                                    .collect::<Vec<_>>()
+                                    .join(", ");
                                 sem(
                                     decl,
                                     "E-HIERARCHY",
@@ -1206,7 +1381,10 @@ fn check_remaining(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                     sem(
                         decl,
                         "E-NO-ANSWERS",
-                        format!("question {} admits fewer than two answers, so it asks nothing", decl.name),
+                        format!(
+                            "question {} admits fewer than two answers, so it asks nothing",
+                            decl.name
+                        ),
                         Some("answers"),
                         out,
                     );
@@ -1241,7 +1419,11 @@ fn check_remaining(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                     sem(
                         decl,
                         "E-WITNESS",
-                        format!("blindspot {} needs exactly two witnesses, got {}", decl.name, witness.len()),
+                        format!(
+                            "blindspot {} needs exactly two witnesses, got {}",
+                            decl.name,
+                            witness.len()
+                        ),
                         Some("witness"),
                         out,
                     );
@@ -1250,7 +1432,10 @@ fn check_remaining(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                     sem(
                         decl,
                         "E-NO-SIGNATURE",
-                        format!("blindspot {} names no signature, so it is not relative to anything", decl.name),
+                        format!(
+                            "blindspot {} names no signature, so it is not relative to anything",
+                            decl.name
+                        ),
                         Some("signature"),
                         out,
                     );
@@ -1259,18 +1444,24 @@ fn check_remaining(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                     sem(
                         decl,
                         "W-NO-EXIT",
-                        format!("blindspot {} closes no question, so nothing will ever resolve it", decl.name),
+                        format!(
+                            "blindspot {} closes no question, so nothing will ever resolve it",
+                            decl.name
+                        ),
                         Some("cannot_express"),
                         out,
                     );
                 }
                 if witness.len() == 2 {
                     let (left, right) = (&witness[0], &witness[1]);
-                    if let (Some(left_decl), Some(right_decl)) = (by_name.get(left.as_str()), by_name.get(right.as_str())) {
+                    if let (Some(left_decl), Some(right_decl)) =
+                        (by_name.get(left.as_str()), by_name.get(right.as_str()))
+                    {
                         if left_decl.kind == "fact" && right_decl.kind == "fact" {
                             for name in &signature {
                                 if let Some(concept) = by_name.get(name.as_str()) {
-                                    if concept.kind == "concept" && separates(concept, left, right) {
+                                    if concept.kind == "concept" && separates(concept, left, right)
+                                    {
                                         sem(
                                             decl,
                                             "E-FALSE-BLINDSPOT",
@@ -1293,7 +1484,10 @@ fn check_remaining(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                     sem(
                         decl,
                         "W-LAW-UNCHECKED",
-                        format!("law {} is asserted, but nothing would break if it were false", decl.name),
+                        format!(
+                            "law {} is asserted, but nothing would break if it were false",
+                            decl.name
+                        ),
                         Some("statement"),
                         out,
                     );
@@ -1337,7 +1531,10 @@ fn check_remaining(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                                 sem(
                                     decl,
                                     "W-EXPOSE-FOREIGN",
-                                    format!("layer {} exposes {name}, which sits in {target_layer}", decl.name),
+                                    format!(
+                                        "layer {} exposes {name}, which sits in {target_layer}",
+                                        decl.name
+                                    ),
                                     Some("exposes"),
                                     out,
                                 );
@@ -1350,4 +1547,3 @@ fn check_remaining(decls: &[Decl], out: &mut Vec<Diagnostic>) {
         }
     }
 }
-

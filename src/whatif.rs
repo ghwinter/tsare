@@ -57,18 +57,32 @@ pub struct Counterfactual {
 pub fn compare(before: &[Decl], after: &[Decl]) -> Counterfactual {
     let diagnostics_before = check(before);
     let diagnostics_after = check(after);
-    let errors_before = diagnostics_before.iter().filter(|item| item.code.starts_with("E-")).count();
-    let errors_after = diagnostics_after.iter().filter(|item| item.code.starts_with("E-")).count();
-    let warnings_before =
-        diagnostics_before.iter().filter(|item| item.code.starts_with("W-")).count();
-    let warnings_after =
-        diagnostics_after.iter().filter(|item| item.code.starts_with("W-")).count();
+    let errors_before = diagnostics_before
+        .iter()
+        .filter(|item| item.code.starts_with("E-"))
+        .count();
+    let errors_after = diagnostics_after
+        .iter()
+        .filter(|item| item.code.starts_with("E-"))
+        .count();
+    let warnings_before = diagnostics_before
+        .iter()
+        .filter(|item| item.code.starts_with("W-"))
+        .count();
+    let warnings_after = diagnostics_after
+        .iter()
+        .filter(|item| item.code.starts_with("W-"))
+        .count();
     let codes_before: HashSet<&str> = diagnostics_before.iter().map(|item| item.code).collect();
     let codes_after: HashSet<&str> = diagnostics_after.iter().map(|item| item.code).collect();
-    let mut new_codes: Vec<String> =
-        codes_after.difference(&codes_before).map(|code| code.to_string()).collect();
-    let mut lost_codes: Vec<String> =
-        codes_before.difference(&codes_after).map(|code| code.to_string()).collect();
+    let mut new_codes: Vec<String> = codes_after
+        .difference(&codes_before)
+        .map(|code| code.to_string())
+        .collect();
+    let mut lost_codes: Vec<String> = codes_before
+        .difference(&codes_after)
+        .map(|code| code.to_string())
+        .collect();
     new_codes.sort();
     lost_codes.sort();
 
@@ -76,7 +90,10 @@ pub fn compare(before: &[Decl], after: &[Decl]) -> Counterfactual {
     let status_after = proposition_statuses(&Program::new(after));
     let mut changed = Vec::new();
     for (name, status) in &status_before {
-        let now = status_after.get(name).cloned().unwrap_or_else(|| "gone".to_string());
+        let now = status_after
+            .get(name)
+            .cloned()
+            .unwrap_or_else(|| "gone".to_string());
         if &now != status {
             changed.push((name.clone(), status.clone(), now));
         }
@@ -85,7 +102,11 @@ pub fn compare(before: &[Decl], after: &[Decl]) -> Counterfactual {
     let mut newly_asserted: Vec<String> = status_after
         .iter()
         .filter(|(name, status)| {
-            **status == "asserted" && status_before.get(*name).map(|old| old != "asserted").unwrap_or(true)
+            **status == "asserted"
+                && status_before
+                    .get(*name)
+                    .map(|old| old != "asserted")
+                    .unwrap_or(true)
         })
         .map(|(name, _)| name.clone())
         .collect();

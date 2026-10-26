@@ -17,7 +17,12 @@ pub struct Session {
 
 impl Session {
     pub fn new(display: impl Into<String>) -> Self {
-        Session { diagnostics: Vec::new(), source: None, sources: Vec::new(), display: display.into() }
+        Session {
+            diagnostics: Vec::new(),
+            source: None,
+            sources: Vec::new(),
+            display: display.into(),
+        }
     }
 
     pub fn with_source(mut self, source: &str) -> Self {
@@ -46,7 +51,10 @@ impl Session {
     }
 
     pub fn errors(&self) -> usize {
-        self.diagnostics.iter().filter(|item| item.code.starts_with('E')).count()
+        self.diagnostics
+            .iter()
+            .filter(|item| item.code.starts_with('E'))
+            .count()
     }
 
     pub fn warnings(&self) -> usize {
@@ -69,7 +77,12 @@ impl Session {
     fn sorted(&self) -> Vec<&Diagnostic> {
         let mut items: Vec<&Diagnostic> = self.diagnostics.iter().collect();
         items.sort_by(|left, right| {
-            (&left.file, left.line, left.col, left.code).cmp(&(&right.file, right.line, right.col, right.code))
+            (&left.file, left.line, left.col, left.code).cmp(&(
+                &right.file,
+                right.line,
+                right.col,
+                right.code,
+            ))
         });
         items
     }
@@ -95,15 +108,20 @@ impl Session {
         if !self.sources.is_empty() {
             let mut out = String::new();
             for (name, text) in &self.sources {
-                let mine: Vec<Diagnostic> =
-                    self.sorted().into_iter().filter(|item| &item.file == name).cloned().collect();
+                let mine: Vec<Diagnostic> = self
+                    .sorted()
+                    .into_iter()
+                    .filter(|item| &item.file == name)
+                    .cloned()
+                    .collect();
                 if mine.is_empty() {
                     continue;
                 }
                 out.push_str(&crate::render::render(text, name, &mine));
             }
             // a diagnostic that belongs to no loaded file still gets printed
-            let inside = |item: &Diagnostic| self.sources.iter().any(|(name, _)| &item.file == name);
+            let inside =
+                |item: &Diagnostic| self.sources.iter().any(|(name, _)| &item.file == name);
             for item in self.sorted() {
                 if !inside(item) {
                     out.push_str(&format!(
@@ -151,7 +169,11 @@ impl Session {
                 crate::cli::escape(&item.message)
             ));
         }
-        let joined = if lines.is_empty() { String::new() } else { format!("\n{}\n", lines.join(",\n")) };
+        let joined = if lines.is_empty() {
+            String::new()
+        } else {
+            format!("\n{}\n", lines.join(",\n"))
+        };
         format!(
             "{{\n  \"diagnostics\": [{joined}],\n  \"errors\": {},\n  \"warnings\": {}\n}}",
             self.errors(),

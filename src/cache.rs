@@ -23,7 +23,10 @@ pub fn key(text: &str) -> String {
 }
 
 fn escape(text: &str) -> String {
-    text.replace('\\', "\\\\").replace('"', "\\\"").replace('\n', "\\n").replace('\t', "\\t")
+    text.replace('\\', "\\\\")
+        .replace('"', "\\\"")
+        .replace('\n', "\\n")
+        .replace('\t', "\\t")
 }
 
 pub fn dump(diagnostics: &[Diagnostic]) -> String {
@@ -50,9 +53,18 @@ pub fn restore(payload: &Json) -> Vec<Diagnostic> {
                 .iter()
                 .filter_map(|item| {
                     let code = item.get("code")?.as_str()?;
-                    let message = item.get("message").and_then(|value| value.as_str()).unwrap_or("");
-                    let line = item.get("line").and_then(|value| value.as_f64()).unwrap_or(1.0) as usize;
-                    let col = item.get("col").and_then(|value| value.as_f64()).unwrap_or(1.0) as usize;
+                    let message = item
+                        .get("message")
+                        .and_then(|value| value.as_str())
+                        .unwrap_or("");
+                    let line = item
+                        .get("line")
+                        .and_then(|value| value.as_f64())
+                        .unwrap_or(1.0) as usize;
+                    let col = item
+                        .get("col")
+                        .and_then(|value| value.as_f64())
+                        .unwrap_or(1.0) as usize;
                     Some(Diagnostic {
                         code: crate::check::code_of(code),
                         message: message.to_string(),
@@ -86,4 +98,3 @@ pub fn save(entries: &[(String, Json)]) -> std::io::Result<()> {
     let fields: Vec<(String, Json)> = entries.to_vec();
     std::fs::write(path, json::serialize(&Json::Obj(fields)))
 }
-

@@ -104,7 +104,12 @@ fn lex(src: &str) -> (Vec<Token>, Vec<ParseError>) {
                     col: start_col,
                 });
             }
-            out.push(Token { text: format!("\x00{text}"), width, line, col: start_col });
+            out.push(Token {
+                text: format!("\x00{text}"),
+                width,
+                line,
+                col: start_col,
+            });
             i = if terminated { j + 1 } else { j };
             col += width;
             continue;
@@ -125,7 +130,12 @@ fn lex(src: &str) -> (Vec<Token>, Vec<ParseError>) {
                 i += 1;
             }
             let width = text.chars().count();
-            out.push(Token { text, width, line, col });
+            out.push(Token {
+                text,
+                width,
+                line,
+                col,
+            });
             col += width;
             continue;
         }
@@ -136,11 +146,21 @@ fn lex(src: &str) -> (Vec<Token>, Vec<ParseError>) {
                 i += 1;
             }
             let width = text.chars().count();
-            out.push(Token { text, width, line, col });
+            out.push(Token {
+                text,
+                width,
+                line,
+                col,
+            });
             col += width;
             continue;
         }
-        out.push(Token { text: c.to_string(), width: 1, line, col });
+        out.push(Token {
+            text: c.to_string(),
+            width: 1,
+            line,
+            col,
+        });
         i += 1;
         col += 1;
     }
@@ -177,8 +197,16 @@ impl Parser {
 
     fn fail(&self, message: String) -> ParseError {
         // at the end of input the useful position is the end of the last token read
-        let (line, col) = if self.pos >= self.toks.len() { self.last_end } else { self.position() };
-        ParseError { message, line: line.max(1), col: col.max(1) }
+        let (line, col) = if self.pos >= self.toks.len() {
+            self.last_end
+        } else {
+            self.position()
+        };
+        ParseError {
+            message,
+            line: line.max(1),
+            col: col.max(1),
+        }
     }
 
     fn expect(&mut self, want: &str) -> Result<(), ParseError> {
@@ -202,7 +230,10 @@ impl Parser {
                     if self.peek().is_none() {
                         return Err(self.fail("unexpected end of input: missing }".to_string()));
                     }
-                    let key = self.bump().ok_or_else(|| self.fail("missing field name".to_string()))?.text;
+                    let key = self
+                        .bump()
+                        .ok_or_else(|| self.fail("missing field name".to_string()))?
+                        .text;
                     self.expect(":")?;
                     fields.push((key, self.value()?));
                     if self.peek() == Some(",") {
@@ -239,11 +270,20 @@ impl Parser {
                 let token = self.bump().unwrap();
                 Ok(Val::Str(token.text[1..].to_string()))
             }
-            Some(text) if text.chars().next().map(|c| c.is_ascii_digit() || c == '-').unwrap_or(false) => {
+            Some(text)
+                if text
+                    .chars()
+                    .next()
+                    .map(|c| c.is_ascii_digit() || c == '-')
+                    .unwrap_or(false) =>
+            {
                 Ok(Val::Num(self.bump().unwrap().text))
             }
             Some(_) => {
-                let name = self.bump().ok_or_else(|| self.fail("missing value".to_string()))?.text;
+                let name = self
+                    .bump()
+                    .ok_or_else(|| self.fail("missing value".to_string()))?
+                    .text;
                 if self.peek() == Some("(") {
                     self.bump();
                     let mut args = Vec::new();
@@ -261,7 +301,8 @@ impl Parser {
                         .get(self.pos.saturating_sub(1))
                         .map(|token| (token.line, token.col))
                         .unwrap_or((0, 0));
-                    self.ref_pos.push((name.clone(), line, col, col + name.chars().count()));
+                    self.ref_pos
+                        .push((name.clone(), line, col, col + name.chars().count()));
                     Ok(Val::Id(name))
                 }
             }
@@ -288,8 +329,13 @@ impl Parser {
     fn declaration(&mut self) -> Result<Decl, ParseError> {
         let (line, col) = self.position();
         self.ref_pos.clear();
-        let kind_token = self.bump().ok_or_else(|| self.fail("declaration without a kind".to_string()))?;
-        let name = self.bump().ok_or_else(|| self.fail("declaration without a name".to_string()))?.text;
+        let kind_token = self
+            .bump()
+            .ok_or_else(|| self.fail("declaration without a kind".to_string()))?;
+        let name = self
+            .bump()
+            .ok_or_else(|| self.fail("declaration without a name".to_string()))?
+            .text;
         self.expect("{")?;
         let mut fields = Vec::new();
         let mut field_span = Vec::new();
@@ -297,7 +343,10 @@ impl Parser {
             if self.peek().is_none() {
                 return Err(self.fail("unexpected end of input: missing }".to_string()));
             }
-            let key = self.bump().ok_or_else(|| self.fail("field without a name".to_string()))?.text;
+            let key = self
+                .bump()
+                .ok_or_else(|| self.fail("field without a name".to_string()))?
+                .text;
             self.expect(":")?;
             let (value_line, value_col) = self.position();
             let value = self.value()?;
@@ -332,7 +381,12 @@ impl Parser {
     fn recover(&mut self) {
         while let Some(token) = self.toks.get(self.pos) {
             let line_initial = token.col == 1;
-            let identifier = token.text.chars().next().map(|c| c.is_alphabetic() || c == '_').unwrap_or(false);
+            let identifier = token
+                .text
+                .chars()
+                .next()
+                .map(|c| c.is_alphabetic() || c == '_')
+                .unwrap_or(false);
             if line_initial && identifier {
                 return;
             }
@@ -346,7 +400,12 @@ impl Parser {
 /// only on an unterminated string, which it reports and then ends at the newline.
 pub fn parse_recovering(src: &str) -> (Vec<Decl>, Vec<ParseError>) {
     let (tokens, lex_errors) = lex(src);
-    let mut parser = Parser { toks: tokens, pos: 0, ref_pos: Vec::new(), last_end: (0, 0) };
+    let mut parser = Parser {
+        toks: tokens,
+        pos: 0,
+        ref_pos: Vec::new(),
+        last_end: (0, 0),
+    };
     let mut decls = Vec::new();
     let mut errors = lex_errors;
     while let Some(kind) = parser.peek().map(|text| text.to_string()) {
@@ -376,10 +435,3 @@ pub fn parse(src: &str) -> Result<Vec<Decl>, ParseError> {
         None => Ok(decls),
     }
 }
-
-
-
-
-
-
-

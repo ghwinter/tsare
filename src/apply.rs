@@ -44,8 +44,14 @@ pub fn score(text: &str) -> (usize, usize) {
     match syntax::parse(text) {
         Ok(decls) => {
             let diagnostics = check(&decls);
-            let errors = diagnostics.iter().filter(|item| item.code.starts_with("E-")).count();
-            let warnings = diagnostics.iter().filter(|item| item.code.starts_with("W-")).count();
+            let errors = diagnostics
+                .iter()
+                .filter(|item| item.code.starts_with("E-"))
+                .count();
+            let warnings = diagnostics
+                .iter()
+                .filter(|item| item.code.starts_with("W-"))
+                .count();
             (errors, warnings)
         }
         Err(_) => (usize::MAX, usize::MAX),

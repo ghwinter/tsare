@@ -15,7 +15,10 @@ pub enum Json {
 impl Json {
     pub fn get(&self, key: &str) -> Option<&Json> {
         match self {
-            Json::Obj(fields) => fields.iter().find(|(name, _)| name == key).map(|(_, value)| value),
+            Json::Obj(fields) => fields
+                .iter()
+                .find(|(name, _)| name == key)
+                .map(|(_, value)| value),
             _ => None,
         }
     }
@@ -43,7 +46,12 @@ impl Json {
 
     pub fn strings(&self) -> Vec<String> {
         self.as_arr()
-            .map(|items| items.iter().filter_map(|item| item.as_str().map(|text| text.to_string())).collect())
+            .map(|items| {
+                items
+                    .iter()
+                    .filter_map(|item| item.as_str().map(|text| text.to_string()))
+                    .collect()
+            })
             .unwrap_or_default()
     }
 }
@@ -182,7 +190,9 @@ impl<'a> Reader<'a> {
                         break;
                     }
                 }
-                text.parse::<f64>().map(Json::Num).map_err(|_| format!("bad number {text:?}"))
+                text.parse::<f64>()
+                    .map(Json::Num)
+                    .map_err(|_| format!("bad number {text:?}"))
             }
             None => Err("unexpected end of input".into()),
         }
@@ -190,7 +200,11 @@ impl<'a> Reader<'a> {
 }
 
 pub fn parse(text: &str) -> Result<Json, String> {
-    let mut reader = Reader { chars: text.chars().collect(), pos: 0, _text: text };
+    let mut reader = Reader {
+        chars: text.chars().collect(),
+        pos: 0,
+        _text: text,
+    };
     reader.value()
 }
 
@@ -217,7 +231,10 @@ pub fn serialize(value: &Json) -> String {
         Json::Bool(false) => "false".to_string(),
         Json::Num(number) => format!("{number}"),
         Json::Str(text) => quote(text),
-        Json::Arr(items) => format!("[{}]", items.iter().map(serialize).collect::<Vec<_>>().join(", ")),
+        Json::Arr(items) => format!(
+            "[{}]",
+            items.iter().map(serialize).collect::<Vec<_>>().join(", ")
+        ),
         Json::Obj(fields) => format!(
             "{{{}}}",
             fields

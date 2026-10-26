@@ -44,7 +44,10 @@ pub fn load_for_check(path: &Path) -> Result<Loaded, String> {
             .read_to_string(&mut text)
             .map_err(|error| format!("standard input: {error}"))?;
         let (decls, errors) = syntax::parse_recovering(&text);
-        let syntax = errors.iter().map(|error| syntax_diagnostic("-", error)).collect();
+        let syntax = errors
+            .iter()
+            .map(|error| syntax_diagnostic("-", error))
+            .collect();
         return Ok(Loaded {
             decls,
             text,
@@ -64,8 +67,13 @@ pub fn load_for_check(path: &Path) -> Result<Loaded, String> {
         let mut syntax_errors = Vec::new();
         let mut sources: Vec<(String, String)> = Vec::new();
         for file in &files {
-            let source = fs::read_to_string(file).map_err(|error| format!("{}: {error}", file.display()))?;
-            let name = file.file_name().unwrap_or_default().to_string_lossy().to_string();
+            let source =
+                fs::read_to_string(file).map_err(|error| format!("{}: {error}", file.display()))?;
+            let name = file
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
             sources.push((name.clone(), source.clone()));
             let (mut parsed, errors) = syntax::parse_recovering(&source);
             for decl in &mut parsed {
@@ -76,13 +84,27 @@ pub fn load_for_check(path: &Path) -> Result<Loaded, String> {
                 syntax_errors.push(syntax_diagnostic(&name, error));
             }
         }
-        return Ok(Loaded { decls, text: String::new(), path: path.to_path_buf(), syntax: syntax_errors, sources });
+        return Ok(Loaded {
+            decls,
+            text: String::new(),
+            path: path.to_path_buf(),
+            syntax: syntax_errors,
+            sources,
+        });
     }
     let text = fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
     let (decls, errors) = syntax::parse_recovering(&text);
-    let syntax_errors: Vec<crate::check::Diagnostic> =
-        errors.iter().map(|error| syntax_diagnostic("", error)).collect();
-    Ok(Loaded { decls, text, path: path.to_path_buf(), syntax: syntax_errors, sources: Vec::new() })
+    let syntax_errors: Vec<crate::check::Diagnostic> = errors
+        .iter()
+        .map(|error| syntax_diagnostic("", error))
+        .collect();
+    Ok(Loaded {
+        decls,
+        text,
+        path: path.to_path_buf(),
+        syntax: syntax_errors,
+        sources: Vec::new(),
+    })
 }
 
 pub fn load(path: &Path) -> Result<Loaded, String> {
@@ -127,7 +149,10 @@ fn pad(text: &str, width: usize) -> String {
 }
 
 fn error_count(diagnostics: &[crate::check::Diagnostic]) -> usize {
-    diagnostics.iter().filter(|item| item.code.starts_with("E-")).count()
+    diagnostics
+        .iter()
+        .filter(|item| item.code.starts_with("E-"))
+        .count()
 }
 
 fn warning_count(diagnostics: &[crate::check::Diagnostic]) -> usize {
@@ -171,7 +196,13 @@ fn cmd_check(
         };
         let expanded = crate::sugar::expand(&raw);
         match syntax::parse(&expanded) {
-            Ok(decls) => Loaded { decls, text: expanded, path: path.to_path_buf(), syntax: Vec::new(), sources: Vec::new() },
+            Ok(decls) => Loaded {
+                decls,
+                text: expanded,
+                path: path.to_path_buf(),
+                syntax: Vec::new(),
+                sources: Vec::new(),
+            },
             Err(error) => return fail(format!("{}: {error}", path.display())),
         }
     } else {
@@ -188,8 +219,15 @@ fn cmd_check(
     let mut coverage = None;
     if loaded.syntax.is_empty() {
         let cacheable = use_cache && !sugar && !path.is_dir();
-        let cache_key = if cacheable { Some(crate::cache::key(&loaded.text)) } else { None };
-        let diagnostics = match cache_key.as_ref().and_then(|key| crate::cache::load().get(key).cloned()) {
+        let cache_key = if cacheable {
+            Some(crate::cache::key(&loaded.text))
+        } else {
+            None
+        };
+        let diagnostics = match cache_key
+            .as_ref()
+            .and_then(|key| crate::cache::load().get(key).cloned())
+        {
             Some(payload) => crate::cache::restore(&payload),
             None => {
                 let computed = crate::check::check(&loaded.decls);
@@ -217,7 +255,10 @@ fn cmd_check(
             let goals = crate::coverage::load_goals(&text);
             let report = crate::coverage::coverage(&Program::new(&loaded.decls), &goals);
             session.extend(crate::coverage::diagnostics(&report));
-            coverage = Some((report.iter().filter(|goal| goal.covered()).count(), report.len()));
+            coverage = Some((
+                report.iter().filter(|goal| goal.covered()).count(),
+                report.len(),
+            ));
         }
     }
     if json {
@@ -230,7 +271,10 @@ fn cmd_check(
     }
     let holes = collect_holes(&loaded.decls);
     if !holes.is_empty() {
-        println!("holes: {} unknown value(s), listed in OPEN.md after a build", holes.len());
+        println!(
+            "holes: {} unknown value(s), listed in OPEN.md after a build",
+            holes.len()
+        );
     }
     println!("{}", session.summary());
     session.exit_code()
@@ -244,7 +288,11 @@ fn cmd_engine(path: &Path, json: bool) -> i32 {
     let result = crate::closure::engine(&loaded.decls);
     if json {
         let quoted = |items: &[String]| {
-            items.iter().map(|item| format!("\"{}\"", escape(item))).collect::<Vec<_>>().join(", ")
+            items
+                .iter()
+                .map(|item| format!("\"{}\"", escape(item)))
+                .collect::<Vec<_>>()
+                .join(", ")
         };
         println!("{{");
         println!("  \"held\": [{}],", quoted(&result.held));
@@ -258,7 +306,11 @@ fn cmd_engine(path: &Path, json: bool) -> i32 {
             .blocked
             .iter()
             .map(|(warrant, missing)| {
-                format!("{{\"warrant\": \"{}\", \"missing\": [{}]}}", escape(warrant), quoted(missing))
+                format!(
+                    "{{\"warrant\": \"{}\", \"missing\": [{}]}}",
+                    escape(warrant),
+                    quoted(missing)
+                )
             })
             .collect();
         println!("  \"blocked\": [{}],", blocked.join(", "));
@@ -320,7 +372,7 @@ fn cmd_suggest(path: &Path, json: bool) -> i32 {
             return 0;
         }
         for item in &items {
-            println!("{} {}", pad(&item.applicability, 18), item.message);
+            println!("{} {}", pad(item.applicability, 18), item.message);
         }
         return 0;
     }
@@ -354,7 +406,10 @@ fn cmd_apply(path: &Path, dry: bool) -> i32 {
     if !dry {
         fs::write(path, &updated).expect("write file");
     }
-    let list: Vec<String> = applied.iter().map(|item| format!("\"{}\"", escape(item))).collect();
+    let list: Vec<String> = applied
+        .iter()
+        .map(|item| format!("\"{}\"", escape(item)))
+        .collect();
     println!("{{\"applied\": [{}]}}", list.join(", "));
     0
 }
@@ -367,9 +422,18 @@ fn cmd_argue(path: &Path) -> i32 {
     let program = Program::new(&loaded.decls);
     let diagnostics = crate::check::check(&loaded.decls);
     let rows = crate::argue::conclusions(&program);
-    let width = rows.iter().map(|row| row.name.chars().count()).max().unwrap_or(10);
+    let width = rows
+        .iter()
+        .map(|row| row.name.chars().count())
+        .max()
+        .unwrap_or(10);
     for row in &rows {
-        println!("{}  {} {}", pad(&row.name, width), pad(row.status, 10), row.why);
+        println!(
+            "{}  {} {}",
+            pad(&row.name, width),
+            pad(row.status, 10),
+            row.why
+        );
     }
     let errors = error_count(&diagnostics);
     if errors > 0 {
@@ -465,7 +529,11 @@ fn cmd_next(path: &Path) -> i32 {
         println!("no open decisions");
         return 0;
     }
-    let width = rows.iter().map(|row| row.label.chars().count()).max().unwrap_or(0);
+    let width = rows
+        .iter()
+        .map(|row| row.label.chars().count())
+        .max()
+        .unwrap_or(0);
     for row in &rows {
         println!("{}  touches {} claim(s)", pad(&row.label, width), row.count);
     }
@@ -479,10 +547,16 @@ fn cmd_cost(path: &Path, top: usize) -> i32 {
     };
     let program = Program::new(&loaded.decls);
     let cost = crate::cost::report(&program);
-    println!("decompression cost: {} external confirmation(s), depth {}", cost.total, cost.depth);
+    println!(
+        "decompression cost: {} external confirmation(s), depth {}",
+        cost.total, cost.depth
+    );
     if !cost.by_kind.is_empty() {
-        let joined: Vec<String> =
-            cost.by_kind.iter().map(|(kind, count)| format!("{kind}={count}")).collect();
+        let joined: Vec<String> = cost
+            .by_kind
+            .iter()
+            .map(|(kind, count)| format!("{kind}={count}"))
+            .collect();
         println!("by kind: {}", joined.join(", "));
     }
     for (name, found) in cost.rows.iter().take(top) {
@@ -509,16 +583,18 @@ fn cmd_weigh(path: &Path, threshold: f64) -> i32 {
     println!("threshold {}", program::fmt_g(threshold));
     for row in rows {
         let Some(value) = row.value else {
-            println!("  {} {}  {}", pad(&row.name, 16), format!("{:>5}", "--"), row.status);
+            println!("  {} {:>5}  {}", pad(&row.name, 16), "--", row.status);
             continue;
         };
         let mark = if value < threshold { "below" } else { "ok" };
-        let detail: Vec<String> =
-            row.detail.iter().map(|(rule, score)| format!("{rule}={score:.2}")).collect();
+        let detail: Vec<String> = row
+            .detail
+            .iter()
+            .map(|(rule, score)| format!("{rule}={score:.2}"))
+            .collect();
         println!(
-            "  {} {}  {} {} {}",
+            "  {} {value:>5.2}  {} {} {}",
             pad(&row.name, 16),
-            format!("{value:>5.2}"),
             pad(row.status, 8),
             pad(mark, 5),
             detail.join("  ")
@@ -534,10 +610,14 @@ fn cmd_cat(path: &Path) -> i32 {
     };
     let program = Program::new(&loaded.decls);
     let diagnostics = crate::check::check(&loaded.decls);
-    let objects: Vec<String> =
-        crate::cat::objects(&program).iter().map(|(kind, count)| format!("{kind}={count}")).collect();
-    let arrows: Vec<String> =
-        crate::cat::arrows(&program).iter().map(|(kind, count)| format!("{kind}={count}")).collect();
+    let objects: Vec<String> = crate::cat::objects(&program)
+        .iter()
+        .map(|(kind, count)| format!("{kind}={count}"))
+        .collect();
+    let arrows: Vec<String> = crate::cat::arrows(&program)
+        .iter()
+        .map(|(kind, count)| format!("{kind}={count}"))
+        .collect();
     println!("objects: {}", objects.join(", "));
     println!("arrows:  {}", arrows.join(", "));
     let (kept, total, failures) = crate::cat::extent_functor(&program);
@@ -553,7 +633,12 @@ fn cmd_cat(path: &Path) -> i32 {
     println!("checker: {} error(s)", error_count(&diagnostics));
     println!("stages:");
     for stage in crate::cat::stages() {
-        println!("  {} {} {}", pad(stage.name, 24), pad(stage.label, 16), stage.why);
+        println!(
+            "  {} {} {}",
+            pad(stage.name, 24),
+            pad(stage.label, 16),
+            stage.why
+        );
     }
     0
 }
@@ -576,7 +661,13 @@ fn cmd_moves(path: &Path) -> i32 {
             .find(|(code, _)| *code == row.code)
             .map(|(_, label)| *label)
             .unwrap_or("");
-        println!("{} {} {} {}", row.code, pad(label, 26), pad(&row.target, 18), row.why);
+        println!(
+            "{} {} {} {}",
+            row.code,
+            pad(label, 26),
+            pad(&row.target, 18),
+            row.why
+        );
     }
     0
 }
@@ -595,10 +686,10 @@ fn cmd_assumptions(path: &Path, top: usize) -> i32 {
     println!("{} load-bearing assumption(s):", rows.len());
     for row in &rows {
         println!(
-            "  {} {} touches {}  {}",
+            "  {} {} touches {:>2}  {}",
             pad(&row.name, 18),
             pad(&row.kind, 12),
-            format!("{:>2}", row.count),
+            row.count,
             row.why
         );
     }
@@ -617,8 +708,16 @@ fn cmd_audit(path: &Path) -> i32 {
             println!("  {} absent", pad(row.kind, 8));
             continue;
         }
-        let lost_text = if row.lost.is_empty() { "-".to_string() } else { row.lost.join(", ") };
-        let added_text = if row.added.is_empty() { "-".to_string() } else { row.added.join(", ") };
+        let lost_text = if row.lost.is_empty() {
+            "-".to_string()
+        } else {
+            row.lost.join(", ")
+        };
+        let added_text = if row.added.is_empty() {
+            "-".to_string()
+        } else {
+            row.added.join(", ")
+        };
         let verdict = if row.lost.is_empty() && row.added.is_empty() {
             "eliminable: no diagnostic changes"
         } else if !row.lost.is_empty() && row.added.is_empty() {
@@ -754,7 +853,12 @@ fn cmd_map(left: &Path, right: &Path, top: usize) -> i32 {
         return 0;
     }
     for row in &rows {
-        let shown: Vec<String> = row.shared.iter().take(4).map(|path| path.join(">")).collect();
+        let shown: Vec<String> = row
+            .shared
+            .iter()
+            .take(4)
+            .map(|path| path.join(">"))
+            .collect();
         println!(
             "{:.2} w={} {} ~ {}  shared: {}",
             row.score,
@@ -770,13 +874,31 @@ fn cmd_map(left: &Path, right: &Path, top: usize) -> i32 {
 /// Codes whose repair needs a value only the author can choose.  Naming them is the honest
 /// alternative to printing nothing and letting the reader assume no repair was needed.
 const NO_REPAIR: &[(&str, &str)] = &[
-    ("W-EXAMPLE-SHAPE", "needs an attribute the examples share; only the author knows one"),
-    ("E-CYCLE", "a cycle can be cut at any edge; which edge is a judgement"),
-    ("W-UNCONFIRMED", "needs a person or a tool to confirm the evidence"),
-    ("E-UNFALSIFIABLE", "needs a test or a rival, which is content"),
+    (
+        "W-EXAMPLE-SHAPE",
+        "needs an attribute the examples share; only the author knows one",
+    ),
+    (
+        "E-CYCLE",
+        "a cycle can be cut at any edge; which edge is a judgement",
+    ),
+    (
+        "W-UNCONFIRMED",
+        "needs a person or a tool to confirm the evidence",
+    ),
+    (
+        "E-UNFALSIFIABLE",
+        "needs a test or a rival, which is content",
+    ),
     ("E-VACUOUS", "needs premises or concepts, which is content"),
-    ("W-PARTITION-UNKNOWN", "needs a dimension, which is the thing being asked for"),
-    ("W-PARTITION-UNLEARNED", "needs an attribute that separates the examples"),
+    (
+        "W-PARTITION-UNKNOWN",
+        "needs a dimension, which is the thing being asked for",
+    ),
+    (
+        "W-PARTITION-UNLEARNED",
+        "needs an attribute that separates the examples",
+    ),
 ];
 
 fn cmd_fix(path: &Path, apply: Option<&str>) -> i32 {
@@ -796,8 +918,10 @@ fn cmd_fix(path: &Path, apply: Option<&str>) -> i32 {
         );
     }
     let diagnostics = crate::check::check(&loaded.decls);
-    let accepted_names: std::collections::HashSet<&str> =
-        accepted.iter().map(|item| item.description.as_str()).collect();
+    let accepted_names: std::collections::HashSet<&str> = accepted
+        .iter()
+        .map(|item| item.description.as_str())
+        .collect();
     let mut flat = 0;
     for (description, trial) in crate::fix::candidates(&loaded.decls) {
         if accepted_names.contains(description.as_str()) {
@@ -835,7 +959,11 @@ fn cmd_fix(path: &Path, apply: Option<&str>) -> i32 {
             if batch.is_empty() {
                 break;
             }
-            current = batch.into_iter().next().map(|item| item.trial).unwrap_or(current);
+            current = batch
+                .into_iter()
+                .next()
+                .map(|item| item.trial)
+                .unwrap_or(current);
             rounds += 1;
         }
         let (after_e, after_w) = crate::fix::score_without_holes(&current);
@@ -854,7 +982,10 @@ fn cmd_induce(path: &Path) -> i32 {
     let diagnostics = crate::check::check(&loaded.decls);
     let errors = error_count(&diagnostics);
     if errors > 0 {
-        println!("note: {errors} error(s) in {}; learning ran on what resolved", path.display());
+        println!(
+            "note: {errors} error(s) in {}; learning ran on what resolved",
+            path.display()
+        );
     }
     let learnings: Vec<crate::induce::Learning> = program
         .of_kind("concept")
@@ -907,8 +1038,22 @@ fn cmd_pattern(path: &Path, name: &str, with_vars: bool) -> i32 {
     let positives = program::pos(concept);
     let negatives = program::neg(concept);
     println!("{}:", concept.name);
-    println!("  positives: {}", if positives.is_empty() { "-".to_string() } else { positives.join(", ") });
-    println!("  negatives: {}", if negatives.is_empty() { "-".to_string() } else { negatives.join(", ") });
+    println!(
+        "  positives: {}",
+        if positives.is_empty() {
+            "-".to_string()
+        } else {
+            positives.join(", ")
+        }
+    );
+    println!(
+        "  negatives: {}",
+        if negatives.is_empty() {
+            "-".to_string()
+        } else {
+            negatives.join(", ")
+        }
+    );
     if with_vars {
         let pattern = crate::patterns::learn(&program, &positives, &negatives);
         match pattern {
@@ -922,8 +1067,10 @@ fn cmd_pattern(path: &Path, name: &str, with_vars: bool) -> i32 {
     match &rule {
         Some(rule) => {
             println!("  structure: {}", rule.join(" and "));
-            let expression: Vec<String> =
-                rule.iter().map(|feature| format!("\"{feature}\" in features")).collect();
+            let expression: Vec<String> = rule
+                .iter()
+                .map(|feature| format!("\"{feature}\" in features"))
+                .collect();
             println!(
                 "  predicate: def {}(features): return {}",
                 concept.name,
@@ -934,11 +1081,23 @@ fn cmd_pattern(path: &Path, name: &str, with_vars: bool) -> i32 {
     }
     println!("  positions:");
     for name in positives.iter().chain(negatives.iter()) {
-        let side = if positives.contains(name) { "pos" } else { "neg" };
-        let mut found: Vec<String> =
-            crate::paths::features(&program, name, 2, &exclude).into_iter().collect();
+        let side = if positives.contains(name) {
+            "pos"
+        } else {
+            "neg"
+        };
+        let mut found: Vec<String> = crate::paths::features(&program, name, 2, &exclude)
+            .into_iter()
+            .collect();
         found.sort();
-        println!("    {side} {name}: {}", if found.is_empty() { "-".to_string() } else { found.join(", ") });
+        println!(
+            "    {side} {name}: {}",
+            if found.is_empty() {
+                "-".to_string()
+            } else {
+                found.join(", ")
+            }
+        );
     }
     0
 }
@@ -955,15 +1114,29 @@ fn cmd_build(path: &Path, out: &str, goals_path: Option<&str>) -> i32 {
     }
     if path.is_dir() {
         let learnings = crate::build::learnings_of(&program);
-        fs::write(out_dir.join("OBLIGATIONS.md"), crate::build::render_obligations(&program, &learning_map(&learnings))).expect("write");
-        fs::write(out_dir.join("LEARNED.md"), crate::build::render_learned(&learnings, &[])).expect("write");
-        println!("project {}: {} declarations, emitted {}", path.display(), program.decls.len(), out_dir.display());
+        fs::write(
+            out_dir.join("OBLIGATIONS.md"),
+            crate::build::render_obligations(&program, &learning_map(&learnings)),
+        )
+        .expect("write");
+        fs::write(
+            out_dir.join("LEARNED.md"),
+            crate::build::render_learned(&learnings, &[]),
+        )
+        .expect("write");
+        println!(
+            "project {}: {} declarations, emitted {}",
+            path.display(),
+            program.decls.len(),
+            out_dir.display()
+        );
         return 0;
     }
 
     let diagnostics = crate::check::check(&loaded.decls);
     {
-        let mut session = crate::session::Session::new(path.display().to_string()).with_source(&loaded.text);
+        let mut session =
+            crate::session::Session::new(path.display().to_string()).with_source(&loaded.text);
         session.extend(diagnostics.clone());
         print!("{}", session.text());
         println!("{}", session.summary());
@@ -987,7 +1160,10 @@ fn cmd_build(path: &Path, out: &str, goals_path: Option<&str>) -> i32 {
     }
     let holes = collect_holes(&loaded.decls);
     if !holes.is_empty() {
-        println!("holes: {} unknown value(s), listed in OPEN.md after a build", holes.len());
+        println!(
+            "holes: {} unknown value(s), listed in OPEN.md after a build",
+            holes.len()
+        );
     }
     if error_count(&all) > 0 {
         println!("not emitted: fix the errors first");
@@ -997,25 +1173,57 @@ fn cmd_build(path: &Path, out: &str, goals_path: Option<&str>) -> i32 {
     let learnings = crate::build::learnings_of(&program);
     let mut structurals: Vec<(String, Option<crate::patterns::Pattern>)> = Vec::new();
     for concept in program.of_kind("concept") {
-        let rule = crate::patterns::learn(
-            &program,
-            &program::pos(concept),
-            &program::neg(concept),
-        );
+        let rule = crate::patterns::learn(&program, &program::pos(concept), &program::neg(concept));
         structurals.push((concept.name.clone(), rule));
     }
     let mapping = learning_map(&learnings);
-    fs::write(out_dir.join("OBLIGATIONS.md"), crate::build::render_obligations(&program, &mapping)).expect("write");
-    fs::write(out_dir.join("LEARNED.md"), crate::build::render_learned(&learnings, &structurals)).expect("write");
-    fs::write(out_dir.join("OPEN.md"), crate::build::render_open(&program, &learnings, &holes)).expect("write");
-    fs::write(out_dir.join("NOTES.md"), crate::build::render_notes(&program)).expect("write");
-    let source = crate::build::predicates_source(&program, &mapping, &structurals, &path.file_name().map(|name| name.to_string_lossy().to_string()).unwrap_or_default());
+    fs::write(
+        out_dir.join("OBLIGATIONS.md"),
+        crate::build::render_obligations(&program, &mapping),
+    )
+    .expect("write");
+    fs::write(
+        out_dir.join("LEARNED.md"),
+        crate::build::render_learned(&learnings, &structurals),
+    )
+    .expect("write");
+    fs::write(
+        out_dir.join("OPEN.md"),
+        crate::build::render_open(&program, &learnings, &holes),
+    )
+    .expect("write");
+    fs::write(
+        out_dir.join("NOTES.md"),
+        crate::build::render_notes(&program),
+    )
+    .expect("write");
+    let source = crate::build::predicates_source(
+        &program,
+        &mapping,
+        &structurals,
+        &path
+            .file_name()
+            .map(|name| name.to_string_lossy().to_string())
+            .unwrap_or_default(),
+    );
     fs::write(out_dir.join("predicates.py"), &source).expect("write");
-    for name in ["OBLIGATIONS.md", "LEARNED.md", "OPEN.md", "NOTES.md", "predicates.py"] {
+    for name in [
+        "OBLIGATIONS.md",
+        "LEARNED.md",
+        "OPEN.md",
+        "NOTES.md",
+        "predicates.py",
+    ] {
         println!("emitted {}", out_dir.join(name).display());
     }
-    let defined = learnings.iter().filter(|item| item.clause.is_some()).count();
-    let structured = structurals.iter().filter(|(_, rule)| rule.is_some()).count();
+    let defined = learnings
+        .iter()
+        .filter(|item| item.clause.is_some())
+        .count();
+    let structured = structurals
+        .iter()
+        .filter(|(_, rule)| rule.is_some())
+        .count();
     let problems = crate::build::verify_predicates(&program, &mapping, &structurals);
     if !problems.is_empty() {
         println!("predicates: FAILED on {} examples", problems.len());
@@ -1024,15 +1232,23 @@ fn cmd_build(path: &Path, out: &str, goals_path: Option<&str>) -> i32 {
         }
         return 1;
     }
-    println!("predicates: {defined} attribute + {structured} structural, verified on every example");
+    println!(
+        "predicates: {defined} attribute + {structured} structural, verified on every example"
+    );
     if let Some(report) = &goals {
-        fs::write(out_dir.join("COVERAGE.md"), crate::build::render_coverage(report)).expect("write");
+        fs::write(
+            out_dir.join("COVERAGE.md"),
+            crate::build::render_coverage(report),
+        )
+        .expect("write");
         println!("emitted {}", out_dir.join("COVERAGE.md").display());
     }
     0
 }
 
-fn learning_map(learnings: &[crate::induce::Learning]) -> std::collections::HashMap<String, crate::induce::Learning> {
+fn learning_map(
+    learnings: &[crate::induce::Learning],
+) -> std::collections::HashMap<String, crate::induce::Learning> {
     learnings
         .iter()
         .map(|item| {
@@ -1071,7 +1287,11 @@ fn cmd_project(path: &Path) -> i32 {
             println!("  {} {file}:{} {}", item.code, item.line, item.message);
         }
     }
-    println!("{} error(s), {} warning(s)", error_count(&diagnostics), warning_count(&diagnostics));
+    println!(
+        "{} error(s), {} warning(s)",
+        error_count(&diagnostics),
+        warning_count(&diagnostics)
+    );
     if error_count(&diagnostics) > 0 {
         1
     } else {
@@ -1087,9 +1307,21 @@ fn cmd_mem(recall: Option<&[String]>, k: usize) -> i32 {
             return 0;
         }
         for entry in entries {
-            let outcome = if entry.improved { "improved" } else { "no better" };
-            let codes = entry.entry.get("codes").map(|value| value.strings()).unwrap_or_default();
-            let action = entry.entry.get("action").and_then(|value| value.as_str()).unwrap_or("");
+            let outcome = if entry.improved {
+                "improved"
+            } else {
+                "no better"
+            };
+            let codes = entry
+                .entry
+                .get("codes")
+                .map(|value| value.strings())
+                .unwrap_or_default();
+            let action = entry
+                .entry
+                .get("action")
+                .and_then(|value| value.as_str())
+                .unwrap_or("");
             let errors = |side: &str| {
                 entry
                     .entry
@@ -1110,14 +1342,20 @@ fn cmd_mem(recall: Option<&[String]>, k: usize) -> i32 {
     }
     let report = crate::cases::audit();
     println!("cases: {}", report.entries);
-    println!("expired:     {}  (recorded under a different checker)", report.expired);
+    println!(
+        "expired:     {}  (recorded under a different checker)",
+        report.expired
+    );
     println!(
         "conflicting: {}  (same situation and action, opposite outcome)",
         report.conflicting
     );
     println!("no-op:       {}  (changed nothing either way)", report.noop);
     println!("unchanged:   {}", report.unchanged);
-    println!("orphans:     {}  (document no longer exists)", report.orphans);
+    println!(
+        "orphans:     {}  (document no longer exists)",
+        report.orphans
+    );
     0
 }
 
@@ -1151,9 +1389,18 @@ fn cmd_propose(path: &Path, proposals_path: &str, apply: bool, policy: &str) -> 
     let mut admitted = 0;
     let mut needs_review = 0;
     for item in &items {
-        let decl = item.get("decl").and_then(|value| value.as_str()).unwrap_or("");
-        let field = item.get("field").and_then(|value| value.as_str()).unwrap_or("");
-        let value = item.get("value").and_then(|value| value.as_str()).unwrap_or("");
+        let decl = item
+            .get("decl")
+            .and_then(|value| value.as_str())
+            .unwrap_or("");
+        let field = item
+            .get("field")
+            .and_then(|value| value.as_str())
+            .unwrap_or("");
+        let value = item
+            .get("value")
+            .and_then(|value| value.as_str())
+            .unwrap_or("");
         let proposal = crate::propose::Proposal {
             decl: decl.to_string(),
             field: field.to_string(),
@@ -1163,8 +1410,17 @@ fn cmd_propose(path: &Path, proposals_path: &str, apply: bool, policy: &str) -> 
             Ok(decls) => decls,
             Err(error) => return fail(format!("the document stopped parsing: {error}")),
         };
-        match crate::propose::verify(&current, &decls, &proposal, crate::propose::Policy::parse(policy)) {
-            crate::propose::Verdict::Admitted { errors, warnings, text } => {
+        match crate::propose::verify(
+            &current,
+            &decls,
+            &proposal,
+            crate::propose::Policy::parse(policy),
+        ) {
+            crate::propose::Verdict::Admitted {
+                errors,
+                warnings,
+                text,
+            } => {
                 admitted += 1;
                 println!(
                     "{} admitted  ({errors:+} errors, {warnings:+} warnings)",
@@ -1185,7 +1441,10 @@ fn cmd_propose(path: &Path, proposals_path: &str, apply: bool, policy: &str) -> 
     if apply {
         fs::write(path, &current).expect("write file");
     }
-    println!("{admitted} admitted, {needs_review} review, {} rejected", items.len() - admitted - needs_review);
+    println!(
+        "{admitted} admitted, {needs_review} review, {} rejected",
+        items.len() - admitted - needs_review
+    );
     0
 }
 
@@ -1200,7 +1459,10 @@ fn cmd_fca(path: &Path) -> i32 {
         printed += 1;
         println!("{}", concept.name);
         println!("  listed        {} positive(s)", concept.listed);
-        println!("  intent        {}", crate::fca::render_pairs(&concept.intent));
+        println!(
+            "  intent        {}",
+            crate::fca::render_pairs(&concept.intent)
+        );
         if concept.implied.is_empty() {
             println!("  implied       -");
         } else {
@@ -1231,7 +1493,10 @@ fn cmd_kinds() -> i32 {
 }
 
 fn usage() {
-    println!("engine-core {} — a compiler for checkable claims", env!("CARGO_PKG_VERSION"));
+    println!(
+        "engine-core {} — a compiler for checkable claims",
+        env!("CARGO_PKG_VERSION")
+    );
     println!();
     println!("usage: engine-core [COMMAND] PATH [options]");
     println!("       engine-core kinds | mem | --explain CODE | --version | --help");
@@ -1239,7 +1504,9 @@ fn usage() {
     println!("PATH is a .mf document, a directory of them, or - for standard input.");
     println!();
     println!("checking");
-    println!("  check PATH [--json] [--goals F] [--sugar] [--cache]   parse and check (the default)");
+    println!(
+        "  check PATH [--json] [--goals F] [--sugar] [--cache]   parse and check (the default)"
+    );
     println!("  project DIR                                          the same, grouped by file");
     println!();
     println!("reasoning");
@@ -1272,9 +1539,15 @@ fn usage() {
     println!("  map LEFT RIGHT [--top N]            structure mapping between two documents");
     println!("  induce PATH                         the clause each concept's examples support");
     println!("  pattern PATH CONCEPT [--vars]       the structure that separates the examples");
-    println!("  audit PATH                          can a kind be written with a smaller vocabulary");
-    println!("  egraph PATH [--write OUT]           merge equivalent declarations, rewrite references");
-    println!("  mem [--recall CODE...] [--k N]      the case store: audit it, or recall situations");
+    println!(
+        "  audit PATH                          can a kind be written with a smaller vocabulary"
+    );
+    println!(
+        "  egraph PATH [--write OUT]           merge equivalent declarations, rewrite references"
+    );
+    println!(
+        "  mem [--recall CODE...] [--k N]      the case store: audit it, or recall situations"
+    );
     println!();
     println!("exit codes");
     println!("  0  no errors (warnings are allowed)");
@@ -1323,7 +1596,16 @@ struct Args {
     options: std::collections::HashMap<String, String>,
 }
 
-const VALUE_FLAGS: &[&str] = &["--top", "--threshold", "--out", "--goals", "--k", "--apply", "--proposals", "--policy"];
+const VALUE_FLAGS: &[&str] = &[
+    "--top",
+    "--threshold",
+    "--out",
+    "--goals",
+    "--k",
+    "--apply",
+    "--proposals",
+    "--policy",
+];
 
 impl Args {
     fn parse(raw: &[String]) -> Self {
@@ -1351,7 +1633,11 @@ impl Args {
             positional.push(item.clone());
             index += 1;
         }
-        Args { positional, flags, options }
+        Args {
+            positional,
+            flags,
+            options,
+        }
     }
 
     fn has(&self, flag: &str) -> bool {
@@ -1363,11 +1649,15 @@ impl Args {
     }
 
     fn number(&self, flag: &str, fallback: f64) -> f64 {
-        self.option(flag).and_then(|value| value.parse().ok()).unwrap_or(fallback)
+        self.option(flag)
+            .and_then(|value| value.parse().ok())
+            .unwrap_or(fallback)
     }
 
     fn count(&self, flag: &str, fallback: usize) -> usize {
-        self.option(flag).and_then(|value| value.parse().ok()).unwrap_or(fallback)
+        self.option(flag)
+            .and_then(|value| value.parse().ok())
+            .unwrap_or(fallback)
     }
 
     fn at(&self, index: usize) -> Option<&str> {
@@ -1395,7 +1685,10 @@ pub fn run() -> i32 {
         };
     }
     if raw.iter().any(|arg| arg == "--version" || arg == "-V") {
-        println!("engine-core {} — a compiler for checkable claims", env!("CARGO_PKG_VERSION"));
+        println!(
+            "engine-core {} — a compiler for checkable claims",
+            env!("CARGO_PKG_VERSION")
+        );
         return 0;
     }
     if raw.is_empty() || raw.iter().any(|arg| arg == "--help" || arg == "-h") {
@@ -1413,7 +1706,11 @@ pub fn run() -> i32 {
     }
     if command == "mem" {
         let codes: Vec<String> = args.positional.clone();
-        let recall = if args.has("--recall") { Some(codes.as_slice()) } else { None };
+        let recall = if args.has("--recall") {
+            Some(codes.as_slice())
+        } else {
+            None
+        };
         return cmd_mem(recall, args.count("--k", 3));
     }
     let Some(target) = args.at(0) else {
@@ -1466,16 +1763,26 @@ pub fn run() -> i32 {
                 println!("usage: engine-core propose FILE --proposals FILE.json [--apply]");
                 return 2;
             };
-            cmd_propose(&path, proposals, args.has("--apply"), args.option("--policy").unwrap_or("harmless"))
+            cmd_propose(
+                &path,
+                proposals,
+                args.has("--apply"),
+                args.option("--policy").unwrap_or("harmless"),
+            )
         }
-        "fca" => cmd_fca(&path),        "pattern" => {
+        "fca" => cmd_fca(&path),
+        "pattern" => {
             let Some(name) = args.at(1) else {
                 println!("usage: engine-core pattern FILE CONCEPT");
                 return 2;
             };
             cmd_pattern(&path, name, args.has("--vars"))
         }
-        "build" => cmd_build(&path, args.option("--out").unwrap_or("out"), args.option("--goals")),
+        "build" => cmd_build(
+            &path,
+            args.option("--out").unwrap_or("out"),
+            args.option("--goals"),
+        ),
         "project" => cmd_project(&path),
         _ => {
             println!("unknown command {command}");
@@ -1483,19 +1790,3 @@ pub fn run() -> i32 {
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

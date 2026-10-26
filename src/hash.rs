@@ -97,7 +97,10 @@ impl Sha256 {
             let block: Vec<u8> = self.buffer.drain(..64).collect();
             self.compress(&block);
         }
-        self.state.iter().map(|word| format!("{word:08x}")).collect()
+        self.state
+            .iter()
+            .map(|word| format!("{word:08x}"))
+            .collect()
     }
 }
 

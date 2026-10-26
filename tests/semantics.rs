@@ -29,7 +29,10 @@ fn codes(source: &str) -> Vec<&'static str> {
 
 fn statuses(source: &str) -> std::collections::HashMap<String, &'static str> {
     let decls = decls(source);
-    conclusions(&Program::new(&decls)).into_iter().map(|row| (row.name, row.status)).collect()
+    conclusions(&Program::new(&decls))
+        .into_iter()
+        .map(|row| (row.name, row.status))
+        .collect()
 }
 
 const ATTACK: &str = r#"
@@ -45,7 +48,11 @@ fn an_attack_defeats_its_target() {
     let (inside, outside) = grounded_sets(&parsed);
     assert!(inside.contains("W2"), "the attacking rule survives");
     assert!(outside.contains("W1"), "the attacked rule falls");
-    assert_eq!(statuses(ATTACK)["P1"], "supported", "the other rule still concludes it");
+    assert_eq!(
+        statuses(ATTACK)["P1"],
+        "supported",
+        "the other rule still concludes it"
+    );
 }
 
 #[test]
@@ -57,7 +64,10 @@ warrant W1 { claim: "r", from: [], to: P1 }
 "#;
     let (inside, outside) = grounded_sets(&decls(source));
     assert!(!inside.contains("W1"));
-    assert!(outside.contains("W1"), "it is out from the start and cannot defeat anything");
+    assert!(
+        outside.contains("W1"),
+        "it is out from the start and cannot defeat anything"
+    );
 }
 
 #[test]
@@ -70,7 +80,10 @@ warrant W1 { claim: "r", from: [F1], to: P1 }
     let declared = decls(source);
     let program = Program::new(&declared);
     let result = analyze(&program);
-    assert!(result.conditional.is_empty(), "F1 is a fact, so P1 is grounded");
+    assert!(
+        result.conditional.is_empty(),
+        "F1 is a fact, so P1 is grounded"
+    );
 
     let source = r#"
 proposition P0 { statement: "unchecked" }
@@ -81,7 +94,10 @@ warrant W1 { claim: "r", from: [P0], to: P1 }
     let program = Program::new(&declared);
     let result = analyze(&program);
     assert_eq!(result.conditional, vec!["P1".to_string()]);
-    assert!(result.reasons["P1"][0].contains("W1 needs P0"), "the reason names the missing premise");
+    assert!(
+        result.reasons["P1"][0].contains("W1 needs P0"),
+        "the reason names the missing premise"
+    );
 }
 
 #[test]
@@ -154,7 +170,10 @@ fn a_duplicate_is_a_machine_repair() {
     assert_eq!(drop.applicability, "MachineApplicable");
     let (updated, applied) = engine_core::apply::apply_best(text, &items);
     assert_eq!(applied.len(), 1);
-    assert!(!updated.contains("\"b\""), "the later duplicate is the one that goes");
+    assert!(
+        !updated.contains("\"b\""),
+        "the later duplicate is the one that goes"
+    );
     let before = engine_core::apply::score(text);
     let after = engine_core::apply::score(&updated);
     assert!(after < before, "the applied text compiles better");
@@ -182,10 +201,13 @@ fn a_repair_that_does_not_improve_is_dropped() {
 #[test]
 fn the_checks_name_the_problem() {
     assert!(codes("").contains(&"E-EMPTY-DOCUMENT"));
-    assert!(codes("fact F1 { claim: \"x\", evidence: user }\nfact F1 { claim: \"y\", evidence: user }")
-        .contains(&"E-DUP-ID"));
-    assert!(codes("proposition P1 { statement: \"a\", from: [F_MISSING] }")
-        .contains(&"E-UNDEFINED"));
+    assert!(codes(
+        "fact F1 { claim: \"x\", evidence: user }\nfact F1 { claim: \"y\", evidence: user }"
+    )
+    .contains(&"E-DUP-ID"));
+    assert!(
+        codes("proposition P1 { statement: \"a\", from: [F_MISSING] }").contains(&"E-UNDEFINED")
+    );
     assert!(codes("fact F1 { claim: \"x\", evidence: nonsense }").contains(&"E-TYPE"));
     assert!(codes("nonsense N { x: 1 }").contains(&"E-KIND-UNKNOWN"));
 }
@@ -199,8 +221,14 @@ fact F_INTERNAL { claim: "x", evidence: user, layer: L_CORE }
 proposition P_LEAK { statement: "y", from: [F_INTERNAL], layer: L_APP }
 "#;
     let diagnostics = check(&decls(source));
-    let leak = diagnostics.iter().find(|item| item.code == "E-LAYER-LEAK").expect("a leak");
-    assert!(leak.message.contains("P_LEAK"), "the declaration that reaches out is named");
+    let leak = diagnostics
+        .iter()
+        .find(|item| item.code == "E-LAYER-LEAK")
+        .expect("a leak");
+    assert!(
+        leak.message.contains("P_LEAK"),
+        "the declaration that reaches out is named"
+    );
 }
 
 #[test]
@@ -217,7 +245,10 @@ concept C_FAST { name: "fast", grounded_by: [F_FAST, F_MEDIUM], against: [F_SLOW
     let learning = induce_concept(&program, concept);
     let clause = learning.clause.expect("a clause exists");
     let text = engine_core::induce::clause_text(&clause);
-    assert_eq!(text, "frame_ms <= 40", "the tightest bound the data supports");
+    assert_eq!(
+        text, "frame_ms <= 40",
+        "the tightest bound the data supports"
+    );
 }
 
 #[test]
@@ -241,14 +272,26 @@ concept C_FAST { name: "fast", grounded_by: [F_FAST], against: [F_SLOW] }
             ),
         ));
     }
-    let problems = verify_predicates(&program, &learnings.iter().map(|item| (item.concept.clone(), engine_core::induce::Learning {
-        concept: item.concept.clone(),
-        positives: item.positives.clone(),
-        negatives: item.negatives.clone(),
-        clause: item.clause.clone(),
-        witness: item.witness.clone(),
-        reason: item.reason.clone(),
-    })).collect(), &structurals);
+    let problems = verify_predicates(
+        &program,
+        &learnings
+            .iter()
+            .map(|item| {
+                (
+                    item.concept.clone(),
+                    engine_core::induce::Learning {
+                        concept: item.concept.clone(),
+                        positives: item.positives.clone(),
+                        negatives: item.negatives.clone(),
+                        clause: item.clause.clone(),
+                        witness: item.witness.clone(),
+                        reason: item.reason.clone(),
+                    },
+                )
+            })
+            .collect(),
+        &structurals,
+    );
     assert!(problems.is_empty(), "{problems:?}");
 }
 
@@ -259,7 +302,10 @@ fn sugar_expands_one_line_into_one_declaration() {
                   because F_SCROLL rule \"one frame is the budget\" given V_FRAME => P_FAST\n";
     let expanded = expand(source);
     let lines: Vec<&str> = expanded.lines().collect();
-    assert_eq!(lines[0], "fact F_WINDOW { claim: \"the window appears\", evidence: user }");
+    assert_eq!(
+        lines[0],
+        "fact F_WINDOW { claim: \"the window appears\", evidence: user }"
+    );
     assert_eq!(
         lines[1],
         "value V_FRAME { metric: \"frame_ms\", direction: min, unit: \"ms\", threshold: 16, measured_by: tool(\"trace\") }"
@@ -335,7 +381,9 @@ fn a_pile_without_a_type_may_be_written_but_not_used() {
         "{PILE_CONTEXT}\npartition E_PILE {{ elements: [F_A, F_B], closure: unknown, closes_with: [Q_X] }}"
     );
     assert!(codes(&named).contains(&"W-PARTITION-UNKNOWN"));
-    assert!(!codes(&named).iter().any(|code| code.starts_with("E-PARTITION")));
+    assert!(!codes(&named)
+        .iter()
+        .any(|code| code.starts_with("E-PARTITION")));
 
     let used = format!(
         "{PILE_CONTEXT}\npartition E_PILE {{ elements: [F_A, F_B], closure: unknown, closes_with: [Q_X] }}\n\
@@ -343,7 +391,8 @@ fn a_pile_without_a_type_may_be_written_but_not_used() {
     );
     assert!(codes(&used).contains(&"E-PARTITION-UNKNOWN-USED"));
 
-    let no_exit = format!("{PILE_CONTEXT}\npartition E_PILE {{ elements: [F_A, F_B], closure: unknown }}");
+    let no_exit =
+        format!("{PILE_CONTEXT}\npartition E_PILE {{ elements: [F_A, F_B], closure: unknown }}");
     assert!(codes(&no_exit).contains(&"E-PARTITION-UNKNOWN-NO-EXIT"));
 }
 
@@ -447,8 +496,14 @@ fn every_kind_owes_an_action() {
     use engine_core::program::TABLE;
     assert_eq!(TABLE.len(), 12, "one row per kind");
     for (kind, obligation, discharge) in TABLE {
-        assert!(engine_core::specs::spec(kind).is_some(), "{kind} has no field spec");
-        assert!(!obligation.is_empty() && !discharge.is_empty(), "{kind} owes nothing?");
+        assert!(
+            engine_core::specs::spec(kind).is_some(),
+            "{kind} has no field spec"
+        );
+        assert!(
+            !obligation.is_empty() && !discharge.is_empty(),
+            "{kind} owes nothing?"
+        );
         assert_ne!(
             engine_core::build::action_of(kind),
             "?",
@@ -465,7 +520,8 @@ fn a_warrant_is_ready_only_with_a_basis() {
          warrant W1 { claim: \"r\", from: [F], to: P, basis: [F] }\n",
     );
     let program = Program::new(&with);
-    let row = engine_core::build::obligation(program.get("W1").unwrap(), &program, &Default::default());
+    let row =
+        engine_core::build::obligation(program.get("W1").unwrap(), &program, &Default::default());
     assert_eq!((row.action, row.state), ("justify", "ready"));
 
     let without = decls(
@@ -474,15 +530,16 @@ fn a_warrant_is_ready_only_with_a_basis() {
          warrant W1 { claim: \"r\", from: [F], to: P }\n",
     );
     let program = Program::new(&without);
-    let row = engine_core::build::obligation(program.get("W1").unwrap(), &program, &Default::default());
+    let row =
+        engine_core::build::obligation(program.get("W1").unwrap(), &program, &Default::default());
     assert_eq!(row.state, "blocked");
 }
 
 #[test]
 fn the_self_document_compiles_without_errors() {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("SELF.mf");
-    let text = std::fs::read_to_string(&path)
-        .unwrap_or_else(|_| panic!("{} is missing", path.display()));
+    let text =
+        std::fs::read_to_string(&path).unwrap_or_else(|_| panic!("{} is missing", path.display()));
     let declared = parse(&text).expect("the self document parses");
     let errors: Vec<&str> = check(&declared)
         .iter()
@@ -494,14 +551,17 @@ fn the_self_document_compiles_without_errors() {
     let program = Program::new(&declared);
     let learnings = learnings_of(&program);
     assert!(
-        learnings.iter().any(|item| item.concept == "C_REFUSE_NOW" && item.clause.is_some()),
+        learnings
+            .iter()
+            .any(|item| item.concept == "C_REFUSE_NOW" && item.clause.is_some()),
         "the self document's concept has no learnable clause"
     );
 }
 
 #[test]
 fn a_syntax_error_is_a_diagnostic_with_a_span() {
-    let error = parse("fact F { claim: \"unterminated\nevidence: user }").expect_err("must not parse");
+    let error =
+        parse("fact F { claim: \"unterminated\nevidence: user }").expect_err("must not parse");
     assert_eq!(error.line, 1);
     assert!(error.col > 10, "the caret points at the opening quote");
     assert!(error.message.contains("unterminated"));
@@ -518,17 +578,34 @@ fn parsing_reports_every_error_in_one_run() {
                   fact F_AFTER { claim: \"still parses\", evidence: user }\n\
                   concept C_BAD { name: \"c\" grounded_by: [F_OK] }\n";
     let (decls, errors) = engine_core::syntax::parse_recovering(source);
-    assert_eq!(errors.len(), 3, "unterminated string, the field that follows it, the missing comma: {errors:?}");
+    assert_eq!(
+        errors.len(),
+        3,
+        "unterminated string, the field that follows it, the missing comma: {errors:?}"
+    );
     let names: Vec<&str> = decls.iter().map(|decl| decl.name.as_str()).collect();
-    assert!(names.contains(&"F_OK"), "a good declaration before the error survives");
-    assert!(names.contains(&"F_AFTER"), "parsing resumes at the next line-initial keyword");
-    assert!(!names.contains(&"C_BAD"), "the broken declaration is dropped, not half-read");
+    assert!(
+        names.contains(&"F_OK"),
+        "a good declaration before the error survives"
+    );
+    assert!(
+        names.contains(&"F_AFTER"),
+        "parsing resumes at the next line-initial keyword"
+    );
+    assert!(
+        !names.contains(&"C_BAD"),
+        "the broken declaration is dropped, not half-read"
+    );
 }
 
 #[test]
 fn a_missing_separator_is_an_error() {
     let error = parse("fact F { claim: \"x\" evidence: user }").expect_err("no comma");
-    assert!(error.message.contains(','), "the message names the separator: {}", error.message);
+    assert!(
+        error.message.contains(','),
+        "the message names the separator: {}",
+        error.message
+    );
 }
 
 #[test]
@@ -552,12 +629,18 @@ fn a_session_owns_order_counts_and_shape() {
         end_col: 9,
         file: String::new(),
     });
-    assert_eq!((session.errors(), session.warnings(), session.exit_code()), (1, 1, 1));
+    assert_eq!(
+        (session.errors(), session.warnings(), session.exit_code()),
+        (1, 1, 1)
+    );
     assert_eq!(session.summary(), "1 error(s), 1 warning(s)");
     let json = session.json();
     assert!(json.contains("\"code\": \"E-TYPE\"") && json.contains("\"code\": \"W-HOLE\""));
     assert!(json.contains("\"errors\": 1") && json.contains("\"warnings\": 1"));
-    assert!(json.find("E-TYPE").unwrap() < json.find("W-HOLE").unwrap(), "sorted by position");
+    assert!(
+        json.find("E-TYPE").unwrap() < json.find("W-HOLE").unwrap(),
+        "sorted by position"
+    );
     // with the source, the text form is the rendered form
     let rendered = engine_core::session::Session::new("doc.mf")
         .with_source("x\nfact F { claim: \"y\" }\n")
@@ -568,8 +651,14 @@ fn a_session_owns_order_counts_and_shape() {
 #[test]
 fn a_directory_is_rendered_file_by_file() {
     let sources = vec![
-        ("a.mf".to_string(), "fact F_A { claim: \"x\" }\n".to_string()),
-        ("b.mf".to_string(), "fact F_B { claim: \"y\" }\n".to_string()),
+        (
+            "a.mf".to_string(),
+            "fact F_A { claim: \"x\" }\n".to_string(),
+        ),
+        (
+            "b.mf".to_string(),
+            "fact F_B { claim: \"y\" }\n".to_string(),
+        ),
     ];
     let mut session = engine_core::session::Session::new("dir").with_sources(&sources);
     session.emit(engine_core::check::Diagnostic {
@@ -593,8 +682,14 @@ fn a_directory_is_rendered_file_by_file() {
     let text = session.text();
     assert!(text.contains("b.mf:1:18: error[E-TYPE]"), "{text}");
     assert!(text.contains("a.mf:1:1: error[E-MISSING]"), "{text}");
-    assert!(text.contains("claim"), "the source line is printed for each file: {text}");
-    assert!(text.find("a.mf").unwrap() < text.find("b.mf").unwrap(), "files in load order");
+    assert!(
+        text.contains("claim"),
+        "the source line is printed for each file: {text}"
+    );
+    assert!(
+        text.find("a.mf").unwrap() < text.find("b.mf").unwrap(),
+        "files in load order"
+    );
 }
 
 #[test]
@@ -621,7 +716,10 @@ fn a_document_can_arrive_on_standard_input() {
 
 #[test]
 fn every_code_the_compiler_prints_has_an_explanation() {
-    let golden = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests").join("fixtures").join("golden");
+    let golden = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("fixtures")
+        .join("golden");
     let mut codes: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
     for entry in std::fs::read_dir(&golden).expect("golden directory") {
         let text = std::fs::read_to_string(entry.expect("entry").path()).expect("golden file");
@@ -635,13 +733,21 @@ fn every_code_the_compiler_prints_has_an_explanation() {
             }
         }
     }
-    assert!(codes.len() > 5, "the corpus should exercise more than a handful of codes");
-    let missing: Vec<&String> =
-        codes.iter().filter(|code| engine_core::explain::explain(code).is_none()).collect();
+    assert!(
+        codes.len() > 5,
+        "the corpus should exercise more than a handful of codes"
+    );
+    let missing: Vec<&String> = codes
+        .iter()
+        .filter(|code| engine_core::explain::explain(code).is_none())
+        .collect();
     assert!(missing.is_empty(), "no explanation for {missing:?}");
     // and the table itself must answer for every code it lists
     for code in engine_core::explain::CODES {
-        assert!(engine_core::explain::explain(code).is_some(), "{code} is listed but unexplained");
+        assert!(
+            engine_core::explain::explain(code).is_some(),
+            "{code} is listed but unexplained"
+        );
     }
 }
 
@@ -650,10 +756,17 @@ fn a_declaration_keeps_its_positions() {
     let declared = decls("fact F1 { claim: \"x\", evidence: user }\n");
     assert_eq!(declared[0].line, 1);
     assert_eq!(declared[0].col, 1);
-    assert_eq!(declared[0].field_span[0], (1, 18, 1, 21), "the claim value runs from col 18 to 21");
+    assert_eq!(
+        declared[0].field_span[0],
+        (1, 18, 1, 21),
+        "the claim value runs from col 18 to 21"
+    );
     let reference = decls("proposition P1 { statement: \"a\", from: [F_MISSING] }");
     assert_eq!(reference[0].ref_pos[0].0, "F_MISSING");
-    assert_eq!(reference[0].ref_pos[0].2, 41, "the reference is where the name was written");
+    assert_eq!(
+        reference[0].ref_pos[0].2, 41,
+        "the reference is where the name was written"
+    );
 }
 
 #[test]
@@ -662,20 +775,32 @@ fn the_content_hash_is_a_function_of_the_bytes() {
         engine_core::hash::hex(b"abc"),
         "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
     );
-    assert_ne!(engine_core::hash::hex(b"abc"), engine_core::hash::hex(b"abd"));
+    assert_ne!(
+        engine_core::hash::hex(b"abc"),
+        engine_core::hash::hex(b"abd")
+    );
 }
 
 #[test]
 fn the_store_reader_reads_the_records_it_wrote() {
     let line = r#"{"doc": "a.mf", "codes": ["E-UNDEFINED", "W-HOLE"], "action": "mechanical", "before": {"errors": 2, "cost": 1}, "after": {"errors": 1, "cost": 1}, "checker": "engine-core-0.1"}"#;
     let entry = engine_core::json::parse(line).expect("parse");
-    assert_eq!(entry.get("codes").map(|value| value.strings()).unwrap_or_default(), vec!["E-UNDEFINED", "W-HOLE"]);
+    assert_eq!(
+        entry
+            .get("codes")
+            .map(|value| value.strings())
+            .unwrap_or_default(),
+        vec!["E-UNDEFINED", "W-HOLE"]
+    );
     assert!(engine_core::cases::improved(&entry));
     assert_eq!(
         engine_core::json::serialize(&entry),
         r#"{"doc": "a.mf", "codes": ["E-UNDEFINED", "W-HOLE"], "action": "mechanical", "before": {"errors": 2, "cost": 1}, "after": {"errors": 1, "cost": 1}, "checker": "engine-core-0.1"}"#
     );
-    assert_eq!(engine_core::cases::list_repr(&["A".to_string(), "B".to_string()]), "['A', 'B']");
+    assert_eq!(
+        engine_core::cases::list_repr(&["A".to_string(), "B".to_string()]),
+        "['A', 'B']"
+    );
 }
 
 #[test]
@@ -683,10 +808,12 @@ fn names_resolve_once_per_program() {
     let source = "fact F1 { claim: \"x\", evidence: user }\nproposition P1 { statement: \"a\", from: [F1] }\n";
     let declared = decls(source);
     let program = Program::new(&declared);
-    let names: HashSet<&str> = program.of_kind("fact").iter().map(|decl| decl.name.as_str()).collect();
+    let names: HashSet<&str> = program
+        .of_kind("fact")
+        .iter()
+        .map(|decl| decl.name.as_str())
+        .collect();
     assert_eq!(names, HashSet::from(["F1"]));
     assert!(program.get("P1").is_some());
     assert!(program.get("P2").is_none());
 }
-
-

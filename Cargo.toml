@@ -13,7 +13,6 @@ categories = ["development-tools", "text-processing"]
 
 [lints.rust]
 unsafe_code = "forbid"
-unused = "warn"
 
 [lints.clippy]
 all = "warn"
@@ -24,3 +23,4 @@ codegen-units = 1
 strip = true
 
 [dependencies]
+

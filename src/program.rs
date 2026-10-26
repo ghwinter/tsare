@@ -40,7 +40,10 @@ impl<'a> Program<'a> {
 }
 
 pub fn field<'a>(decl: &'a Decl, key: &str) -> Option<&'a Val> {
-    decl.fields.iter().find(|(name, _)| name == key).map(|(_, value)| value)
+    decl.fields
+        .iter()
+        .find(|(name, _)| name == key)
+        .map(|(_, value)| value)
 }
 
 pub fn f_str<'a>(decl: &'a Decl, key: &str) -> Option<&'a str> {
@@ -143,14 +146,23 @@ pub fn support_edges(prog: &Program) -> HashMap<String, Vec<String>> {
     let mut edges: HashMap<String, Vec<String>> = HashMap::new();
     for warrant in prog.of_kind("warrant") {
         if let Some(target) = f_id(warrant, "to") {
-            edges.entry(target.to_string()).or_default().extend(f_ids(warrant, "from"));
+            edges
+                .entry(target.to_string())
+                .or_default()
+                .extend(f_ids(warrant, "from"));
         }
     }
     for proposition in prog.of_kind("proposition") {
-        edges.entry(proposition.name.clone()).or_default().extend(f_ids(proposition, "from"));
+        edges
+            .entry(proposition.name.clone())
+            .or_default()
+            .extend(f_ids(proposition, "from"));
     }
     for hypothesis in prog.of_kind("hypothesis") {
-        edges.entry(hypothesis.name.clone()).or_default().extend(f_ids(hypothesis, "assumes"));
+        edges
+            .entry(hypothesis.name.clone())
+            .or_default()
+            .extend(f_ids(hypothesis, "assumes"));
     }
     edges
 }
@@ -162,24 +174,24 @@ pub struct Step {
     pub path: Vec<String>,
 }
 
-pub fn walk(
-    prog: &Program,
-    start: &str,
-    edges: &HashMap<String, Vec<String>>,
-) -> Vec<Step> {
+pub fn walk(prog: &Program, start: &str, edges: &HashMap<String, Vec<String>>) -> Vec<Step> {
     let mut found: Vec<Step> = Vec::new();
     let mut seen: Vec<String> = vec![start.to_string()];
     let mut queue: std::collections::VecDeque<Vec<String>> = std::collections::VecDeque::new();
     queue.push_back(vec![start.to_string()]);
     while let Some(path) = queue.pop_front() {
         let last = path.last().cloned().unwrap_or_default();
-        let Some(premises) = edges.get(&last) else { continue };
+        let Some(premises) = edges.get(&last) else {
+            continue;
+        };
         for premise in premises {
             if seen.iter().any(|name| name == premise) {
                 continue;
             }
             seen.push(premise.clone());
-            let Some(decl) = prog.get(premise) else { continue };
+            let Some(decl) = prog.get(premise) else {
+                continue;
+            };
             let mut step = path.clone();
             step.push(premise.clone());
             if decl.kind == "fact" {
@@ -197,22 +209,66 @@ pub fn walk(
 }
 
 pub const TABLE: &[(&str, &str, &str)] = &[
-    ("fact", "evidence someone else can check", "run the tool, or ask the person who saw it"),
-    ("concept", "a positive and a negative example", "find a counterexample, or drop the concept"),
-    ("proposition", "a rule that connects its premises", "name the warrant, or mark it assumed"),
-    ("hypothesis", "a test or a rival", "design the observation that would refute it"),
-    ("question", "two answers that split two live hypotheses", "ask it of a named respondent"),
-    ("blindspot", "a witness pair plus the question that would close it", "add closes_with"),
-    ("value", "an instrument and a threshold", "name the command that measures it"),
-    ("warrant", "a premise and a basis", "say what makes the rule acceptable"),
-    ("law", "something that would break if it failed", "point checked_by at that thing"),
-    ("layer", "an interface that hides its internals", "expose exactly what others may use"),
+    (
+        "fact",
+        "evidence someone else can check",
+        "run the tool, or ask the person who saw it",
+    ),
+    (
+        "concept",
+        "a positive and a negative example",
+        "find a counterexample, or drop the concept",
+    ),
+    (
+        "proposition",
+        "a rule that connects its premises",
+        "name the warrant, or mark it assumed",
+    ),
+    (
+        "hypothesis",
+        "a test or a rival",
+        "design the observation that would refute it",
+    ),
+    (
+        "question",
+        "two answers that split two live hypotheses",
+        "ask it of a named respondent",
+    ),
+    (
+        "blindspot",
+        "a witness pair plus the question that would close it",
+        "add closes_with",
+    ),
+    (
+        "value",
+        "an instrument and a threshold",
+        "name the command that measures it",
+    ),
+    (
+        "warrant",
+        "a premise and a basis",
+        "say what makes the rule acceptable",
+    ),
+    (
+        "law",
+        "something that would break if it failed",
+        "point checked_by at that thing",
+    ),
+    (
+        "layer",
+        "an interface that hides its internals",
+        "expose exactly what others may use",
+    ),
     (
         "partition",
         "a dimension, or a stated lack of one",
         "name the concept the elements share, or the question that would",
     ),
-    ("note", "nothing; it is not a commitment", "promote it to a typed declaration to make it count"),
+    (
+        "note",
+        "nothing; it is not a commitment",
+        "promote it to a typed declaration to make it count",
+    ),
 ];
 
 /// Everything that still costs an external confirmation for this declaration.
@@ -225,7 +281,8 @@ pub fn obligations(prog: &Program, decl: &Decl) -> Vec<String> {
     }
     match decl.kind.as_str() {
         "fact" => {
-            if matches!(field(decl, "evidence"), Some(Val::Id(name)) if name == "user" || name == "model") {
+            if matches!(field(decl, "evidence"), Some(Val::Id(name)) if name == "user" || name == "model")
+            {
                 out.push("evidence is asserted, not measured".to_string());
             }
         }

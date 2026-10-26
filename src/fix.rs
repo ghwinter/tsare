@@ -20,8 +20,10 @@ pub fn render_value(value: &Val) -> String {
             format!("{}({})", name, parts.join(", "))
         }
         Val::Rec(fields) => {
-            let parts: Vec<String> =
-                fields.iter().map(|(key, item)| format!("{key}: {}", render_value(item))).collect();
+            let parts: Vec<String> = fields
+                .iter()
+                .map(|(key, item)| format!("{key}: {}", render_value(item)))
+                .collect();
             format!("{{ {} }}", parts.join(", "))
         }
     }
@@ -55,16 +57,31 @@ pub struct Suggestion {
 
 fn score(decls: &[Decl]) -> (usize, usize) {
     let diagnostics: Vec<Diagnostic> = check(decls);
-    let errors = diagnostics.iter().filter(|item| item.code.starts_with("E-")).count();
-    let warnings = diagnostics.iter().filter(|item| item.code.starts_with("W-")).count();
+    let errors = diagnostics
+        .iter()
+        .filter(|item| item.code.starts_with("E-"))
+        .count();
+    let warnings = diagnostics
+        .iter()
+        .filter(|item| item.code.starts_with("W-"))
+        .count();
     (errors, warnings)
 }
 
 fn without(decls: &[Decl], target: &Decl) -> Vec<Decl> {
-    decls.iter().filter(|decl| !std::ptr::eq(*decl, target)).cloned().collect()
+    decls
+        .iter()
+        .filter(|decl| !std::ptr::eq(*decl, target))
+        .cloned()
+        .collect()
 }
 
-fn classify(before: (usize, usize), after: (usize, usize), text: &str, original: &str) -> &'static str {
+fn classify(
+    before: (usize, usize),
+    after: (usize, usize),
+    text: &str,
+    original: &str,
+) -> &'static str {
     if after >= before {
         return "Unspecified";
     }
@@ -74,7 +91,13 @@ fn classify(before: (usize, usize), after: (usize, usize), text: &str, original:
     "MachineApplicable"
 }
 
-fn clone_with_list(decls: &[Decl], owner: &str, key: &str, old: &str, new: &str) -> Option<Vec<Decl>> {
+fn clone_with_list(
+    decls: &[Decl],
+    owner: &str,
+    key: &str,
+    old: &str,
+    new: &str,
+) -> Option<Vec<Decl>> {
     let mut out = Vec::new();
     let mut touched = false;
     for decl in decls {
@@ -105,7 +128,11 @@ fn clone_with_list(decls: &[Decl], owner: &str, key: &str, old: &str, new: &str)
         }
         out.push(copy);
     }
-    if touched { Some(out) } else { None }
+    if touched {
+        Some(out)
+    } else {
+        None
+    }
 }
 
 pub fn from_diagnostics(decls: &[Decl]) -> Vec<Suggestion> {
@@ -117,17 +144,28 @@ pub fn from_diagnostics(decls: &[Decl]) -> Vec<Suggestion> {
             continue;
         }
         let message = &item.message;
-        let Some(dot) = message.find('.') else { continue };
-        let Some(space) = message.find(" expects ") else { continue };
+        let Some(dot) = message.find('.') else {
+            continue;
+        };
+        let Some(space) = message.find(" expects ") else {
+            continue;
+        };
         let owner = &message[..dot];
         let key = &message[dot + 1..space];
         let rest = &message[space + " expects ".len()..];
-        let Some(comma) = rest.find(", but ") else { continue };
+        let Some(comma) = rest.find(", but ") else {
+            continue;
+        };
         let want = &rest[..comma];
         let tail = &rest[comma + ", but ".len()..];
-        let Some(space2) = tail.find(" is ") else { continue };
+        let Some(space2) = tail.find(" is ") else {
+            continue;
+        };
         let target = &tail[..space2];
-        let Some(replacement) = decls.iter().find(|decl| decl.kind == want && decl.name != target) else {
+        let Some(replacement) = decls
+            .iter()
+            .find(|decl| decl.kind == want && decl.name != target)
+        else {
             continue;
         };
         let Some(trial) = clone_with_list(decls, owner, key, target, &replacement.name) else {
@@ -159,11 +197,17 @@ fn code_counts(decls: &[Decl]) -> std::collections::HashMap<String, usize> {
     counts
 }
 
-fn improves(before: (usize, usize), after: (usize, usize), old: &std::collections::HashMap<String, usize>, new: &std::collections::HashMap<String, usize>) -> bool {
+fn improves(
+    before: (usize, usize),
+    after: (usize, usize),
+    old: &std::collections::HashMap<String, usize>,
+    new: &std::collections::HashMap<String, usize>,
+) -> bool {
     if after.0 > before.0 {
         return false;
     }
-    old.iter().any(|(code, count)| new.get(code).copied().unwrap_or(0) < *count)
+    old.iter()
+        .any(|(code, count)| new.get(code).copied().unwrap_or(0) < *count)
 }
 
 fn add_field(decls: &[Decl], owner: &str, key: &str, value: Val) -> Vec<Decl> {
@@ -181,7 +225,10 @@ fn add_field(decls: &[Decl], owner: &str, key: &str, value: Val) -> Vec<Decl> {
 /// Warnings a candidate should reduce.  A hole is a progress marker, not noise.
 pub fn score_without_holes(decls: &[Decl]) -> (usize, usize) {
     let diagnostics = check(decls);
-    let errors = diagnostics.iter().filter(|item| item.code.starts_with("E-")).count();
+    let errors = diagnostics
+        .iter()
+        .filter(|item| item.code.starts_with("E-"))
+        .count();
     let warnings = diagnostics
         .iter()
         .filter(|item| item.code.starts_with("W-") && item.code != "W-HOLE")
@@ -203,9 +250,16 @@ pub fn candidates(decls: &[Decl]) -> Vec<(String, Vec<Decl>)> {
     let mut seen_names: HashSet<&str> = HashSet::new();
     for (index, decl) in decls.iter().enumerate() {
         if !seen_names.insert(decl.name.as_str()) {
-            let trial: Vec<Decl> =
-                decls.iter().enumerate().filter(|(position, _)| *position != index).map(|(_, item)| item.clone()).collect();
-            out.push((format!("{}: drop the duplicate at line {}", decl.name, decl.line), trial));
+            let trial: Vec<Decl> = decls
+                .iter()
+                .enumerate()
+                .filter(|(position, _)| *position != index)
+                .map(|(_, item)| item.clone())
+                .collect();
+            out.push((
+                format!("{}: drop the duplicate at line {}", decl.name, decl.line),
+                trial,
+            ));
         }
     }
 
@@ -228,8 +282,11 @@ pub fn candidates(decls: &[Decl]) -> Vec<(String, Vec<Decl>)> {
             for key in &missing {
                 trial = add_field(&trial, &decl.name, key, Val::Hole);
             }
-            let listed =
-                missing.iter().map(|key| format!("`{key}: ?`")).collect::<Vec<_>>().join(", ");
+            let listed = missing
+                .iter()
+                .map(|key| format!("`{key}: ?`"))
+                .collect::<Vec<_>>()
+                .join(", ");
             out.push((format!("{}: add {listed}", decl.name), trial));
         }
         if decl.kind == "value" {
@@ -242,8 +299,11 @@ pub fn candidates(decls: &[Decl]) -> Vec<(String, Vec<Decl>)> {
                 for key in &absent {
                     trial = add_field(&trial, &decl.name, key, Val::Hole);
                 }
-                let listed =
-                    absent.iter().map(|key| format!("`{key}: ?`")).collect::<Vec<_>>().join(", ");
+                let listed = absent
+                    .iter()
+                    .map(|key| format!("`{key}: ?`"))
+                    .collect::<Vec<_>>()
+                    .join(", ");
                 out.push((format!("{}: add {listed}", decl.name), trial));
             }
         }
@@ -293,7 +353,10 @@ pub fn verified(decls: &[Decl]) -> (Vec<Verified>, (usize, usize)) {
             accepted.push(Verified {
                 description,
                 trial,
-                delta: (after_e as isize - before_e as isize, after_w as isize - before_w as isize),
+                delta: (
+                    after_e as isize - before_e as isize,
+                    after_w as isize - before_w as isize,
+                ),
             });
         }
     }
@@ -350,7 +413,7 @@ pub fn suggestions(decls: &[Decl]) -> Vec<Suggestion> {
         .collect();
 
     for decl in decls {
-        if decl.kind == "proposition".to_string()
+        if decl.kind == "proposition"
             && !crate::closure::field_ids(decl, "from").is_empty()
             && !warranted.contains(&decl.name)
         {
@@ -378,16 +441,14 @@ pub fn suggestions(decls: &[Decl]) -> Vec<Suggestion> {
                         && !decl.fields.iter().any(|(key, _)| key == name)
                 })
                 .map(|(name, _, _)| *name)
-                .chain(
-                    if decl.kind == "value" {
-                        ["unit", "threshold"]
-                            .into_iter()
-                            .filter(|key| !decl.fields.iter().any(|(name, _)| name == *key))
-                            .collect::<Vec<_>>()
-                    } else {
-                        Vec::new()
-                    },
-                )
+                .chain(if decl.kind == "value" {
+                    ["unit", "threshold"]
+                        .into_iter()
+                        .filter(|key| !decl.fields.iter().any(|(name, _)| name == *key))
+                        .collect::<Vec<_>>()
+                } else {
+                    Vec::new()
+                })
                 .collect();
             if !missing.is_empty() {
                 let mut trial = decls.to_vec();
