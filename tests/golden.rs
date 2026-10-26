@@ -306,6 +306,27 @@ partition P_SOME { dimension: C_THINGS, elements: [F_A, F_B], closure: open }
     golden("ask.missing", &run(&["ask", &path.display().to_string()]));
 }
 
+/// A collision is the question with no partition in sight: two facts record the same evidence
+/// and the same attributes.  `--json --one` is the shape a loop consumes, so it gets a
+/// snapshot of its own.
+#[test]
+fn ask_answers_a_collision_in_json() {
+    let dir = std::env::temp_dir().join("engine-golden-ask-json");
+    std::fs::create_dir_all(&dir).expect("temp dir");
+    let path = dir.join("collision.mf");
+    std::fs::write(
+        &path,
+        r#"fact F_A { claim: "one", evidence: tool("survey"), attrs: { asked: 32, total: 40 } }
+fact F_B { claim: "two", evidence: tool("survey"), attrs: { total: 40, asked: 32 } }
+"#,
+    )
+    .expect("write the document");
+    golden(
+        "ask.collision-json",
+        &run(&["ask", &path.display().to_string(), "--json", "--one"]),
+    );
+}
+
 /// `novel` decides whether a proposed attribute is a new distinction or a recombination of the
 /// recorded one.  Two facts with the same record are the witness; the snapshot pins both the
 /// verdict and the sentence it prints.

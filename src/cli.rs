@@ -540,66 +540,70 @@ fn cmd_next(path: &Path) -> i32 {
     0
 }
 
-fn cmd_ask(path: &Path) -> i32 {
+fn cmd_ask(path: &Path, args: &Args) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
     };
     let program = Program::new(&loaded.decls);
-    let rows = crate::ask::plan(&program);
-    if rows.is_empty() {
-        println!("nothing to ask: no open list, and no pile");
+    let asked = crate::ask::questions(&program);
+    let one = args.has("--one");
+    if args.has("--json") {
+        let asked = if one {
+            &asked[..asked.len().min(1)]
+        } else {
+            &asked[..]
+        };
+        let items: Vec<crate::json::Json> = asked
+            .iter()
+            .map(|item| {
+                let mut fields = vec![
+                    ("kind", crate::json::Json::Str(item.kind.to_string())),
+                    ("subject", crate::json::Json::Str(item.subject.clone())),
+                    ("decides", crate::json::Json::Num(item.decides as f64)),
+                    ("question", crate::json::Json::Str(item.question.clone())),
+                ];
+                if let Some(fact) = &item.fact {
+                    fields.push(("fact", crate::json::Json::Str(fact.clone())));
+                }
+                if let Some(key) = &item.key {
+                    fields.push(("key", crate::json::Json::Str(key.clone())));
+                }
+                if let Some(value) = &item.value {
+                    fields.push(("value", crate::json::Json::Str(value.clone())));
+                }
+                crate::json::Json::Obj(
+                    fields
+                        .into_iter()
+                        .map(|(k, v)| (k.to_string(), v))
+                        .collect(),
+                )
+            })
+            .collect();
+        println!(
+            "{}",
+            crate::json::serialize(&crate::json::Json::Obj(vec![(
+                "questions".to_string(),
+                crate::json::Json::Arr(items)
+            )]))
+        );
         return 0;
     }
-    for row in &rows {
-        match row {
-            crate::ask::Row::Pile { partition, asks } => {
-                println!("{partition} (no dimension)");
-                if asks.is_empty() {
-                    println!("  nothing would ever type it: no question is attached");
-                } else {
-                    println!(
-                        "  ask: which concept do its elements share? -> {}",
-                        crate::ask::and_list(asks)
-                    );
-                }
-            }
-            crate::ask::Row::Open {
-                partition,
-                dimension,
-                listed,
-                extent,
-                gaps,
-            } => {
-                println!("{partition} (dimension {dimension}, lists {listed} of {extent})");
-                if gaps.is_empty() {
-                    println!("  nothing is missing; closing it needs a basis, not a question");
-                    continue;
-                }
-                for gap in gaps {
-                    println!("  {} is in the extent and not in the list", gap.fact);
-                    if gap.separates.is_empty() {
-                        println!(
-                            "    no recorded attribute separates it from {}",
-                            crate::ask::and_list(&gap.twins)
-                        );
-                        println!(
-                            "    the vocabulary is insufficient here; a new attribute is what would decide it"
-                        );
-                        continue;
-                    }
-                    for (key, value) in &gap.separates {
-                        if value == "(not recorded)" {
-                            println!("    ask: does it record {key}?  every listed element does");
-                        } else {
-                            println!(
-                                "    ask: does it record {key} = {value}?  no listed element does"
-                            );
-                        }
-                    }
-                }
-            }
-        }
+    if asked.is_empty() {
+        println!("nothing to ask: every list covers its extent and nothing collides");
+        return 0;
+    }
+    if one {
+        let top = &asked[0];
+        println!("{}", top.question);
+        return 0;
+    }
+    println!(
+        "{} question(s), ranked by what one answer would settle",
+        asked.len()
+    );
+    for item in &asked {
+        println!("  {:>2}  {:9}  {}", item.decides, item.kind, item.question);
     }
     0
 }
@@ -1871,7 +1875,7 @@ pub fn run() -> i32 {
         "debt" => cmd_debt(&path, args.has("--all")),
         "impact" => cmd_impact(&path),
         "next" => cmd_next(&path),
-        "ask" => cmd_ask(&path),
+        "ask" => cmd_ask(&path, &args),
         "novel" => cmd_novel(&path, &args),
         "cost" => cmd_cost(&path, args.count("--top", 8)),
         "weigh" => cmd_weigh(&path, args.number("--threshold", 0.7)),

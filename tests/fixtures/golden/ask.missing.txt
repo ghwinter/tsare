@@ -1,3 +1,3 @@
-P_SOME (dimension C_THINGS, lists 2 of 3)
-  F_GAP is in the extent and not in the list
-    ask: does it record kind = second?  no listed element does
+2 question(s), ranked by what one answer would settle
+   1  collision  F_A and F_B record the same evidence and the same attributes; which recorded attribute differs?
+   1  gap        P_SOME does not list F_GAP; does it record kind = second? no listed element does

@@ -2,7 +2,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-mod collide;
+pub(crate) mod collide;
 mod confidence;
 mod partition;
 

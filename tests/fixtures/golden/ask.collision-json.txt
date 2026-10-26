@@ -1,0 +1,1 @@
+{"questions": [{"kind": "collision", "subject": "F_A ~ F_B", "decides": 1, "question": "F_A and F_B record the same evidence and the same attributes; which recorded attribute differs?", "fact": "F_A"}]}

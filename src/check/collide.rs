@@ -44,7 +44,7 @@ pub(crate) fn check_collide(decls: &[Decl], out: &mut Vec<Diagnostic>) {
 /// every other one, and the attribute table says nothing about either.  Evidence is part of
 /// the signature because two facts citing different commands are distinguished even when their
 /// numbers are identical.
-fn signature(decl: &Decl) -> Option<String> {
+pub(crate) fn signature(decl: &Decl) -> Option<String> {
     let attrs = decl
         .fields
         .iter()
