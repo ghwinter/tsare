@@ -21,6 +21,7 @@ pub mod fix;
 pub mod graph;
 pub mod hash;
 pub mod impact;
+pub mod imply;
 pub mod induce;
 pub mod json;
 pub mod mapping;

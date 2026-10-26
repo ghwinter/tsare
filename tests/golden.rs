@@ -285,6 +285,50 @@ fn every_command_in_the_help_screen_is_dispatched() {
     }
 }
 
+/// `imply` reports the laws the attribute table already holds, and refuses the ones a single
+/// counterexample kills.  The five facts here are the falsifying test: `items=1` implies
+/// `urgent=0`, and `urgent=0` does not imply `items=1`.
+#[test]
+fn imply_reports_the_laws_the_table_already_holds() {
+    let dir = std::env::temp_dir().join("engine-golden-imply");
+    std::fs::create_dir_all(&dir).expect("temp dir");
+    let path = dir.join("imply.mf");
+    std::fs::write(
+        &path,
+        r#"fact F_1 { claim: "1", evidence: tool("t"), attrs: { items: 1, urgent: 0 } }
+fact F_2 { claim: "2", evidence: tool("t"), attrs: { items: 1, urgent: 0 } }
+fact F_3 { claim: "3", evidence: tool("t"), attrs: { items: 1, urgent: 0 } }
+fact F_4 { claim: "4", evidence: tool("t"), attrs: { items: 5, urgent: 1 } }
+fact F_5 { claim: "5", evidence: tool("t"), attrs: { items: 5, urgent: 0 } }
+"#,
+    )
+    .expect("write the document");
+    let shown = path.display().to_string();
+    golden(
+        "imply.laws",
+        &run(&[
+            "imply",
+            &shown,
+            "--max-antecedent",
+            "1",
+            "--min-support",
+            "2",
+        ]),
+    );
+    golden(
+        "imply.json",
+        &run(&[
+            "imply",
+            &shown,
+            "--json",
+            "--max-antecedent",
+            "1",
+            "--min-support",
+            "2",
+        ]),
+    );
+}
+
 /// `ask` needs a document with a gap, and no fixture has one: the six fixtures all list a
 /// complete extent.  So the gap case is written here rather than added as a seventh fixture,
 /// which would multiply the snapshots of every other command.

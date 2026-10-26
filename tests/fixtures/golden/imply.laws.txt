@@ -1,0 +1,2 @@
+1 implication(s) over 5 fact(s) and 4 attribute(s); antecedents up to 1, support at least 2
+  items=1 -> urgent=0   (3/5 facts; converse fails: F_5)

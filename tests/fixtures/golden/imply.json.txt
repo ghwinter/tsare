@@ -1,0 +1,1 @@
+{"implications": [{"antecedent": ["items=1"], "consequent": "urgent=0", "support": 3, "objects": 5, "converse_fails": "F_5"}]}

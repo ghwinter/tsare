@@ -666,6 +666,89 @@ fn cmd_novel(path: &Path, args: &Args) -> i32 {
     0
 }
 
+fn cmd_imply(path: &Path, args: &Args) -> i32 {
+    let loaded = match load(path) {
+        Ok(loaded) => loaded,
+        Err(error) => return fail(error),
+    };
+    let program = Program::new(&loaded.decls);
+    let max = args.count("--max-antecedent", 2);
+    let support = args.count("--min-support", 3);
+    let (found, search) = crate::imply::implications(&program, max, support);
+    if args.has("--json") {
+        let items: Vec<crate::json::Json> = found
+            .iter()
+            .map(|item| {
+                let mut fields = vec![
+                    (
+                        "antecedent".to_string(),
+                        crate::json::Json::Arr(
+                            item.antecedent
+                                .iter()
+                                .map(|pair| crate::json::Json::Str(pair.clone()))
+                                .collect(),
+                        ),
+                    ),
+                    (
+                        "consequent".to_string(),
+                        crate::json::Json::Str(item.consequent.clone()),
+                    ),
+                    (
+                        "support".to_string(),
+                        crate::json::Json::Num(item.support as f64),
+                    ),
+                    (
+                        "objects".to_string(),
+                        crate::json::Json::Num(item.objects as f64),
+                    ),
+                ];
+                if let Some(witness) = &item.converse_witness {
+                    fields.push((
+                        "converse_fails".to_string(),
+                        crate::json::Json::Str(witness.clone()),
+                    ));
+                }
+                crate::json::Json::Obj(fields)
+            })
+            .collect();
+        println!(
+            "{}",
+            crate::json::serialize(&crate::json::Json::Obj(vec![(
+                "implications".to_string(),
+                crate::json::Json::Arr(items)
+            )]))
+        );
+        return 0;
+    }
+    if found.is_empty() {
+        println!(
+            "no implication holds: {} fact(s), {} attribute(s), antecedents up to {}, support at least {}",
+            search.objects, search.attributes, search.max_antecedent, search.min_support
+        );
+        return 0;
+    }
+    println!(
+        "{} implication(s) over {} fact(s) and {} attribute(s); antecedents up to {}, support at least {}",
+        found.len(),
+        search.objects,
+        search.attributes,
+        search.max_antecedent,
+        search.min_support
+    );
+    for item in &found {
+        let lhs = item.antecedent.join(" & ");
+        let converse = match &item.converse_witness {
+            Some(name) => format!("converse fails: {name}"),
+            None => "converse also holds".to_string(),
+        };
+        println!(
+            "  {lhs} -> {}   ({}/{} facts; {converse})",
+            item.consequent, item.support, item.objects
+        );
+    }
+    0
+}
+
 fn cmd_cost(path: &Path, top: usize) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
@@ -1645,6 +1728,7 @@ fn usage() {
     println!("  next PATH                    open decisions, ranked by what they touch");
     println!("  ask PATH [--json] [--one]   the next question, ranked by what one answer settles");
     println!("  novel PATH --attribute N [--holds IDS]");
+    println!("  imply PATH [--json] [--max-antecedent N] [--min-support N]");
     println!(
         "                               is a proposed attribute new, redundant, or a recombination"
     );
@@ -1702,6 +1786,7 @@ fn is_command(name: &str) -> bool {
             | "next"
             | "ask"
             | "novel"
+            | "imply"
             | "cost"
             | "weigh"
             | "cat"
@@ -1742,6 +1827,8 @@ const VALUE_FLAGS: &[&str] = &[
     "--policy",
     "--attribute",
     "--holds",
+    "--max-antecedent",
+    "--min-support",
 ];
 
 impl Args {
@@ -1877,6 +1964,7 @@ pub fn run() -> i32 {
         "next" => cmd_next(&path),
         "ask" => cmd_ask(&path, &args),
         "novel" => cmd_novel(&path, &args),
+        "imply" => cmd_imply(&path, &args),
         "cost" => cmd_cost(&path, args.count("--top", 8)),
         "weigh" => cmd_weigh(&path, args.number("--threshold", 0.7)),
         "cat" => cmd_cat(&path),

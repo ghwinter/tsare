@@ -20,6 +20,10 @@ All notable changes are recorded here. The format follows
   column that is already recorded, or a recombination of the recorded attributes. The decision
   is a partition comparison -- two facts with identical records that the proposal separates are
   the witness -- so it needs no model and no statistics.
+- `imply [--json] [--max-antecedent N] [--min-support N]`: the laws the attribute table already
+  holds -- `items=1 -> urgent=0`, with the number of facts behind it and a fact that makes the
+  converse fail. The search is bounded on purpose (antecedents up to N attributes, at least M
+  facts) and says so in its own output instead of claiming to be the canonical basis.
 
 ### Fixed
 

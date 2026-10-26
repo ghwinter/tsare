@@ -51,6 +51,7 @@ answers `--json`.
 | `next FILE` | open decisions ranked by what they touch | |
 | `ask FILE [--json] [--one]` | the next question the document needs: a gap in a list, two facts nothing tells apart, or a concept whose examples look alike; `--one` gives the question that settles the most | yes |
 | `novel FILE --attribute N [--holds IDS]` | new, redundant, or a recombination: whether a proposed attribute is a distinction the recorded vocabulary already contains | |
+| `imply FILE [--json] [--max-antecedent N] [--min-support N]` | the laws the attribute table already holds, with support and a counterexample to the converse; bounded on purpose | yes |
 | `cost FILE` | external confirmations the document demands, and its longest chain | |
 | `weigh FILE` | confidence propagated by min/max, with no probability | |
 | `kinds` | the obligation table: what each kind owes | |
