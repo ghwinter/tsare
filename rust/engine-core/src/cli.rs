@@ -45,29 +45,22 @@ pub fn load_for_check(path: &Path) -> Result<Loaded, String> {
         for file in &files {
             let source = fs::read_to_string(file).map_err(|error| format!("{}: {error}", file.display()))?;
             let name = file.file_name().unwrap_or_default().to_string_lossy().to_string();
-            match syntax::parse(&source) {
-                Ok(mut parsed) => {
-                    for decl in &mut parsed {
-                        decl.file = name.clone();
-                    }
-                    decls.extend(parsed);
-                }
-                Err(error) => syntax_errors.push(syntax_diagnostic(&name, &error)),
+            let (mut parsed, errors) = syntax::parse_recovering(&source);
+            for decl in &mut parsed {
+                decl.file = name.clone();
+            }
+            decls.extend(parsed);
+            for error in &errors {
+                syntax_errors.push(syntax_diagnostic(&name, error));
             }
         }
         return Ok(Loaded { decls, text: String::new(), path: path.to_path_buf(), syntax: syntax_errors });
     }
     let text = fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
-    let (decls, syntax_error) = match syntax::parse(&text) {
-        Ok(decls) => (decls, None),
-        Err(error) => (Vec::new(), Some(syntax_diagnostic("", &error))),
-    };
-    Ok(Loaded {
-        decls,
-        text,
-        path: path.to_path_buf(),
-        syntax: syntax_error.into_iter().collect(),
-    })
+    let (decls, errors) = syntax::parse_recovering(&text);
+    let syntax_errors: Vec<crate::check::Diagnostic> =
+        errors.iter().map(|error| syntax_diagnostic("", error)).collect();
+    Ok(Loaded { decls, text, path: path.to_path_buf(), syntax: syntax_errors })
 }
 
 pub fn load(path: &Path) -> Result<Loaded, String> {
@@ -245,7 +238,7 @@ fn cmd_check(
                 crate::render::render(&loaded.text, &path.display().to_string(), &loaded.syntax)
             );
         }
-        println!("1 error(s), 0 warning(s)");
+        println!("{} error(s), 0 warning(s)", loaded.syntax.len());
         return 1;
     }
     let cacheable = use_cache && !sugar && !path.is_dir();
@@ -1523,6 +1516,8 @@ pub fn run() -> i32 {
         }
     }
 }
+
+
 
 
 

@@ -41,9 +41,10 @@ pub struct Token {
     pub col: usize,
 }
 
-fn lex(src: &str) -> Result<Vec<Token>, ParseError> {
+fn lex(src: &str) -> (Vec<Token>, Vec<ParseError>) {
     let chars: Vec<char> = src.chars().collect();
     let mut out: Vec<Token> = Vec::new();
+    let mut errors: Vec<ParseError> = Vec::new();
     let mut i = 0usize;
     let mut line = 1usize;
     let mut col = 1usize;
@@ -71,13 +72,11 @@ fn lex(src: &str) -> Result<Vec<Token>, ParseError> {
             let start_col = col;
             let mut j = i + 1;
             let mut text = String::new();
-            while j < n && chars[j] != '"' {
-                if chars[j] == '\n' {
-                    return Err(ParseError {
-                        message: "unterminated string literal".to_string(),
-                        line,
-                        col: start_col,
-                    });
+            let mut terminated = false;
+            while j < n && chars[j] != '\n' {
+                if chars[j] == '"' {
+                    terminated = true;
+                    break;
                 }
                 if chars[j] == '\\' && j + 1 < n {
                     let escaped = chars[j + 1];
@@ -95,16 +94,18 @@ fn lex(src: &str) -> Result<Vec<Token>, ParseError> {
                 text.push(chars[j]);
                 j += 1;
             }
-            if j >= n {
-                return Err(ParseError {
+            // an unterminated string ends at the newline: report it and keep lexing, so the
+            // rest of the file can still produce declarations and errors of its own
+            let width = if terminated { j - i + 1 } else { j - i };
+            if !terminated {
+                errors.push(ParseError {
                     message: "unterminated string literal".to_string(),
                     line,
                     col: start_col,
                 });
             }
-            let width = j - i + 1;
             out.push(Token { text: format!("\x00{text}"), width, line, col: start_col });
-            i = j + 1;
+            i = if terminated { j + 1 } else { j };
             col += width;
             continue;
         }
@@ -143,7 +144,7 @@ fn lex(src: &str) -> Result<Vec<Token>, ParseError> {
         i += 1;
         col += 1;
     }
-    Ok(out)
+    (out, errors)
 }
 
 struct Parser {
@@ -206,6 +207,8 @@ impl Parser {
                     fields.push((key, self.value()?));
                     if self.peek() == Some(",") {
                         self.bump();
+                    } else if self.peek() != Some("}") {
+                        return Err(self.fail("expected , or } in a record".to_string()));
                     }
                 }
                 self.expect("}")?;
@@ -221,6 +224,8 @@ impl Parser {
                     items.push(self.value()?);
                     if self.peek() == Some(",") {
                         self.bump();
+                    } else if self.peek() != Some("]") {
+                        return Err(self.fail("expected , or ] in a list".to_string()));
                     }
                 }
                 self.expect("]")?;
@@ -278,39 +283,36 @@ impl std::fmt::Display for ParseError {
     }
 }
 
-pub fn parse(src: &str) -> Result<Vec<Decl>, ParseError> {
-    let mut parser = Parser { toks: lex(src)?, pos: 0, ref_pos: Vec::new(), last_end: (0, 0) };
-    let mut out = Vec::new();
-    while let Some(kind) = parser.peek().map(|text| text.to_string()) {
-        if kind == "}" || kind == "]" {
-            parser.bump();
-            continue;
-        }
-        let (line, col) = parser.position();
-        parser.ref_pos.clear();
-        let kind_token = parser.bump().ok_or_else(|| parser.fail("declaration without a kind".to_string()))?;
-        let name = parser.bump().ok_or_else(|| parser.fail("declaration without a name".to_string()))?.text;
-        parser.expect("{")?;
+impl Parser {
+    /// One declaration, from its kind token to its closing brace.
+    fn declaration(&mut self) -> Result<Decl, ParseError> {
+        let (line, col) = self.position();
+        self.ref_pos.clear();
+        let kind_token = self.bump().ok_or_else(|| self.fail("declaration without a kind".to_string()))?;
+        let name = self.bump().ok_or_else(|| self.fail("declaration without a name".to_string()))?.text;
+        self.expect("{")?;
         let mut fields = Vec::new();
         let mut field_span = Vec::new();
-        while parser.peek() != Some("}") {
-            if parser.peek().is_none() {
-                return Err(parser.fail("unexpected end of input: missing }".to_string()));
+        while self.peek() != Some("}") {
+            if self.peek().is_none() {
+                return Err(self.fail("unexpected end of input: missing }".to_string()));
             }
-            let key = parser.bump().ok_or_else(|| parser.fail("field without a name".to_string()))?.text;
-            parser.expect(":")?;
-            let (value_line, value_col) = parser.position();
-            let value = parser.value()?;
+            let key = self.bump().ok_or_else(|| self.fail("field without a name".to_string()))?.text;
+            self.expect(":")?;
+            let (value_line, value_col) = self.position();
+            let value = self.value()?;
             fields.push((key, value));
-            field_span.push((value_line, value_col, parser.last_end.0, parser.last_end.1));
-            if parser.peek() == Some(",") {
-                parser.bump();
+            field_span.push((value_line, value_col, self.last_end.0, self.last_end.1));
+            if self.peek() == Some(",") {
+                self.bump();
+            } else if self.peek() != Some("}") {
+                return Err(self.fail("expected , or } after a field".to_string()));
             }
         }
-        let (end_line, end_col) = parser.position();
-        parser.expect("}")?;
-        out.push(Decl {
-            kind,
+        let (end_line, end_col) = self.position();
+        self.expect("}")?;
+        Ok(Decl {
+            kind: kind_token.text,
             name,
             fields,
             field_span,
@@ -321,11 +323,61 @@ pub fn parse(src: &str) -> Result<Vec<Decl>, ParseError> {
             end_line,
             end_col: end_col + 1,
             file: String::new(),
-            ref_pos: parser.ref_pos.clone(),
-        });
+            ref_pos: self.ref_pos.clone(),
+        })
     }
-    Ok(out)
+
+    /// Skip to the next line-initial identifier: the place a declaration may begin.  A broken
+    /// record cannot be repaired locally, so the parser restarts where the author started.
+    fn recover(&mut self) {
+        while let Some(token) = self.toks.get(self.pos) {
+            let line_initial = token.col == 1;
+            let identifier = token.text.chars().next().map(|c| c.is_alphabetic() || c == '_').unwrap_or(false);
+            if line_initial && identifier {
+                return;
+            }
+            self.pos += 1;
+        }
+    }
 }
+
+/// Parse, keeping every error: after one declaration fails the parser restarts at the next
+/// line-initial identifier, so one typo does not hide the rest of the file.  The lexer fails
+/// only on an unterminated string, which it reports and then ends at the newline.
+pub fn parse_recovering(src: &str) -> (Vec<Decl>, Vec<ParseError>) {
+    let (tokens, lex_errors) = lex(src);
+    let mut parser = Parser { toks: tokens, pos: 0, ref_pos: Vec::new(), last_end: (0, 0) };
+    let mut decls = Vec::new();
+    let mut errors = lex_errors;
+    while let Some(kind) = parser.peek().map(|text| text.to_string()) {
+        if kind == "}" || kind == "]" {
+            parser.bump();
+            continue;
+        }
+        let start = parser.pos;
+        match parser.declaration() {
+            Ok(decl) => decls.push(decl),
+            Err(error) => {
+                errors.push(error);
+                parser.recover();
+                if parser.pos == start {
+                    parser.bump();
+                }
+            }
+        }
+    }
+    (decls, errors)
+}
+
+pub fn parse(src: &str) -> Result<Vec<Decl>, ParseError> {
+    let (decls, errors) = parse_recovering(src);
+    match errors.into_iter().next() {
+        Some(error) => Err(error),
+        None => Ok(decls),
+    }
+}
+
+
 
 
 
