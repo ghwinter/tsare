@@ -1494,7 +1494,7 @@ fn cmd_kinds() -> i32 {
 
 fn usage() {
     println!(
-        "cogent {} — a compiler for checkable claims",
+        "cogent {} — an external reasoning engine for AI agents",
         env!("CARGO_PKG_VERSION")
     );
     println!();
@@ -1687,7 +1687,7 @@ pub fn run() -> i32 {
     }
     if raw.iter().any(|arg| arg == "--version" || arg == "-V") {
         println!(
-            "cogent {} — a compiler for checkable claims",
+            "cogent {} — an external reasoning engine for AI agents",
             env!("CARGO_PKG_VERSION")
         );
         return 0;
@@ -1794,4 +1794,5 @@ pub fn run() -> i32 {
         }
     }
 }
+
 
