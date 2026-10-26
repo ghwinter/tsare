@@ -40,6 +40,8 @@ answers `--json`.
 | `apply FILE [--dry-run]` | machine repairs spliced and recompiled | |
 | `build FILE\|DIR [--out] [--goals]` | obligations, learned clauses, open items, notes, predicates | |
 | `mem [--recall CODE...] [--k N]` | the case store: audit it, or recall similar situations | |
+| `propose FILE --proposals FILE.json [--policy ...]` | gate values an outside model wants to fill into holes | |
+| `fca FILE` | what a concept's positives share, and which facts the attributes imply | |
 
 `suggest` and `apply` are the engine's own shape: `apply` splices a span and keeps the result
 only if the document compiles better.
@@ -116,6 +118,33 @@ One crate, grouped by what a module needs:
 
 `check` calls `closure` for the conditional-conclusion warning, so the check tier depends on
 the reasoning tier in exactly one place. Keep it that way.
+
+## Checks added after v1
+
+Each of these follows one rule: a property that can be derived from the document must be
+checked against what was declared.
+
+| code | what it compares |
+| --- | --- |
+| `E-TYPE` on list elements | every element must have the element type, not just be inside a list |
+| `W-EXAMPLE-SHAPE` | an example must share a recorded attribute with the concept's positives, or it cannot be compared with them |
+| `W-BY-MISMATCH` | an inference type is derived from structure — a warrant makes deduction, concepts without a rule make induction — and a declaration that disagrees is contradicted |
+| `W-CONFIDENCE-INFLATED` | a declared number is bounded by the weakest link: the rule's premises, or the premises a rule-less proposition cites |
+| `E-PARTITION-*` | a closed list is contradicted by the dimension's extent and by any fact the attributes imply |
+| `W-PARTITION-UNKNOWN` | a pile with no dimension may be written and may not discharge anything |
+
+## Gatekeeping values from outside
+
+`propose` takes a declaration, a field, and a value, and answers one of three ways:
+
+- **admitted** — no diagnostic was introduced and no error was added;
+- **review** — no error, but a diagnostic appeared that was not there before;
+- **rejected** — an error was added, the value did not parse, or nothing changed.
+
+`--policy` decides how much a fill must earn: `harmless` (the three above), `strict` (an
+introduced diagnostic is a rejection), `improve` (something besides the hole must get better).
+The default is `harmless`. None of the three looks at content, and the experiments in
+`experiments/hole-filling` measure what that costs.
 
 ## Deliberate differences from v1
 
