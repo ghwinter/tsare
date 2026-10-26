@@ -1356,6 +1356,23 @@ impl Args {
 
 pub fn run() -> i32 {
     let raw: Vec<String> = std::env::args().skip(1).collect();
+    if let Some(position) = raw.iter().position(|arg| arg == "--explain") {
+        let Some(code) = raw.get(position + 1) else {
+            println!("usage: engine-core --explain CODE");
+            return 2;
+        };
+        return match crate::explain::explain(code) {
+            Some(text) => {
+                println!("{code}\n");
+                println!("{text}");
+                0
+            }
+            None => {
+                println!("no explanation for {code}");
+                1
+            }
+        };
+    }
     if raw.iter().any(|arg| arg == "--version" || arg == "-V") {
         println!("engine-core {} — a compiler for checkable claims", env!("CARGO_PKG_VERSION"));
         return 0;
@@ -1445,6 +1462,7 @@ pub fn run() -> i32 {
         }
     }
 }
+
 
 
 

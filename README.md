@@ -24,6 +24,14 @@ The binary is 0.6 MB, links no runtime beyond the OS, and needs no interpreter:
 
 `check`, `engine`, `suggest` answer `--json` for machines; every other command prints text.
 
+## Explain a diagnostic
+
+Every code the compiler prints has a two-line explanation, and a test keeps the table complete:
+
+```powershell
+.\target\release\engine-core.exe --explain W-BY-MISMATCH
+```
+
 ## Test it
 
 ```powershell
@@ -90,3 +98,4 @@ PROTOCOL.md              the contract: commands, JSON, directories, deliberate d
 
 `obligo` (tag `v1`) holds the frozen Python implementation and the research behind it. It is
 history, not a dependency.
+

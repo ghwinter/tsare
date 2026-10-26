@@ -15,6 +15,7 @@ pub mod debt;
 pub mod derive;
 pub mod egraph;
 pub mod fca;
+pub mod explain;
 pub mod fix;
 pub mod graph;
 pub mod hash;
@@ -33,4 +34,5 @@ pub mod sugar;
 pub mod syntax;
 pub mod weigh;
 pub mod whatif;
+
 

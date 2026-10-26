@@ -500,6 +500,32 @@ fn the_self_document_compiles_without_errors() {
 }
 
 #[test]
+fn every_code_the_compiler_prints_has_an_explanation() {
+    let golden = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests").join("fixtures").join("golden");
+    let mut codes: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+    for entry in std::fs::read_dir(&golden).expect("golden directory") {
+        let text = std::fs::read_to_string(entry.expect("entry").path()).expect("golden file");
+        // only diagnostic positions count: `error[CODE]:` or `warning[CODE]:`, never prose
+        for marker in ["error[", "warning["] {
+            let mut rest = text.as_str();
+            while let Some(position) = rest.find(marker) {
+                rest = &rest[position + marker.len()..];
+                let Some(end) = rest.find(']') else { break };
+                codes.insert(rest[..end].to_string());
+            }
+        }
+    }
+    assert!(codes.len() > 5, "the corpus should exercise more than a handful of codes");
+    let missing: Vec<&String> =
+        codes.iter().filter(|code| engine_core::explain::explain(code).is_none()).collect();
+    assert!(missing.is_empty(), "no explanation for {missing:?}");
+    // and the table itself must answer for every code it lists
+    for code in engine_core::explain::CODES {
+        assert!(engine_core::explain::explain(code).is_some(), "{code} is listed but unexplained");
+    }
+}
+
+#[test]
 fn a_declaration_keeps_its_positions() {
     let declared = decls("fact F1 { claim: \"x\", evidence: user }\n");
     assert_eq!(declared[0].line, 1);
