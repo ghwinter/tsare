@@ -16,8 +16,13 @@
 !tests/**
 !docs/
 !docs/**
+!agent/
+!agent/**
 !experiments/
+!agent/
+!agent/**
 !experiments/**
 !scripts/
 !scripts/**
 !SELF.mf
+

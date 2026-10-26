@@ -3,7 +3,7 @@ name = "engine-core"
 version = "0.2.0"
 edition = "2021"
 rust-version = "1.85"
-description = "A compiler for checkable claims: it decides whether a statement can be checked, and prints the smallest edit that would make it so."
+description = "A reasoning engine for AI agents: it reads a claim written as code, decides whether it can be checked, and prints the smallest edit that would make it so."
 license = "MIT"
 readme = "README.md"
 keywords = ["compiler", "logic", "argument", "verification", "reasoning"]
@@ -23,4 +23,5 @@ codegen-units = 1
 strip = true
 
 [dependencies]
+
 

@@ -1,6 +1,10 @@
 # engine
 
-A compiler for checkable claims. A `.mf` document is a set of typed declarations — facts,
+**An external reasoning engine for AI agents.** It turns a claim into a small program and
+answers two questions a model cannot answer about itself: *can this be checked at all*, and
+*what is the smallest edit that would make it so*.
+
+A `.mf` document is a set of typed declarations — facts,
 concepts, propositions, hypotheses, questions, blind spots, values, warrants, laws, layers,
 partitions, notes — and the compiler decides whether each one can be checked at all, what it
 still owes, and what follows from it.
@@ -15,6 +19,26 @@ SELF.mf:13:13: warning[W-UNCONFIRMED]: fact F_ENUM_FORM was supplied by a model,
  13 |   evidence: model
     |             ^^^^^
 ```
+
+## Use it from an agent
+
+The point is not that a human types `.mf` files. It is that an agent, before it asserts
+something, can write the claim as code and have a deterministic checker say whether the claim
+is anchored, whether a rule connects it to its support, and what is missing.
+
+`agent/AGENTS.snippet.md` is a block to paste into your agent instructions. The loop it
+installs is one line long: write the claim, compile it, report only what compiles, and report
+the refusals with the corrected version.
+
+```powershell
+engine-core check claim.mf        # what is wrong with it
+engine-core fix claim.mf          # the smallest edits that would fix it
+engine-core --explain E-VACUOUS   # what a diagnostic means
+```
+
+Nothing model-shaped is inside the binary: proposal is the agent's job, verification is the
+binary's, and the two meet at `propose` (three verdicts, three policies) and at a human who
+confirms.
 
 ## Install
 
@@ -116,4 +140,5 @@ SELF.mf         the repository, written as declarations
 ## License
 
 MIT.
+
 
