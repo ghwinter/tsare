@@ -1,0 +1,47 @@
+---
+name: tsare
+description: Compile a claim before asserting it. Write the claim as a .mf document and run tsare — it decides whether the claim can be checked at all, what it still owes, and whether the recorded vocabulary can tell two objects apart. Deterministic; no model inside.
+---
+
+# tsare
+
+Use this when a claim, a number, a plan or a design decision is about to be asserted and a
+reader will rely on it. Four cases, not every sentence:
+
+1. you are about to conclude something;
+2. you are about to give a number;
+3. you are about to say "it works";
+4. you are choosing between options.
+
+## The loop
+
+Write the claim as declarations in `claim.mf`:
+
+    fact F_TRACE { claim: "the trace shows 14ms", evidence: tool("trace, 200 runs") }
+    value V_BUDGET { metric: "frame_ms", direction: max, unit: "ms", threshold: 16, measured_by: "trace" }
+    proposition P_FAST { statement: "frames land in budget", from: [F_TRACE] }
+    warrant W_FAST { claim: "16ms is the budget", from: [F_TRACE], to: P_FAST, basis: [V_BUDGET] }
+
+Then:
+
+    tsare check claim.mf          # errors block; warnings must be reported, not hidden
+    tsare ask claim.mf --one      # the next question the document needs
+    tsare novel claim.mf --attribute X --holds F_A,F_B   # is X new, redundant, or a recombination?
+    tsare imply claim.mf          # the laws the attribute table already holds
+    tsare fix claim.mf            # the smallest edits that would make it checkable
+    tsare --explain CODE          # what a diagnostic means
+
+## Rules
+
+- Report a claim only after it compiles with no error. Name the warnings that stand.
+- If the checker refuses, report the refusal and the corrected version together. Never silently
+  rewrite into something that passes.
+- `evidence: model` without `confirmed_by` is a warning you must pass on: the claim came from a
+  model, not from a tool or a person.
+- Never invent a kind, a field or a code: `tsare kinds`, `tsare --explain`.
+- A number needs an instrument, a universal claim needs a scope, a proposal needs evidence.
+
+## Where it is
+
+Binary: `D:\GitHub\tsare\target\release\tsare.exe`. Source, protocol and tests:
+`D:\GitHub\tsare`.

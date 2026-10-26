@@ -77,6 +77,18 @@ answers `--json`.
 `suggest` and `apply` are the engine's own shape: `apply` splices a span and keeps the result
 only if the document compiles better.
 
+## MCP
+
+`tsare mcp` speaks JSON-RPC 2.0 over stdio and exposes nine tools: `check`, `argue`, `derive`,
+`fix`, `explain`, `kinds`, `ask`, `novel`, `imply`. Each answers with the same text the command
+line prints -- one renderer per command, so the two cannot drift -- and no tool calls a model.
+`tests/mcp.rs` opens the server the way a client would and checks that every listed tool is
+dispatched.
+
+The server is not registered by a harness by default. Registration costs about 500 tokens of tool
+schema in every turn; the skill in `dsh/tsare/SKILL.md` costs one catalog line, which is why it is
+the cheaper way to keep the tool reachable.
+
 ## The JSON contract
 
 ### `check --json FILE|DIR`

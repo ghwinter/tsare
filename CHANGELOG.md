@@ -6,6 +6,11 @@ All notable changes are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-26
+
+The version where the engine starts judging its own vocabulary: whether a predicate is new,
+which observation would decide an open list, and what the attribute table already implies.
+
 ### Added
 
 - `ask`: the next question the document needs, from three families that are one defect in three

@@ -1,6 +1,6 @@
 [package]
 name = "tsare"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 rust-version = "1.85"
 description = "An external reasoning engine and language checker for LLMs: claims compile, and checkability has a deterministic answer."

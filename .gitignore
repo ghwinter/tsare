@@ -36,6 +36,13 @@
 !/docs/PROTOCOL.md
 !/docs/REPO.mf
 
+# The skill is part of the artifact: without it a clone cannot be installed into a harness.
+!/dsh
+/dsh/*
+!/dsh/tsare
+/dsh/tsare/*
+!/dsh/tsare/SKILL.md
+
 # Junk, wherever it appears.
 __pycache__/
 *.pyc
