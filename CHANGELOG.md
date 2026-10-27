@@ -8,6 +8,14 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `supersedes: [ID]` on every kind — withdrawal appends, it does not delete. The superseded
+  declaration stays in the document and references to it still resolve, but it grounds nothing,
+  supports nothing and attacks nothing: `closure` and `engine` drop it, conclusions that leaned on
+  it become conditional with `retired` in the reason, `check` reports `W-RETIRED` at the citation,
+  and `impact` prints the transitive set of declarations that still reach it. This is the whole of
+  the memory feature — no store, no query language, only "what was replaced, and what falls with
+  it".
+
 - `abstract FILE [--min-support N] [--max-intent N]` — concept declarations the attribute table
   supports but nobody wrote. A candidate needs three things: at least two facts, an extent no
   named concept already has, and a witness pair (one fact in, one out). The third is what keeps a

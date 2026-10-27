@@ -67,6 +67,7 @@ pub const CODES: &[&str] = &[
     "W-PARTITION-OPEN-USED",
     "W-PARTITION-UNKNOWN",
     "W-PARTITION-UNLEARNED",
+    "W-RETIRED",
     "W-UNANSWERED",
     "W-UNCONFIRMED",
     "W-UNPRINCIPLED",
@@ -223,6 +224,10 @@ pub fn explain(code: &str) -> Option<&'static str> {
             Fix: answer the question it names, or add a dimension.",
         "W-PARTITION-UNLEARNED" => "A partition leans on a dimension whose own examples no recorded attribute separates.\n\
             Fix: record the attribute that distinguishes them.",
+        "W-RETIRED" => "A declaration cites one that was retired by a supersedes field.\n\
+            The reference still resolves -- withdrawal appends, it does not delete -- but the ground\n\
+            behind it is gone, so anything leaning on it is leaning on what was replaced.\n\
+            Fix: point the reference at the replacement, or drop it.",
         "W-UNANSWERED" => "A rule in one document is attacked by a rule in another, and the attacked document has no rule that attacks back.\n\
             An unanswered attack is not a defeat: it is an argument that stopped where it was hit.\n\
             Fix: add a warrant with `attacks:` naming the attacker, or withdraw the attacked rule.",

@@ -15,6 +15,7 @@ pub fn spec(kind: &str) -> Option<&'static [Field]> {
             ("artifact", "str", false),
             ("out", "str", false),
             ("layer", "ref:layer", false),
+            ("supersedes", "list:ref:any", false),
         ],
         "concept" => &[
             ("name", "str", true),
@@ -23,6 +24,7 @@ pub fn spec(kind: &str) -> Option<&'static [Field]> {
             ("against", "list:ref:fact", false),
             ("parent", "ref:concept", false),
             ("layer", "ref:layer", false),
+            ("supersedes", "list:ref:any", false),
         ],
         "proposition" => &[
             ("statement", "str", true),
@@ -33,6 +35,7 @@ pub fn spec(kind: &str) -> Option<&'static [Field]> {
             ("status", "enum:asserted,open", false),
             ("confidence", "num", false),
             ("layer", "ref:layer", false),
+            ("supersedes", "list:ref:any", false),
         ],
         "hypothesis" => &[
             ("assumes", "list:ref:any", true),
@@ -42,6 +45,7 @@ pub fn spec(kind: &str) -> Option<&'static [Field]> {
             ("verdict", "enum:open,supported,refuted", false),
             ("verdict_by", "ref:fact", false),
             ("layer", "ref:layer", false),
+            ("supersedes", "list:ref:any", false),
         ],
         "question" => &[
             ("asks", "str", true),
@@ -49,6 +53,7 @@ pub fn spec(kind: &str) -> Option<&'static [Field]> {
             ("separates", "list:ref:hypothesis", true),
             ("to", "enum:user,tool,experiment", false),
             ("layer", "ref:layer", false),
+            ("supersedes", "list:ref:any", false),
         ],
         "blindspot" => &[
             ("cannot_express", "str", true),
@@ -56,6 +61,7 @@ pub fn spec(kind: &str) -> Option<&'static [Field]> {
             ("signature", "list:ref:concept", true),
             ("closes_with", "list:ref:question", false),
             ("layer", "ref:layer", false),
+            ("supersedes", "list:ref:any", false),
         ],
         "warrant" => &[
             ("claim", "str", true),
@@ -66,8 +72,13 @@ pub fn spec(kind: &str) -> Option<&'static [Field]> {
             ("attacks", "list:ref:warrant", false),
             ("confidence", "num", false),
             ("layer", "ref:layer", false),
+            ("supersedes", "list:ref:any", false),
         ],
-        "layer" => &[("name", "str", true), ("exposes", "list:ref:any", true)],
+        "layer" => &[
+            ("name", "str", true),
+            ("exposes", "list:ref:any", true),
+            ("supersedes", "list:ref:any", false),
+        ],
         "law" => &[
             ("statement", "str", true),
             ("holds_in", "ref:layer", true),
@@ -75,6 +86,7 @@ pub fn spec(kind: &str) -> Option<&'static [Field]> {
             ("refines", "ref:layer", false),
             ("requires", "list:str", false),
             ("layer", "ref:layer", false),
+            ("supersedes", "list:ref:any", false),
         ],
         "value" => &[
             ("metric", "str", true),
@@ -84,6 +96,7 @@ pub fn spec(kind: &str) -> Option<&'static [Field]> {
             ("priority", "num", false),
             ("measured_by", "instrument", false),
             ("layer", "ref:layer", false),
+            ("supersedes", "list:ref:any", false),
         ],
         "partition" => &[
             ("of", "ref:any", false),
@@ -93,12 +106,14 @@ pub fn spec(kind: &str) -> Option<&'static [Field]> {
             ("basis", "list:ref:any", false),
             ("closes_with", "list:ref:question", false),
             ("layer", "ref:layer", false),
+            ("supersedes", "list:ref:any", false),
         ],
         "note" => &[
             ("tag", "enum:intuition,conjecture,preference,hunch", true),
             ("text", "str", true),
             ("about", "list:ref:any", false),
             ("layer", "ref:layer", false),
+            ("supersedes", "list:ref:any", false),
         ],
         _ => return None,
     })

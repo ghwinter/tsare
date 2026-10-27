@@ -182,6 +182,7 @@ checked against what was declared.
 | `W-BY-MISMATCH` | an inference type is derived from structure — a warrant makes deduction, concepts without a rule make induction — and a declaration that disagrees is contradicted |
 | `W-CONFIDENCE-INFLATED` | a declared number is bounded by the weakest link: the rule's premises, or the premises a rule-less proposition cites |
 | `E-PARTITION-*` | a closed list is contradicted by the dimension's extent and by any fact the attributes imply |
+| `W-RETIRED` | a reference is compared with the set of names retired by `supersedes:`; it resolves, but it no longer grounds |
 | `W-UNSATISFIED` | a citation is compared with the fields the cited law declares it requires under `requires:` |
 | `E-OUT-MISMATCH` | a recorded hash is compared with the bytes of the artifact it names (path read from the working directory) |
 | `W-OUT-UNVERIFIED` | a hash with no artifact, or an artifact that cannot be read — unverifiable, not wrong |

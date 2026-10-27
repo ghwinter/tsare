@@ -268,6 +268,7 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
     check_layer(decls, &mut out);
     check_refinements(decls, &mut out);
     check_requirements(decls, &mut out);
+    check_retirement(decls, &mut out);
     check_bindings(decls, &mut out);
     check_verdicts(decls, &mut out);
     check_dead_values(decls, &mut out);
@@ -841,6 +842,44 @@ fn check_bindings(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                 Some("over"),
                 out,
             );
+        }
+    }
+}
+
+/// A reference to a retired declaration resolves -- nothing was deleted -- but the ground behind it
+/// was withdrawn.  Saying nothing would let a document keep leaning on what it already replaced.
+fn check_retirement(decls: &[Decl], out: &mut Vec<Diagnostic>) {
+    let gone = crate::closure::retired(decls);
+    if gone.is_empty() {
+        return;
+    }
+    for decl in decls {
+        // one warning per name, at the first field that cites it: a declaration that cites the
+        // same withdrawn ground twice is still one mistake
+        let mut reported: std::collections::HashSet<(String, String)> =
+            std::collections::HashSet::new();
+        for (key, value) in &decl.fields {
+            if !REF_KEYS.contains(&key.as_str()) {
+                continue;
+            }
+            for name in ids(value) {
+                if !gone.contains(&name) || name == decl.name {
+                    continue;
+                }
+                if !reported.insert((decl.name.clone(), name.clone())) {
+                    continue;
+                }
+                sem(
+                    decl,
+                    "W-RETIRED",
+                    format!(
+                        "{} cites {name}, which is retired: the reference resolves, the ground does not",
+                        decl.name
+                    ),
+                    Some(key),
+                    out,
+                );
+            }
         }
     }
 }

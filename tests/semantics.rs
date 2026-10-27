@@ -1167,3 +1167,47 @@ fn an_abstraction_is_proposed_only_when_it_separates_something() {
         "{found:#?}"
     );
 }
+
+/// Retirement appends, it does not delete: the old declaration stays, references to it still
+/// resolve, and everything that leaned on it loses its ground.  This is the minimal memory --
+/// no storage, no query language, just "what was replaced, and what falls with it".
+#[test]
+fn a_retired_fact_takes_what_leaned_on_it_down_with_it() {
+    let source = concat!(
+        "fact F_OLD { claim: \"latency is 80 ms\", evidence: tool(\"t\") }\n",
+        "fact F_NEW { claim: \"latency is 140 ms after the fix\", evidence: tool(\"t\"), supersedes: [F_OLD] }\n",
+        "proposition P_FAST { statement: \"we are under the budget\", from: [F_OLD] }\n",
+        "warrant W_FAST { claim: \"80 ms is under budget\", from: [F_OLD], to: P_FAST, basis: [F_OLD] }\n",
+    );
+    let declared = decls(source);
+    // the reference resolves: withdrawal is an append, not a delete
+    assert!(!check(&declared)
+        .iter()
+        .any(|item| item.code == "E-UNDEFINED"));
+    // but the ground is gone, and the checker says so
+    let found = check(&declared);
+    let retired: Vec<&str> = found
+        .iter()
+        .filter(|item| item.code == "W-RETIRED")
+        .map(|item| item.message.as_str())
+        .collect();
+    assert_eq!(retired.len(), 2, "{retired:#?}");
+    assert!(retired.iter().all(|message| message.contains("F_OLD")));
+
+    // the engine drops it: the conclusion no longer holds
+    let program = Program::new(&declared);
+    let result = tsare::closure::engine(&declared);
+    assert!(
+        result
+            .conditional
+            .iter()
+            .any(|(name, why)| name == "P_FAST" && why.iter().any(|line| line.contains("retired"))),
+        "{:#?}",
+        result.conditional
+    );
+    // and without the retirement the same document holds
+    let plain = source.replace(", supersedes: [F_OLD]", "");
+    let held = tsare::closure::engine(&decls(&plain));
+    assert!(!held.conditional.iter().any(|(name, _)| name == "P_FAST"));
+    let _ = program;
+}

@@ -716,6 +716,13 @@ fn cmd_impact(path: &Path) -> i32 {
     for line in crate::impact::report(&program) {
         println!("{line}");
     }
+    for (name, affected) in crate::impact::retirement(&program) {
+        if affected.is_empty() {
+            println!("retired: {name} (nothing cites it anymore)");
+        } else {
+            println!("retired: {name} -> {}", affected.join(", "));
+        }
+    }
     let errors = error_count(&diagnostics);
     if errors > 0 {
         println!("note: {errors} error(s); analyses ran on the resolved part");

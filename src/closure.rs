@@ -96,13 +96,27 @@ pub fn grounded(decls: &[Decl]) -> HashSet<String> {
     grounded_sets(decls).0
 }
 
+/// Names withdrawn by some `supersedes:` field.  A retired declaration stays in the document --
+/// references to it still resolve -- but it counts for nothing: it grounds nothing, supports
+/// nothing, attacks nothing.  That is what makes withdrawal an append instead of an edit, and
+/// what lets a reader see what used to be believed.
+pub fn retired(decls: &[Decl]) -> HashSet<String> {
+    decls
+        .iter()
+        .flat_map(|decl| field_ids(decl, "supersedes"))
+        .collect()
+}
+
 /// The grounded extension, plus the rules it defeats.  `undecided` is the rest.
 pub fn grounded_sets(decls: &[Decl]) -> (HashSet<String>, HashSet<String>) {
     let warrants: Vec<&Decl> = decls.iter().filter(|decl| decl.kind == "warrant").collect();
+    let gone = retired(decls);
     let invalid: HashSet<String> = warrants
         .iter()
         .filter(|decl| field_ids(decl, "from").is_empty())
         .map(|decl| decl.name.clone())
+        // a retired rule is still declared and no longer holds a position
+        .chain(gone.iter().cloned())
         .collect();
 
     let mut attackers: HashMap<String, Vec<String>> = HashMap::new();
@@ -185,15 +199,16 @@ pub struct Closure {
 
 pub fn closure(decls: &[Decl]) -> Closure {
     let inside = grounded(decls);
+    let gone = retired(decls);
     let facts: HashSet<String> = decls
         .iter()
-        .filter(|decl| decl.kind == "fact")
+        .filter(|decl| decl.kind == "fact" && !gone.contains(&decl.name))
         .map(|decl| decl.name.clone())
         .collect();
     let mut held = facts.clone();
     let rules: Vec<Rule> = applications(decls)
         .into_iter()
-        .filter(|rule| inside.contains(&rule.warrant))
+        .filter(|rule| inside.contains(&rule.warrant) && !gone.contains(&rule.warrant))
         .collect();
     let mut changed = true;
     while changed {
@@ -221,10 +236,14 @@ pub fn closure(decls: &[Decl]) -> Closure {
         for rule in rules.iter().filter(|rule| &rule.target == name) {
             for premise in &rule.premises {
                 if !held.contains(premise) {
-                    let premise_state = state
-                        .get(premise)
-                        .cloned()
-                        .unwrap_or_else(|| "fact".to_string());
+                    let premise_state = if gone.contains(premise) {
+                        "retired".to_string()
+                    } else {
+                        state
+                            .get(premise)
+                            .cloned()
+                            .unwrap_or_else(|| "fact".to_string())
+                    };
                     let label = if premise_state == "defeated" {
                         "defeated".to_string()
                     } else {
@@ -314,14 +333,15 @@ fn support_edges(decls: &[Decl]) -> HashMap<String, Vec<String>> {
 
 pub fn engine(decls: &[Decl]) -> EngineResult {
     let inside = grounded(decls);
+    let gone = retired(decls);
     let facts: HashSet<String> = decls
         .iter()
-        .filter(|decl| decl.kind == "fact")
+        .filter(|decl| decl.kind == "fact" && !gone.contains(&decl.name))
         .map(|decl| decl.name.clone())
         .collect();
     let rules: Vec<Rule> = applications(decls)
         .into_iter()
-        .filter(|rule| inside.contains(&rule.warrant))
+        .filter(|rule| inside.contains(&rule.warrant) && !gone.contains(&rule.warrant))
         .collect();
 
     let mut held = facts.clone();
@@ -361,10 +381,14 @@ pub fn engine(decls: &[Decl]) -> EngineResult {
         for rule in rules.iter().filter(|rule| &rule.target == name) {
             for premise in &rule.premises {
                 if !held.contains(premise) {
-                    let premise_state = state
-                        .get(premise)
-                        .cloned()
-                        .unwrap_or_else(|| "fact".to_string());
+                    let premise_state = if gone.contains(premise) {
+                        "retired".to_string()
+                    } else {
+                        state
+                            .get(premise)
+                            .cloned()
+                            .unwrap_or_else(|| "fact".to_string())
+                    };
                     let label = if premise_state == "defeated" {
                         "defeated".to_string()
                     } else {

@@ -308,3 +308,36 @@ pub fn support_adjacency(prog: &Program) -> Vec<(String, Vec<String>)> {
 pub fn referenced<'a>(prog: &Program<'a>, name: &str) -> Option<&'a Decl> {
     prog.get(name)
 }
+
+/// What a retirement takes with it: each retired name and every declaration that still reaches it.
+/// The walk is over the reference graph, not the support graph -- a citation is enough to be
+/// affected, because a citation is what the next reader will follow.
+pub fn retirement(prog: &Program) -> Vec<(String, Vec<String>)> {
+    let gone = crate::closure::retired(prog.decls);
+    let mut out: Vec<(String, Vec<String>)> = Vec::new();
+    for name in &gone {
+        let mut affected: Vec<String> = Vec::new();
+        let mut frontier: Vec<String> = vec![name.clone()];
+        while let Some(target) = frontier.pop() {
+            for decl in prog.decls {
+                if decl.name == target || affected.contains(&decl.name) {
+                    continue;
+                }
+                let cites = decl
+                    .fields
+                    .iter()
+                    .filter(|(key, _)| crate::check::REF_KEYS.contains(&key.as_str()))
+                    .flat_map(|(key, _)| crate::closure::field_ids(decl, key))
+                    .any(|found| found == target);
+                if cites {
+                    affected.push(decl.name.clone());
+                    frontier.push(decl.name.clone());
+                }
+            }
+        }
+        affected.sort();
+        out.push((name.clone(), affected));
+    }
+    out.sort();
+    out
+}
