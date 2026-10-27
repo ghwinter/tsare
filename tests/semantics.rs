@@ -972,3 +972,95 @@ fn a_law_that_names_a_requirement_charges_for_being_cited() {
     let text = tsare::explain::explain("W-UNSATISFIED").unwrap_or_default();
     assert!(text.contains("requirement"), "{text}");
 }
+
+/// A verdict is a claim about the strength of evidence, so a model's own assessment cannot supply
+/// it.  The fact stays legal -- it is still a fact the document holds -- but it cannot settle a
+/// hypothesis: deciding needs a witness that is not the thing being judged.
+#[test]
+fn a_model_cannot_settle_a_hypothesis_by_agreeing_with_itself() {
+    let base = concat!(
+        "fact F_MODEL { claim: \"the new path is faster\", evidence: model }\n",
+        "fact F_TOOL { claim: \"the new path is faster\", evidence: tool(\"bench.sh\") }\n",
+        "hypothesis H_ONE { assumes: [F_MODEL], predicts: \"a\", verdict: supported, verdict_by: F_MODEL }\n",
+        "hypothesis H_TWO { assumes: [F_TOOL], predicts: \"b\", verdict: supported, verdict_by: F_TOOL }\n",
+    );
+    let found = check(&decls(base));
+    let self_verdict: Vec<&str> = found
+        .iter()
+        .filter(|item| item.code == "E-SELF-VERDICT")
+        .map(|item| item.message.as_str())
+        .collect();
+    assert_eq!(self_verdict.len(), 1, "{self_verdict:#?}");
+    assert!(self_verdict[0].contains("H_ONE") && self_verdict[0].contains("F_MODEL"));
+    // a person who looked is a witness
+    let confirmed = concat!(
+        "fact F_MODEL { claim: \"x\", evidence: model, confirmed_by: \"user\" }\n",
+        "hypothesis H_ONE { assumes: [F_MODEL], predicts: \"a\", verdict: refuted, verdict_by: F_MODEL }\n",
+    );
+    assert!(!check(&decls(confirmed))
+        .iter()
+        .any(|item| item.code == "E-SELF-VERDICT"));
+}
+
+/// A threshold nothing reads cannot change a decision.  It is the number-shaped version of a fact
+/// no conclusion depends on: the document pays a reader's attention for it and gets nothing back.
+#[test]
+fn a_bound_no_rule_reads_is_not_a_decision() {
+    let unread = concat!(
+        "value V_CONTRAST { metric: \"contrast\", direction: min, threshold: 4.5, measured_by: \"checker\" }\n",
+        "fact F_A { claim: \"a\", evidence: tool(\"t\") }\n",
+        "proposition P_A { statement: \"it passes\", from: [F_A] }\n",
+    );
+    let found = check(&decls(unread));
+    assert_eq!(
+        found.iter().filter(|item| item.code == "W-UNREAD").count(),
+        1
+    );
+    // cited by the rule it constrains: no longer dead
+    let read = concat!(
+        "value V_CONTRAST { metric: \"contrast\", direction: min, threshold: 4.5, measured_by: \"checker\" }\n",
+        "fact F_A { claim: \"a\", evidence: tool(\"t\") }\n",
+        "warrant W_A { claim: \"readable text needs 4.5\", from: [F_A], basis: [V_CONTRAST] }\n",
+    );
+    assert!(!check(&decls(read))
+        .iter()
+        .any(|item| item.code == "W-UNREAD"));
+}
+
+/// `out` is what the instrument produced.  A fact naming an artifact whose bytes hash to something
+/// else is not evidence: the run that produced this document is not the run that produced the file.
+/// A hash with nothing to compare is unverified, which is a different thing from wrong.
+#[test]
+fn an_artifact_that_does_not_match_its_hash_is_refused() {
+    let dir = std::env::temp_dir().join("tsare-artifact");
+    std::fs::create_dir_all(&dir).expect("temp dir");
+    let path = dir.join("out.log");
+    std::fs::write(&path, b"3 runs, all within threshold\n").expect("write artifact");
+    let shown = path.display().to_string().replace('\\', "/");
+    let actual = tsare::hash::hex(b"3 runs, all within threshold\n");
+
+    let matching = format!(
+        "fact F_OK {{ claim: \"three runs\", evidence: tool(\"bench.sh\"), artifact: \"{shown}\", out: \"{actual}\" }}\n"
+    );
+    let found = check(&decls(&matching));
+    assert!(
+        !found
+            .iter()
+            .any(|item| item.code.starts_with('E') || item.code == "W-OUT-UNVERIFIED"),
+        "{found:#?}"
+    );
+
+    let wrong = matching.replace(
+        &actual,
+        "0000000000000000000000000000000000000000000000000000000000000000",
+    );
+    assert!(check(&decls(&wrong))
+        .iter()
+        .any(|item| item.code == "E-OUT-MISMATCH"));
+
+    let unverified =
+        format!("fact F_ONE {{ claim: \"x\", evidence: tool(\"bench.sh\"), out: \"{actual}\" }}\n");
+    assert!(check(&decls(&unverified))
+        .iter()
+        .any(|item| item.code == "W-OUT-UNVERIFIED"));
+}

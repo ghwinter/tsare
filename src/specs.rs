@@ -11,6 +11,8 @@ pub fn spec(kind: &str) -> Option<&'static [Field]> {
             ("confirmed_by", "str", false),
             ("scope", "str", false),
             ("confidence", "num", false),
+            ("artifact", "str", false),
+            ("out", "str", false),
             ("layer", "ref:layer", false),
         ],
         "concept" => &[

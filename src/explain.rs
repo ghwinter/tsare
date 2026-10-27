@@ -34,6 +34,8 @@ pub const CODES: &[&str] = &[
     "E-PARTITION-EMPTY",
     "E-PARTITION-UNKNOWN-NO-EXIT",
     "E-PARTITION-UNKNOWN-USED",
+    "E-OUT-MISMATCH",
+    "E-SELF-VERDICT",
     "E-SYNTAX",
     "E-TENSION",
     "E-TYPE",
@@ -58,6 +60,7 @@ pub const CODES: &[&str] = &[
     "W-LAW-UNCHECKED",
     "W-NO-EXIT",
     "W-OPEN",
+    "W-OUT-UNVERIFIED",
     "W-OVERCLAIM",
     "W-PARTITION-CLOSED-UNJUSTIFIED",
     "W-PARTITION-OPEN-USED",
@@ -65,6 +68,7 @@ pub const CODES: &[&str] = &[
     "W-PARTITION-UNLEARNED",
     "W-UNCONFIRMED",
     "W-UNPRINCIPLED",
+    "W-UNREAD",
     "W-UNREFINED",
     "W-UNSATISFIED",
     "W-UNTESTED",
@@ -138,6 +142,15 @@ pub fn explain(code: &str) -> Option<&'static str> {
             Fix: add closes_with pointing at the question.",
         "E-PARTITION-UNKNOWN-USED" => "A pile with no dimension is used as a premise. A hole cannot discharge anything.\n\
             Fix: give it a dimension, or stop using it as support.",
+        "E-OUT-MISMATCH" => "The artifact a fact names does not hash to what the fact records.\n\
+            `evidence: tool(\"bench.sh\")` says something ran; `out` says what came out. When the\n\
+            two disagree, the run that produced this file is not the run that produced the hash --\n\
+            and a process that exits 0 while leaving a placeholder behind passes every other check.\n\
+            Fix: re-run and record the new hash, or point `artifact` at the real output.",
+        "E-SELF-VERDICT" => "A hypothesis is marked supported or refuted by a fact whose only witness is a model.\n\
+            A model assessing its own guess is not an observation; the verdict would assert an\n\
+            evidence grade nothing reached.\n\
+            Fix: decide it with a tool or a person, or leave `verdict: open`.",
         "E-SYNTAX" => "The document does not parse: a string is unterminated, a bracket is missing, or a value is not a value.\n\
             Fix: the caret points at the first token that could not start what the grammar expected.",
         "E-TENSION" => "Two values constrain the same metric in opposite directions and neither has a priority.\n\
@@ -190,6 +203,9 @@ pub fn explain(code: &str) -> Option<&'static str> {
             Fix: add closes_with pointing at a question.",
         "W-OPEN" => "A proposition is marked open and cites no premises, so nothing could close it.\n\
             Fix: name what would settle it.",
+        "W-OUT-UNVERIFIED" => "A fact records a hash with nothing to compare it against: no artifact named, or the artifact cannot be read.\n\
+            An unverifiable claim is not a false one, but it is not evidence either.\n\
+            Fix: name `artifact`, or drop `out` and accept that the evidence is a name.",
         "W-OVERCLAIM" => "A claim is universal and names no scope.\n\
             Fix: say who or what was sampled, with `scope:`.",
         "W-PARTITION-CLOSED-UNJUSTIFIED" => "A list claims to be closed without a reason.\n\
@@ -205,6 +221,11 @@ pub fn explain(code: &str) -> Option<&'static str> {
         "W-UNPRINCIPLED" => "A declaration sits in a layer the kernel governs, but cites none of that\n\
             layer's laws. It may be right; it is not standing on the principle it claims to be inside.\n\
             Fix: cite the law in `from:` or `basis:`, or move the declaration out of that layer.",
+        "W-UNREAD" => "A value declares a bound that no rule reads.\n\
+            A threshold nothing cites cannot change a decision: it is a figure that costs a reader\n\
+            attention and pays nothing back. `impact` reports facts no conclusion depends on; this\n\
+            is the same defect for numbers.\n\
+            Fix: cite the value from the rule it is supposed to constrain, or drop the bound.",
         "W-UNREFINED" => "A law holds in a layer, but no law at another layer declares that it \
             refines that layer.\n\
             The layer hides detail and the law says what is preserved; nothing says the hidden \

@@ -1,4 +1,4 @@
 kind audit: <fixtures>/talk.v2.mf
   law      absent
-  value    present  lost: -                            added: W-UNCONFIRMED          rewrite adds diagnostics
+  value    present  lost: W-UNREAD                     added: W-UNCONFIRMED          obligation survives in another code
   layer    absent

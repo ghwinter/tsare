@@ -8,6 +8,21 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `fact artifact:` + `fact out:` — the hash of what the instrument produced. `evidence: tool(...)`
+  records that something ran; `out` records what came out, and a mismatch is `E-OUT-MISMATCH`.
+  A hash with nothing to compare against is `W-OUT-UNVERIFIED`, which is not the same as wrong.
+  Artifact paths are read from the working directory. This closes the case the automated-research
+  papers kept producing: the process exits 0 while the artifact is a placeholder, and every other
+  check in this file is satisfied.
+
+- `E-SELF-VERDICT` — a `hypothesis` may not be marked `supported` or `refuted` by a fact whose
+  only witness is a model. A model assessing its own guess is not an observation; the verdict
+  would assert an evidence grade nothing reached. The fact stays legal; it just cannot decide.
+
+- `W-UNREAD` — a `value` that declares `threshold` or `priority` which no rule reads. A bound
+  nothing cites cannot change a decision. It fired four times on `tests/fixtures/talk.v2.mf` the
+  first time it ran: four thresholds in that document were decoration.
+
 - `law requires: ["field", ...]`: a law may name what citing it costs. A declaration that cites
   the law through `from`, `basis` or `checked_by` without carrying a named field gets
   `W-UNSATISFIED`. Before this, citing a principle was free: a reference was resolved for

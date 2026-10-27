@@ -26,7 +26,27 @@
  135 |   cannot_express: "从竞品有推出我们应该有",
      |                   ^^^^^^^^^^^^^
 
-0 error(s), 7 warning(s)
+<fixtures>/talk.v2.mf:144:14: warning[W-UNREAD]: value V_CONTRAST declares a bound that no rule reads, so it cannot change a decision
+ 144 |   threshold: 4.5,
+     |              ^^^
+
+<fixtures>/talk.v2.mf:152:14: warning[W-UNREAD]: value V_THEME_SWITCH declares a bound that no rule reads, so it cannot change a decision
+ 152 |   threshold: 16,
+     |              ^^
+
+<fixtures>/talk.v2.mf:160:14: warning[W-UNREAD]: value V_SPEED declares a bound that no rule reads, so it cannot change a decision
+ 160 |   threshold: 6,
+     |              ^
+
+<fixtures>/talk.v2.mf:168:14: warning[W-UNREAD]: value V_QUALITY declares a bound that no rule reads, so it cannot change a decision
+ 168 |   threshold: 2,
+     |              ^
+
+<fixtures>/talk.v2.mf:176:14: warning[W-UNREAD]: value V_RETENTION declares a bound that no rule reads, so it cannot change a decision
+ 176 |   threshold: 0,
+     |              ^
+
+0 error(s), 12 warning(s)
 emitted <temp>/engine-golden-build-talk.v2/OBLIGATIONS.md
 emitted <temp>/engine-golden-build-talk.v2/LEARNED.md
 emitted <temp>/engine-golden-build-talk.v2/OPEN.md

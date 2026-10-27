@@ -267,6 +267,9 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
     check_layer(decls, &mut out);
     check_refinements(decls, &mut out);
     check_requirements(decls, &mut out);
+    check_verdicts(decls, &mut out);
+    check_dead_values(decls, &mut out);
+    check_artifacts(decls, &mut out);
     let result = closure::closure(decls);
     for (name, reason) in &result.conditional {
         let decl = decls.iter().find(|item| &item.name == name);
@@ -657,6 +660,125 @@ fn carries(decl: &Decl, key: &str) -> bool {
         return false;
     };
     !matches!(value, Val::Hole) && !matches!(value, Val::List(items) if items.is_empty())
+}
+
+/// A verdict is a claim about how strong the evidence is.  When the only witness is the model that
+/// made the claim, the verdict asserts a grade nothing reached: a model assessing its own guess is
+/// not an observation.  The fact stays legal; what it cannot do is settle a hypothesis.
+fn check_verdicts(decls: &[Decl], out: &mut Vec<Diagnostic>) {
+    let by_name: std::collections::HashMap<&str, &Decl> = decls
+        .iter()
+        .map(|decl| (decl.name.as_str(), decl))
+        .collect();
+    for decl in decls.iter().filter(|decl| decl.kind == "hypothesis") {
+        let Some(verdict) = id_field(decl, "verdict") else {
+            continue;
+        };
+        if verdict != "supported" && verdict != "refuted" {
+            continue;
+        }
+        let Some(witness) =
+            id_field(decl, "verdict_by").and_then(|name| by_name.get(name).copied())
+        else {
+            continue;
+        };
+        if id_field(witness, "evidence") != Some("model")
+            || string_field(witness, "confirmed_by").is_some()
+        {
+            continue;
+        }
+        sem(
+            decl,
+            "E-SELF-VERDICT",
+            format!(
+                "hypothesis {} is marked {verdict}, but {} is model-supplied and unconfirmed: a model judging its own guess is not an observation",
+                decl.name, witness.name
+            ),
+            Some("verdict"),
+            out,
+        );
+    }
+}
+
+/// A bound that no rule reads cannot change a decision.  `impact` reports facts no conclusion
+/// depends on; this is the same defect for the numbers a decision would have had to use.
+fn check_dead_values(decls: &[Decl], out: &mut Vec<Diagnostic>) {
+    let referenced: std::collections::HashSet<String> = decls
+        .iter()
+        .flat_map(|decl| decl.fields.iter())
+        .filter(|(key, _)| REF_KEYS.contains(&key.as_str()))
+        .flat_map(|(_, value)| ids(value))
+        .collect();
+    for decl in decls.iter().filter(|decl| decl.kind == "value") {
+        let decides = decl
+            .fields
+            .iter()
+            .any(|(key, _)| key == "threshold" || key == "priority");
+        if !decides || referenced.contains(&decl.name) {
+            continue;
+        }
+        sem(
+            decl,
+            "W-UNREAD",
+            format!(
+                "value {} declares a bound that no rule reads, so it cannot change a decision",
+                decl.name
+            ),
+            Some("threshold"),
+            out,
+        );
+    }
+}
+
+/// `out` is the hash of what the instrument produced.  Without it, `evidence: tool("bench.sh")`
+/// records that something ran, not what came out -- and a run that exits 0 while leaving a
+/// placeholder behind passes every other check in this file.  A path is read from the working
+/// directory; an unreadable artifact is unverified, never assumed good.
+fn check_artifacts(decls: &[Decl], out: &mut Vec<Diagnostic>) {
+    for decl in decls.iter().filter(|decl| decl.kind == "fact") {
+        let Some(expected) = string_field(decl, "out") else {
+            continue;
+        };
+        let Some(path) = string_field(decl, "artifact") else {
+            sem(
+                decl,
+                "W-OUT-UNVERIFIED",
+                format!(
+                    "fact {} declares out but names no artifact, so the hash is compared with nothing",
+                    decl.name
+                ),
+                Some("out"),
+                out,
+            );
+            continue;
+        };
+        let Ok(bytes) = std::fs::read(path) else {
+            sem(
+                decl,
+                "W-OUT-UNVERIFIED",
+                format!(
+                    "fact {} names artifact {path}, which cannot be read from here",
+                    decl.name
+                ),
+                Some("artifact"),
+                out,
+            );
+            continue;
+        };
+        let actual = crate::hash::hex(&bytes);
+        if !actual.eq_ignore_ascii_case(expected.trim()) {
+            sem(
+                decl,
+                "E-OUT-MISMATCH",
+                format!(
+                    "fact {} records {expected}, but {path} hashes to {actual}: the artifact is not what the document says it is",
+                    decl.name
+                ),
+                Some("out"),
+                out,
+            );
+        }
+    }
 }
 
 fn check_layer(decls: &[Decl], out: &mut Vec<Diagnostic>) {

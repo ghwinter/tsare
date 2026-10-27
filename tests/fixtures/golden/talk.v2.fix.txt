@@ -1,4 +1,4 @@
-before: 0 errors, 7 warnings (holes not counted)
+before: 0 errors, 12 warnings (holes not counted)
   + P_IMPORTANT: add a warrant over its premises  (+0 errors, -1 warnings)
 candidates that do not pay:
   - F_MULTI: add `scope: ?`  (no gain: +0 errors, +0 warnings)

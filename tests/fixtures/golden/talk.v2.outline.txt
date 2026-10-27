@@ -154,30 +154,35 @@ stands on, who checks it, and what is still owed.
 > contrast_ratio
 
   direction: min | unit: "ratio" | threshold: 4.5 | measured_by: "contrast checker on every theme" | obligation: measure (ready)
+  ! W-UNREAD: value V_CONTRAST declares a bound that no rule reads, so it cannot change a decision
 
 ### V_THEME_SWITCH -- value
 
 > theme_switch_ms
 
   direction: max | unit: "ms" | threshold: 16 | measured_by: "trace theme switch" | obligation: measure (ready)
+  ! W-UNREAD: value V_THEME_SWITCH declares a bound that no rule reads, so it cannot change a decision
 
 ### V_SPEED -- value
 
 > features_per_quarter
 
   direction: max | unit: "features" | threshold: 6 | priority: 1 | obligation: measure (ready)
+  ! W-UNREAD: value V_SPEED declares a bound that no rule reads, so it cannot change a decision
 
 ### V_QUALITY -- value
 
 > features_per_quarter
 
   direction: min | unit: "features" | threshold: 2 | priority: 2 | obligation: measure (ready)
+  ! W-UNREAD: value V_QUALITY declares a bound that no rule reads, so it cannot change a decision
 
 ### V_RETENTION -- value
 
 > retention_delta_pp
 
   direction: min | unit: "pp" | threshold: 0 | measured_by: "cohort comparison after four weeks" | obligation: measure (ready)
+  ! W-UNREAD: value V_RETENTION declares a bound that no rule reads, so it cannot change a decision
 
 ---
 
