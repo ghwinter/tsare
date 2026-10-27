@@ -1,0 +1,3 @@
+fact F_A { claim: "a", evidence: tool("t") }
+note N_A { tag: hunch, text: "a thought is not a licence" }
+warrant W_A { claim: "r", from: [F_A], basis: [N_A] }

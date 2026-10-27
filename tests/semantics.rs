@@ -1215,3 +1215,44 @@ fn a_retired_fact_takes_what_leaned_on_it_down_with_it() {
     assert!(!held.conditional.iter().any(|(name, _)| name == "P_FAST"));
     let _ = program;
 }
+
+/// A basis is a licence, not a citation.  Each kind has one criterion -- the same one it owes
+/// elsewhere -- and a note, a question or a hypothesis is never a licence.
+#[test]
+fn a_basis_must_meet_its_own_kind_criterion() {
+    let licence = concat!(
+        "fact F_MEASURED { claim: \"a\", evidence: tool(\"t\") }\n",
+        "fact F_GUESS { claim: \"b\", evidence: model }\n",
+        "note N_A { tag: hunch, text: \"not a licence\" }\n",
+        "warrant W_OK { claim: \"r\", from: [F_MEASURED], basis: [F_MEASURED] }\n",
+    );
+    let found = check(&decls(licence));
+    assert!(
+        !found.iter().any(|item| item.code == "W-BASIS-NO-CRITERION"),
+        "{found:#?}"
+    );
+
+    for (bad, needle) in [
+        (
+            "note N_B { tag: hunch, text: \"t\" }",
+            "note is not a licence",
+        ),
+        ("fact F_GUESS { claim: \"b\", evidence: model }", "model"),
+    ] {
+        let name = if bad.starts_with("note") {
+            "N_B"
+        } else {
+            "F_GUESS"
+        };
+        let source = format!(
+            "fact F_MEASURED {{ claim: \"a\", evidence: tool(\"t\") }}\n{bad}\nwarrant W_BAD {{ claim: \"r\", from: [F_MEASURED], basis: [{name}] }}\n"
+        );
+        let found = check(&decls(&source));
+        assert!(
+            found
+                .iter()
+                .any(|item| item.code == "W-BASIS-NO-CRITERION" && item.message.contains(needle)),
+            "{source}\n{found:#?}"
+        );
+    }
+}

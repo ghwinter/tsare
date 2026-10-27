@@ -25,6 +25,17 @@ All notable changes are recorded here. The format follows
   document's total goes down. The old rule let a repair be accepted for a warning it silenced
   elsewhere, and it could not say which of two same-code complaints it had answered. The line
   numbers move under a repair; the declaration name does not.
+- `W-BASIS-NO-CRITERION` — a warrant that rests on something which is not a licence. `basis` was
+  `ref:any` and only checked for emptiness, so it was the second field where writing anything
+  counted as writing something (the first was `from:`, closed by `law.requires`). Each kind now
+  has one criterion, and it is the same one that kind owes elsewhere: a `fact` must not be a
+  model opinion, a `proposition` must stand and be concluded by some rule, a `concept` needs a
+  positive example, a `partition` needs elements, a `layer` needs declarations, a `law` needs
+  something checking it, a `value` needs a threshold and an instrument. A `note`, a `question`, a
+  `hypothesis` and a `blindspot` are never licences.
+
+  Its first run found three in `SELF.tsare`: three warrants that rest on model-supplied facts.
+  They are left in place -- the warning is the finding.
 ### Added
 
 - `E-SUPERSEDE-UNDEFINED` — a `supersedes` field that names nothing, or names itself. A withdrawal

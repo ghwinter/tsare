@@ -722,6 +722,38 @@ pub(crate) fn sem(
     });
 }
 
+/// Whether a field is carried: present, not a hole, not an empty list.
+fn derives(decl: &Decl, key: &str) -> bool {
+    match decl
+        .fields
+        .iter()
+        .find(|(name, _)| name == key)
+        .map(|(_, value)| value)
+    {
+        None | Some(Val::Hole) => false,
+        Some(Val::List(items)) => !items.is_empty(),
+        Some(_) => true,
+    }
+}
+
+/// What a licence of this kind looks like, in the words the diagnostic uses.
+fn criterion_for(kind: &str) -> &'static str {
+    match kind {
+        "fact" => "a model's opinion is not evidence anyone else can check",
+        "proposition" => "it must stand (not `status: open`) and some rule must conclude it",
+        "concept" => "it has no positive example",
+        "partition" => "it has no elements",
+        "layer" => "the layer holds no declaration",
+        "law" => "the law is checked by nothing",
+        "value" => "it needs a threshold and an instrument",
+        "note" => "a note owes nothing, so it cannot discharge anything",
+        "hypothesis" => "a hypothesis is not a licence",
+        "question" => "a question is not a licence",
+        "blindspot" => "a blind spot is not a licence",
+        _ => "it is not the kind of thing that licenses an inference",
+    }
+}
+
 fn is_incomplete(decl: &Decl) -> bool {
     let Some(fields) = spec(&decl.kind) else {
         return true;
@@ -1013,6 +1045,45 @@ fn check_semantics(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                         format!(
                             "warrant {} states a rule, but nothing makes the rule acceptable",
                             decl.name
+                        ),
+                        Some("basis"),
+                        out,
+                    );
+                }
+                // A basis is not "whatever parses": it has to be the kind of thing that licenses an
+                // inference.  Each kind has one criterion, and it is the same one the kind owes
+                // elsewhere -- a law is checked by something, a value was measured, a proposition
+                // stands (not open) and some rule concludes it.
+                for cited in list_field(decl, "basis") {
+                    let Some(target) = decls.iter().find(|item| item.name == cited) else {
+                        continue;
+                    };
+                    let licensed = match target.kind.as_str() {
+                        "fact" => id_field(target, "evidence") != Some("model"),
+                        "proposition" => {
+                            id_field(target, "status") != Some("open")
+                                && warranty_targets.contains(&target.name)
+                        }
+                        "concept" => !list_field(target, "grounded_by").is_empty(),
+                        "partition" => !list_field(target, "elements").is_empty(),
+                        "layer" => decls
+                            .iter()
+                            .any(|item| id_field(item, "layer") == Some(target.name.as_str())),
+                        "law" => !list_field(target, "checked_by").is_empty(),
+                        "value" => derives(target, "threshold") && derives(target, "measured_by"),
+                        _ => false,
+                    };
+                    if licensed {
+                        continue;
+                    }
+                    sem(
+                        decl,
+                        "W-BASIS-NO-CRITERION",
+                        format!(
+                            "warrant {} rests on {cited}, but a {} is not a licence here: {}",
+                            decl.name,
+                            target.kind,
+                            criterion_for(&target.kind)
                         ),
                         Some("basis"),
                         out,

@@ -49,6 +49,7 @@ pub const CODES: &[&str] = &[
     "E-VERSION",
     "E-WARRANT-MODE",
     "E-WITNESS",
+    "W-BASIS-NO-CRITERION",
     "W-BY-MISMATCH",
     "W-COARSE",
     "W-COLLIDE",
@@ -189,6 +190,11 @@ pub fn explain(code: &str) -> Option<&'static str> {
             Fix: use `to:` for one conclusion, or `concludes:` for every match.",
         "E-WITNESS" => "A blind spot needs exactly two witnesses.\n\
             Fix: name the pair that the current signature cannot separate.",
+        "W-BASIS-NO-CRITERION" => "A warrant rests on something that is not a licence.\n\
+            Each kind has one criterion, and it is the same one that kind owes elsewhere: a law is\n\
+            checked by something, a value was measured, a concept has a positive example, a fact is\n\
+            not a model opinion. A note, a question and a hypothesis are never licences.\n\
+            Fix: cite something that meets its own criterion, or say the rule is unsupported.",
         "W-BY-MISMATCH" => "The declared inference type disagrees with the structure: a warrant makes deduction, concepts without a rule make induction.\n\
             Fix: change `by`, or add the rule the declaration claims.",
         "W-COARSE" => "A question has fewer answers than the hypotheses it separates.\n\
