@@ -30,10 +30,14 @@ pub fn report(prog: &Program, only_gated: bool) -> Vec<Debt> {
         if only_gated && weak.is_empty() {
             continue;
         }
-        let worst = if weak.iter().any(|step| step.status == "unconfirmed") {
+        // the worst grade among the weak steps, not "anything weak is asserted": a confirmed
+        // premise is weaker than a measured one and stronger than an unconfirmed one
+        let worst = if weak.iter().any(|step| step.status == "asserted") {
+            "asserted"
+        } else if weak.iter().any(|step| step.status == "unconfirmed") {
             "unconfirmed"
         } else if !weak.is_empty() {
-            "asserted"
+            "confirmed"
         } else {
             "clear"
         };

@@ -36,6 +36,7 @@ pub const CODES: &[&str] = &[
     "E-PARTITION-UNKNOWN-USED",
     "E-OUT-MISMATCH",
     "E-SELF-VERDICT",
+    "E-SUPERSEDE-UNDEFINED",
     "E-SCOPE-UNBOUNDED",
     "E-SYNTAX",
     "E-TENSION",
@@ -161,6 +162,10 @@ pub fn explain(code: &str) -> Option<&'static str> {
             Fix: bind `over:` to an enumerable extent, or weaken the sentence.",
         "E-SYNTAX" => "The document does not parse: a string is unterminated, a bracket is missing, or a value is not a value.\n\
             Fix: the caret points at the first token that could not start what the grammar expected.",
+        "E-SUPERSEDE-UNDEFINED" => "A `supersedes` field names a declaration that does not exist.\n\
+            A withdrawal that names nothing withdraws nothing, and because `supersedes` is an edge\n\
+            rather than a dependency, a typo in it would otherwise be silent.\n\
+            Fix: name the declaration it replaces, or delete the field.",
         "E-TENSION" => "Two values constrain the same metric in opposite directions and neither has a priority.\n\
             Fix: give one a higher priority, or split the metric by phase.",
         "E-TYPE" => "A field's value does not have the field's type. Lists are checked element by element.\n\

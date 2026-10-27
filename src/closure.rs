@@ -274,33 +274,6 @@ pub struct EngineResult {
     pub gates: Vec<(String, Vec<String>)>,
 }
 
-fn evidence_status(decl: &Decl) -> String {
-    for (name, value) in &decl.fields {
-        if name != "evidence" {
-            continue;
-        }
-        match value {
-            Val::Id(token) => {
-                return match token.as_str() {
-                    "model" => {
-                        if decl.fields.iter().any(|(key, _)| key == "confirmed_by") {
-                            "confirmed".to_string()
-                        } else {
-                            "unconfirmed".to_string()
-                        }
-                    }
-                    _ => "asserted".to_string(),
-                }
-            }
-            Val::Call(call, _) if (call == "tool" || call == "doc" || call == "code") => {
-                return "measured".to_string();
-            }
-            _ => {}
-        }
-    }
-    "asserted".to_string()
-}
-
 fn support_edges(decls: &[Decl]) -> HashMap<String, Vec<String>> {
     let mut edges: HashMap<String, Vec<String>> = HashMap::new();
     for decl in decls {
@@ -469,9 +442,9 @@ pub fn engine(decls: &[Decl]) -> EngineResult {
                 }
                 match by_name.get(premise.as_str()) {
                     Some(decl) if decl.kind == "fact" => {
-                        let status = evidence_status(decl);
-                        if status != "measured" {
-                            weak.push(format!("{premise} ({status})"));
+                        let grade = crate::program::grade(decl);
+                        if grade != crate::program::Grade::Measured {
+                            weak.push(format!("{premise} ({})", grade.label()));
                         }
                     }
                     Some(_) => queue.push(premise),

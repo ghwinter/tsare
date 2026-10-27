@@ -22,6 +22,29 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `E-SUPERSEDE-UNDEFINED` — a `supersedes` field that names nothing, or names itself. A withdrawal
+  that leaves nothing standing withdraws nothing; because `supersedes` is an edge rather than a
+  dependency, a typo in it was completely silent. The self-verification test caught this code
+  before the commit -- it had no document that turned it on -- the first time that test paid.
+
+- `tests/prelude.rs` pins the SHA-256 of all four prelude files. Measured, not imagined: an agent
+  deleted `requires: ["measured_by"]` from the kernel and every other test stayed green, because
+  `W-UNPRINCIPLED` alone already fires on the violation.
+
+### Changed
+
+- Evidence has one grade, in one place: `program::Grade { Asserted < ModelSupplied < Confirmed <
+  Measured }`. `closure` had its own copy that disagreed about whether a `confirmed_by` hole counts
+  as a confirmation. Two consequences worth naming: `evidence: user` and `evidence: observation`
+  are now `confirmed` rather than `asserted` (a person, or a sighting, is a witness), and a
+  `hypothesis` is settled only by a witness graded `Confirmed` or better -- the rule used to be
+  the word "model". `debt` reports the worst grade it found instead of calling every weak premise
+  asserted.
+
+- `W-UNWARRANTED-BASIS` pointed its caret at `claim`, blaming the sentence for a missing licence.
+  It points at `basis` when the field exists and at the declaration otherwise.
+### Added
+
 - `prelude/` — the documents this project admits, and one it does not: the six principles
   (`KERNEL.tsare`), a claim that skips them (`VIOLATION.tsare`), the categories
   (`WORLDVIEW.tsare`), and what makes a sentence sayable at all (`PROCESS.tsare`). They are

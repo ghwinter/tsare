@@ -112,17 +112,17 @@ fn check_verdicts(decls: &[Decl], out: &mut Vec<Diagnostic>) {
         else {
             continue;
         };
-        if id_field(witness, "evidence") != Some("model")
-            || string_field(witness, "confirmed_by").is_some()
-        {
+        if crate::program::grade(witness) >= crate::program::Grade::Confirmed {
             continue;
         }
         sem(
             decl,
             "E-SELF-VERDICT",
             format!(
-                "hypothesis {} is marked {verdict}, but {} is model-supplied and unconfirmed: a model judging its own guess is not an observation",
-                decl.name, witness.name
+                "hypothesis {} is marked {verdict}, but {} is {}: a witness graded below confirmed cannot settle it",
+                decl.name,
+                witness.name,
+                crate::program::grade(witness).label()
             ),
             Some("verdict"),
             out,
@@ -264,6 +264,40 @@ fn check_bindings(decls: &[Decl], out: &mut Vec<Diagnostic>) {
 /// A reference to a retired declaration resolves -- nothing was deleted -- but the ground behind it
 /// was withdrawn.  Saying nothing would let a document keep leaning on what it already replaced.
 fn check_retirement(decls: &[Decl], out: &mut Vec<Diagnostic>) {
+    // a withdrawal names something; a withdrawal that names nothing withdraws nothing, and a typo
+    // would otherwise be silent because `supersedes` is an edge, not a dependency
+    let declared: std::collections::HashSet<&str> =
+        decls.iter().map(|decl| decl.name.as_str()).collect();
+    for decl in decls {
+        for name in list_field(decl, "supersedes") {
+            if name == decl.name {
+                sem(
+                    decl,
+                    "E-SUPERSEDE-UNDEFINED",
+                    format!(
+                        "{} supersedes itself: a withdrawal has to leave something standing",
+                        decl.name
+                    ),
+                    Some("supersedes"),
+                    out,
+                );
+                continue;
+            }
+            if declared.contains(name.as_str()) {
+                continue;
+            }
+            sem(
+                decl,
+                "E-SUPERSEDE-UNDEFINED",
+                format!(
+                    "{} supersedes {name}, which is not declared: the withdrawal names nothing",
+                    decl.name
+                ),
+                Some("supersedes"),
+                out,
+            );
+        }
+    }
     let gone = crate::closure::retired(decls);
     if gone.is_empty() {
         return;

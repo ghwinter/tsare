@@ -123,23 +123,55 @@ pub fn is_hole(decl: &Decl, key: &str) -> bool {
 
 pub const MEASURED: &[&str] = &["tool", "doc", "code"];
 
-pub fn evidence_status(decl: &Decl) -> &'static str {
+/// How well a fact is witnessed, as an order rather than four words.  Two functions used to answer
+/// this question separately -- one here, one in `closure` -- and they disagreed about whether a
+/// `confirmed_by` hole counts as a confirmation.  The order is what a verdict needs: a hypothesis
+/// may be settled by `Confirmed` or better, never by the model's own say-so.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Grade {
+    /// nothing recorded, or a witness nobody stands behind
+    Asserted,
+    /// a model said so and no person confirmed it
+    ModelSupplied,
+    /// a person stands behind it: `evidence: user`, or a model claim with `confirmed_by`
+    Confirmed,
+    /// a machine can produce it again: `tool(...)`, `code(...)`, `doc(...)`
+    Measured,
+}
+
+impl Grade {
+    pub fn label(self) -> &'static str {
+        match self {
+            Grade::Measured => "measured",
+            Grade::Confirmed => "confirmed",
+            Grade::ModelSupplied => "unconfirmed",
+            Grade::Asserted => "asserted",
+        }
+    }
+}
+
+pub fn grade(decl: &Decl) -> Grade {
     let name = match field(decl, "evidence") {
         Some(Val::Id(name)) => Some(name.as_str()),
         Some(Val::Call(name, _)) => Some(name.as_str()),
         _ => None,
     };
     match name {
-        Some(name) if MEASURED.contains(&name) => "measured",
+        Some(name) if MEASURED.contains(&name) => Grade::Measured,
+        Some("user") | Some("observation") => Grade::Confirmed,
         Some("model") => {
             if f_str(decl, "confirmed_by").is_some() {
-                "confirmed"
+                Grade::Confirmed
             } else {
-                "unconfirmed"
+                Grade::ModelSupplied
             }
         }
-        _ => "asserted",
+        _ => Grade::Asserted,
     }
+}
+
+pub fn evidence_status(decl: &Decl) -> &'static str {
+    grade(decl).label()
 }
 
 pub fn support_edges(prog: &Program) -> HashMap<String, Vec<String>> {
@@ -283,7 +315,7 @@ pub fn obligations(prog: &Program, decl: &Decl) -> Vec<String> {
         "fact" => {
             if matches!(field(decl, "evidence"), Some(Val::Id(name)) if name == "user" || name == "model")
             {
-                out.push("evidence is asserted, not measured".to_string());
+                out.push(format!("evidence is {}, not measured", grade(decl).label()));
             }
         }
         "proposition" => {

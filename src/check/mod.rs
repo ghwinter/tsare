@@ -1003,7 +1003,7 @@ fn check_semantics(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                             "warrant {} states a rule, but nothing makes the rule acceptable",
                             decl.name
                         ),
-                        Some("claim"),
+                        Some("basis"),
                         out,
                     );
                 }
