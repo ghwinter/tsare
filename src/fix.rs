@@ -197,6 +197,19 @@ fn code_counts(decls: &[Decl]) -> std::collections::HashMap<String, usize> {
     counts
 }
 
+/// The complaints raised about one declaration.  A repair answers a specific complaint: a fix that
+/// silences a warning somewhere else in the document has fixed nothing here, and the total score
+/// cannot tell the two apart.
+fn code_counts_for(decls: &[Decl], name: &str) -> std::collections::HashMap<String, usize> {
+    let mut counts = std::collections::HashMap::new();
+    for item in check(decls) {
+        if item.witness.as_deref() == Some(name) {
+            *counts.entry(item.code.to_string()).or_insert(0) += 1;
+        }
+    }
+    counts
+}
+
 fn improves(
     before: (usize, usize),
     after: (usize, usize),
@@ -456,7 +469,9 @@ pub fn suggestions(decls: &[Decl]) -> Vec<Suggestion> {
                     trial = add_field(&trial, &decl.name, key, Val::Hole);
                 }
                 let after = score(&trial);
-                if improves(before, after, &old_codes, &code_counts(&trial)) {
+                let here = code_counts_for(decls, &decl.name);
+                let there = code_counts_for(&trial, &decl.name);
+                if improves(before, after, &here, &there) {
                     let listed = missing
                         .iter()
                         .map(|key| format!("`{key}: ?`"))

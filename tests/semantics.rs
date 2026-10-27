@@ -703,6 +703,7 @@ fn a_session_owns_order_counts_and_shape() {
         end_line: 9,
         end_col: 2,
         file: String::new(),
+        witness: None,
     });
     session.emit(tsare::check::Diagnostic {
         code: "E-TYPE",
@@ -712,6 +713,7 @@ fn a_session_owns_order_counts_and_shape() {
         end_line: 2,
         end_col: 9,
         file: String::new(),
+        witness: None,
     });
     assert_eq!(
         (session.errors(), session.warnings(), session.exit_code()),
@@ -753,6 +755,7 @@ fn a_directory_is_rendered_file_by_file() {
         end_line: 1,
         end_col: 21,
         file: "b.tsare".to_string(),
+        witness: None,
     });
     session.emit(tsare::check::Diagnostic {
         code: "E-MISSING",
@@ -762,6 +765,7 @@ fn a_directory_is_rendered_file_by_file() {
         end_line: 1,
         end_col: 4,
         file: "a.tsare".to_string(),
+        witness: None,
     });
     let text = session.text();
     assert!(text.contains("b.tsare:1:18: error[E-TYPE]"), "{text}");

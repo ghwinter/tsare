@@ -96,10 +96,18 @@ fn every_diagnostic_has_a_document_that_turns_it_on() {
             // the empty document is a trigger for E-EMPTY-DOCUMENT and parses to nothing
             Err(error) => panic!("{} does not parse: {error:?}", path.display()),
         };
-        let found: Vec<String> = check(&decls)
-            .iter()
-            .map(|item| item.code.to_string())
-            .collect();
+        let checked = check(&decls);
+        // every diagnostic says which declaration it is about, and that name exists here
+        for item in &checked {
+            if let Some(name) = &item.witness {
+                assert!(
+                    decls.iter().any(|decl| &decl.name == name),
+                    "{} names {name}, which is not declared",
+                    item.code
+                );
+            }
+        }
+        let found: Vec<String> = checked.iter().map(|item| item.code.to_string()).collect();
         from_documents.extend(found.iter().cloned());
         let expected = path
             .file_stem()

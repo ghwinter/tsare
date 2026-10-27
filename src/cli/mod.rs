@@ -41,6 +41,7 @@ fn syntax_diagnostic(file: &str, error: &syntax::ParseError) -> crate::check::Di
         end_line: error.line,
         end_col: error.col + 1,
         file: file.to_string(),
+        witness: None,
     }
 }
 

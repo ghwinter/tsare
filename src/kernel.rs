@@ -85,5 +85,6 @@ fn diag(decl: &Decl, code: &'static str, message: String) -> Diagnostic {
         end_line: decl.end_line,
         end_col: decl.end_col,
         file: decl.file.clone(),
+        witness: Some(decl.name.clone()),
     }
 }

@@ -121,5 +121,6 @@ pub fn diagnostics(goals: &[Goal]) -> Vec<Diagnostic> {
         end_line: 1,
         end_col: 1,
         file: String::new(),
+        witness: None,
     }]
 }

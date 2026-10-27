@@ -56,6 +56,10 @@ pub struct Diagnostic {
     pub end_line: usize,
     pub end_col: usize,
     pub file: String,
+    /// The declaration this diagnostic is about.  A code alone is not enough: two `W-COLLIDE`s in
+    /// one document are two different complaints, and a repair that silences one elsewhere has not
+    /// touched this one.  The name is stable across the edits a repair makes; line numbers are not.
+    pub witness: Option<String>,
 }
 
 fn diag(code: &'static str, message: String, decl: &Decl) -> Diagnostic {
@@ -67,6 +71,7 @@ fn diag(code: &'static str, message: String, decl: &Decl) -> Diagnostic {
         end_line: decl.end_line,
         end_col: decl.end_col,
         file: decl.file.clone(),
+        witness: Some(decl.name.clone()),
     }
 }
 
@@ -190,6 +195,7 @@ fn check_record(decl: &Decl, out: &mut Vec<Diagnostic>) {
                         end_line,
                         end_col,
                         file: decl.file.clone(),
+                        witness: Some(decl.name.clone()),
                     });
                 }
                 if !type_ok(ftype, value) {
@@ -201,6 +207,7 @@ fn check_record(decl: &Decl, out: &mut Vec<Diagnostic>) {
                         end_line,
                         end_col,
                         file: decl.file.clone(),
+                        witness: Some(decl.name.clone()),
                     });
                 }
             }
@@ -212,6 +219,7 @@ fn check_record(decl: &Decl, out: &mut Vec<Diagnostic>) {
                 end_line,
                 end_col,
                 file: decl.file.clone(),
+                witness: Some(decl.name.clone()),
             }),
         }
     }
@@ -240,6 +248,7 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
             end_line: 1,
             end_col: 1,
             file: String::new(),
+            witness: None,
         });
     }
     let mut by_name: HashMap<&str, &str> = HashMap::new();
@@ -378,6 +387,7 @@ fn diag_ref(code: &'static str, message: String, decl: &Decl, key: &str, name: &
         end_line: line,
         end_col,
         file: decl.file.clone(),
+        witness: Some(decl.name.clone()),
     }
 }
 
@@ -708,6 +718,7 @@ pub(crate) fn sem(
         end_line,
         end_col,
         file: decl.file.clone(),
+        witness: Some(decl.name.clone()),
     });
 }
 

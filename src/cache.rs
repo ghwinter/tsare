@@ -73,6 +73,7 @@ pub fn restore(payload: &Json) -> Vec<Diagnostic> {
                         end_line: line,
                         end_col: col,
                         file: String::new(),
+                        witness: None,
                     })
                 })
                 .collect()

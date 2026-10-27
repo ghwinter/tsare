@@ -20,6 +20,11 @@ All notable changes are recorded here. The format follows
   keeps: one dispatch path, one place that decides, and a command that loads, calls one library
   function and prints.
 
+- A diagnostic now records the declaration it is about (`Diagnostic.witness`). `fix` uses it:
+  a repair is accepted when the complaints **about that declaration** shrink, not when the
+  document's total goes down. The old rule let a repair be accepted for a warning it silenced
+  elsewhere, and it could not say which of two same-code complaints it had answered. The line
+  numbers move under a repair; the declaration name does not.
 ### Added
 
 - `E-SUPERSEDE-UNDEFINED` — a `supersedes` field that names nothing, or names itself. A withdrawal
