@@ -67,6 +67,7 @@ pub const CODES: &[&str] = &[
     "W-PARTITION-OPEN-USED",
     "W-PARTITION-UNKNOWN",
     "W-PARTITION-UNLEARNED",
+    "W-UNANSWERED",
     "W-UNCONFIRMED",
     "W-UNPRINCIPLED",
     "W-UNREAD",
@@ -222,6 +223,9 @@ pub fn explain(code: &str) -> Option<&'static str> {
             Fix: answer the question it names, or add a dimension.",
         "W-PARTITION-UNLEARNED" => "A partition leans on a dimension whose own examples no recorded attribute separates.\n\
             Fix: record the attribute that distinguishes them.",
+        "W-UNANSWERED" => "A rule in one document is attacked by a rule in another, and the attacked document has no rule that attacks back.\n\
+            An unanswered attack is not a defeat: it is an argument that stopped where it was hit.\n\
+            Fix: add a warrant with `attacks:` naming the attacker, or withdraw the attacked rule.",
         "W-UNCONFIRMED" => "A fact was supplied by a model and nobody confirmed it.\n\
             Fix: add confirmed_by, or change the evidence to a person or a tool.",
         "W-UNPRINCIPLED" => "A declaration sits in a layer the kernel governs, but cites none of that\n\

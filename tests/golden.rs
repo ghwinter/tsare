@@ -398,3 +398,42 @@ fact F_C { claim: "c", evidence: tool("t"), attrs: { size: 9, kind: second } }
         &run(&["novel", &shown, "--attribute", "big", "--holds", "F_A,F_B"]),
     );
 }
+
+/// Two documents that only make sense together: the objection names the rule it objects to, so
+/// neither compiles alone.  `check --against` is the context that resolves them, `argue` reports
+/// what the objection does to the conclusion, and `confront` says whether anyone answered.
+#[test]
+fn a_pair_of_documents_can_only_be_checked_together() {
+    let dir = std::env::temp_dir().join("engine-golden-confront");
+    std::fs::create_dir_all(&dir).expect("temp dir");
+    let a = dir.join("claim.mf");
+    let b = dir.join("objection.mf");
+    std::fs::write(
+        &a,
+        r#"fact F_BENCH { claim: "the new path is three times faster", evidence: tool("bench.sh") }
+proposition P_SHIP { statement: "we can ship", from: [F_BENCH] }
+warrant W_FAST { claim: "three times faster is enough", from: [F_BENCH], to: P_SHIP, basis: [F_BENCH] }
+"#,
+    )
+    .expect("write claim");
+    std::fs::write(
+        &b,
+        r#"fact F_SINGLE_RUN { claim: "bench.sh ran once, on a busy machine", evidence: tool("trace.log") }
+proposition P_WEAK { statement: "the benchmark does not support the claim", from: [F_SINGLE_RUN] }
+warrant W_SLOW { claim: "one busy run is not evidence", from: [F_SINGLE_RUN], to: P_WEAK, basis: [F_SINGLE_RUN], attacks: [W_FAST] }
+"#,
+    )
+    .expect("write objection");
+    let shown_a = a.display().to_string();
+    let shown_b = b.display().to_string();
+    golden("confront.alone", &run(&["check", &shown_a]));
+    golden(
+        "confront.context",
+        &run(&["check", &shown_b, "--against", &shown_a]),
+    );
+    golden(
+        "confront.argue",
+        &run(&["argue", &shown_a, "--against", &shown_b]),
+    );
+    golden("confront.pair", &run(&["confront", &shown_a, &shown_b]));
+}

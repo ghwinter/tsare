@@ -42,9 +42,10 @@ answers `--json`.
 
 | command | what it answers | JSON |
 | --- | --- | --- |
-| `check FILE\|DIR` | which declarations are well formed; `--goals`, `--sugar`, `--cache`, `--against KERNEL` | yes |
+| `check FILE\|DIR` | which declarations are well formed; `--goals`, `--sugar`, `--cache`, `--against OTHER` | yes |
 | `engine FILE\|DIR` | held, conditional, blocked, chains, gates | yes |
-| `argue FILE` | which conclusions survive attack | |
+| `argue FILE [--against OTHER]` | which conclusions survive attack; with `--against`, the attack graph is the merge | |
+| `confront LEFT RIGHT` | which rules attack across the pair, and which attacks nobody answered; exit 1 when `LEFT` leaves one unanswered | |
 | `derive FILE` | which conclusions are grounded in facts | |
 | `debt FILE [--all]` | which facts transitively gate a conclusion | |
 | `impact FILE` | dead facts, single support, load-bearing nodes | |

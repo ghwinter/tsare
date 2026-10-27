@@ -286,6 +286,17 @@ fn cmd_check(
 
 /// `check FILE --against KERNEL`: the kernel is a prelude. Its names may be used, not
 /// redefined, and a claim inside one of its layers must stand on one of that layer's laws.
+/// One document, with every declaration labelled by the file it came from.  A merge is only
+/// honest if a reader can tell which side a name is on, and the diagnostics already carry that.
+fn tagged(path: &Path, loaded: &Loaded) -> Vec<crate::syntax::Decl> {
+    let name = path.display().to_string();
+    let mut decls = loaded.decls.clone();
+    for decl in &mut decls {
+        decl.file = name.clone();
+    }
+    decls
+}
+
 fn check_against(path: &Path, loaded: &Loaded, kernel_path: &Path, json: bool) -> i32 {
     let kernel = match load_for_check(kernel_path) {
         Ok(kernel) => kernel,
@@ -294,39 +305,45 @@ fn check_against(path: &Path, loaded: &Loaded, kernel_path: &Path, json: bool) -
     let kernel_name = kernel_path.display().to_string();
     let target_name = path.display().to_string();
 
-    let mut kernel_decls = kernel.decls.clone();
-    for decl in &mut kernel_decls {
-        decl.file = kernel_name.clone();
-    }
-    let mut target_decls = loaded.decls.clone();
-    for decl in &mut target_decls {
-        decl.file = target_name.clone();
-    }
-    let kernel_own = crate::check::check(&kernel_decls);
-    if kernel_own.iter().any(|item| item.code.starts_with('E')) {
+    let kernel_decls = tagged(kernel_path, &kernel);
+    let target_decls = tagged(path, loaded);
+    let mut merged = kernel_decls.clone();
+    merged.extend(target_decls.clone());
+    let merged_diagnostics = crate::check::check(&merged);
+
+    // The condition is that the other document compiles *in this context*, not on its own: an
+    // objection refers to the thing it objects to, so it cannot be self-contained.  What must
+    // hold is that nothing on that side is unresolvable once both are present.
+    let other_errors: Vec<crate::check::Diagnostic> = merged_diagnostics
+        .iter()
+        .filter(|item| item.file == kernel_name && item.code.starts_with('E'))
+        .cloned()
+        .collect();
+    if !other_errors.is_empty() {
         let mut session =
             crate::session::Session::new(kernel_name.clone()).with_source(&kernel.text);
-        session.extend(kernel_own);
+        session.extend(other_errors);
         print!("{}", session.text());
         println!("{}", session.summary());
-        println!("the kernel does not compile; fix it before checking anything against it");
+        println!(
+            "the other document does not compile in this context; fix it before checking against it"
+        );
         return 1;
     }
 
-    let mut merged = kernel_decls.clone();
-    merged.extend(target_decls.clone());
     let shadows = crate::kernel::check(&kernel_decls, &target_decls);
     let shadowed: std::collections::HashSet<(String, usize)> = shadows
         .iter()
         .map(|item| (item.file.clone(), item.line))
         .collect();
     // the merge makes a shadowed name a plain duplicate; the kernel code says it better
-    let mut diagnostics: Vec<crate::check::Diagnostic> = crate::check::check(&merged)
-        .into_iter()
+    let mut diagnostics: Vec<crate::check::Diagnostic> = merged_diagnostics
+        .iter()
         .filter(|item| item.file == target_name)
         .filter(|item| {
             !(item.code == "E-DUP-ID" && shadowed.contains(&(item.file.clone(), item.line)))
         })
+        .cloned()
         .collect();
     diagnostics.extend(shadows);
 
@@ -342,9 +359,9 @@ fn check_against(path: &Path, loaded: &Loaded, kernel_path: &Path, json: bool) -
         return session.exit_code();
     }
     print!("{}", session.text());
-    let kernel_warnings = kernel_own
+    let kernel_warnings = merged_diagnostics
         .iter()
-        .filter(|item| !item.code.starts_with('E'))
+        .filter(|item| item.file == kernel_name && !item.code.starts_with('E'))
         .count();
     if kernel_warnings > 0 {
         println!("kernel: {kernel_warnings} warning(s) of its own");
@@ -487,14 +504,32 @@ fn cmd_apply(path: &Path, dry: bool) -> i32 {
     0
 }
 
-fn cmd_argue(path: &Path) -> i32 {
+fn cmd_argue(path: &Path, against: Option<&Path>) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
     };
-    let program = Program::new(&loaded.decls);
-    let diagnostics = crate::check::check(&loaded.decls);
-    let rows = crate::argue::conclusions(&program);
+    let mut decls = loaded.decls.clone();
+    let mut diagnostics = crate::check::check(&loaded.decls);
+    // With another document, the graph is the merge: a rule in this file may be attacked by a
+    // rule in that one, and the conclusion's status is computed over both.
+    if let Some(other_path) = against {
+        let other = match load(other_path) {
+            Ok(other) => other,
+            Err(error) => return fail(error),
+        };
+        let mut merged = tagged(other_path, &other);
+        merged.extend(decls.clone());
+        decls = merged;
+        diagnostics = crate::check::check(&decls);
+    }
+    let program = Program::new(&decls);
+    let mine: std::collections::HashSet<&str> =
+        loaded.decls.iter().map(|decl| decl.name.as_str()).collect();
+    let rows: Vec<crate::argue::Conclusion> = crate::argue::conclusions(&program)
+        .into_iter()
+        .filter(|row| mine.contains(row.name.as_str()))
+        .collect();
     let width = rows
         .iter()
         .map(|row| row.name.chars().count())
@@ -516,6 +551,103 @@ fn cmd_argue(path: &Path) -> i32 {
         );
     }
     0
+}
+
+/// Two documents attacking each other.  The report is the argument, not a verdict: `check
+/// --against` decides admissibility, this shows which rules point at which, and which attacks
+/// nobody answered.  Exit 1 when the first document leaves an attack unanswered.
+fn cmd_confront(left: &Path, right: &Path) -> i32 {
+    let loads = [load(left), load(right)];
+    let [ours, theirs] = match loads {
+        [Ok(ours), Ok(theirs)] => [ours, theirs],
+        [Err(error), _] | [_, Err(error)] => return fail(error),
+    };
+    let left_decls = tagged(left, &ours);
+    let right_decls = tagged(right, &theirs);
+    let ours_names: std::collections::HashSet<&str> =
+        left_decls.iter().map(|decl| decl.name.as_str()).collect();
+    let theirs_names: std::collections::HashSet<&str> =
+        right_decls.iter().map(|decl| decl.name.as_str()).collect();
+    let mut merged = right_decls.clone();
+    merged.extend(left_decls.clone());
+
+    // who attacks whom, across the pair only: an attack inside one document is that document's
+    // own business and `argue` already reports it
+    let mut from_right: Vec<(String, String)> = Vec::new();
+    let mut from_left: Vec<(String, String)> = Vec::new();
+    for decl in merged.iter().filter(|decl| decl.kind == "warrant") {
+        for target in crate::closure::field_ids(decl, "attacks") {
+            let pair = (decl.name.clone(), target.clone());
+            if theirs_names.contains(decl.name.as_str()) && ours_names.contains(target.as_str()) {
+                from_right.push(pair);
+            } else if ours_names.contains(decl.name.as_str())
+                && theirs_names.contains(target.as_str())
+            {
+                from_left.push(pair);
+            }
+        }
+    }
+    // an attack is answered when the attacked document holds a rule that attacks the attacker
+    let answers = |document: &[crate::syntax::Decl]| -> std::collections::HashSet<String> {
+        document
+            .iter()
+            .filter(|decl| decl.kind == "warrant")
+            .flat_map(|decl| crate::closure::field_ids(decl, "attacks"))
+            .collect()
+    };
+    let our_answers = answers(&left_decls);
+    let their_answers = answers(&right_decls);
+
+    println!("confront {} {}", left.display(), right.display());
+    println!();
+    println!(
+        "{} attacks {} ({}):",
+        right.display(),
+        left.display(),
+        from_right.len()
+    );
+    let mut unanswered = 0;
+    for (attacker, target) in &from_right {
+        if our_answers.contains(attacker) {
+            println!("  {attacker} -> {target}   answered");
+        } else {
+            unanswered += 1;
+            println!("  {attacker} -> {target}   W-UNANSWERED");
+        }
+    }
+    println!();
+    println!(
+        "{} attacks {} ({}):",
+        left.display(),
+        right.display(),
+        from_left.len()
+    );
+    for (attacker, target) in &from_left {
+        if their_answers.contains(attacker) {
+            println!("  {attacker} -> {target}   answered");
+        } else {
+            println!("  {attacker} -> {target}   undefended on the other side");
+        }
+    }
+    println!();
+    println!(
+        "{} attack(s) across the pair, {unanswered} unanswered on {}",
+        from_right.len() + from_left.len(),
+        left.display()
+    );
+    for (attacker, target) in &from_right {
+        if !our_answers.contains(attacker) {
+            println!(
+                "W-UNANSWERED: {target} is attacked by {attacker}, and {} has no rule that attacks {attacker} back",
+                left.display()
+            );
+        }
+    }
+    if unanswered > 0 {
+        1
+    } else {
+        0
+    }
 }
 
 fn cmd_derive(path: &Path) -> i32 {
@@ -1740,7 +1872,8 @@ fn usage() {
     println!();
     println!("reasoning");
     println!("  engine PATH [--json]         held, conditional, blocked, chains, gates");
-    println!("  argue PATH                   which conclusions survive attack");
+    println!("  argue PATH [--against OTHER] which conclusions survive attack");
+    println!("  confront LEFT RIGHT          which rules attack which, and which attacks nobody answered");
     println!("  derive PATH                  which conclusions are grounded in facts");
     println!("  debt PATH [--all]            which facts transitively gate a conclusion");
     println!("  impact PATH                  dead facts, single support, load-bearing nodes");
@@ -1799,6 +1932,7 @@ fn is_command(name: &str) -> bool {
         "check"
             | "engine"
             | "argue"
+            | "confront"
             | "derive"
             | "debt"
             | "kinds"
@@ -1982,7 +2116,14 @@ pub fn run() -> i32 {
         "engine" => cmd_engine(&path, args.has("--json")),
         "suggest" => cmd_suggest(&path, args.has("--json")),
         "apply" => cmd_apply(&path, args.has("--dry-run")),
-        "argue" => cmd_argue(&path),
+        "argue" => cmd_argue(&path, args.option("--against").map(Path::new)),
+        "confront" => {
+            let Some(other) = args.at(1) else {
+                println!("usage: tsare confront LEFT RIGHT");
+                return 2;
+            };
+            cmd_confront(&path, Path::new(other))
+        }
         "derive" => cmd_derive(&path),
         "debt" => cmd_debt(&path, args.has("--all")),
         "impact" => cmd_impact(&path),

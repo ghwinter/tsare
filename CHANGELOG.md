@@ -8,6 +8,18 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `argue FILE --against OTHER` and `confront LEFT RIGHT` — an objection refers to the rule it
+  objects to, so the pair only compiles together. `argue --against` computes the attack graph
+  over the merge and reports the conclusions of `FILE`; `confront` shows which rule attacks
+  which across the pair and `W-UNANSWERED` when `LEFT` has no rule that attacks back, with exit
+  1 for that case. It judges whether an objection was answered, never whether it is right.
+
+- `check --against` now requires the other document to compile *in context* instead of alone.
+  The old rule was written for a prelude and is wrong for an opponent: an objection that must
+  be self-contained cannot object to anything. What still holds is that nothing on the other
+  side may be unresolvable once both documents are present, so a genuinely broken context is
+  refused exactly as before.
+
 - `fact over:` / `proposition over:` — the domain a universal claim ranges over. A universal is
   bound only when its domain can be enumerated: a concept's positive examples, a closed
   partition's elements, or a layer's declarations. Binding it to anything else is
