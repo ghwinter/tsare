@@ -828,6 +828,19 @@ fn cmd_novel(path: &Path, args: &Args) -> i32 {
     0
 }
 
+fn cmd_abstract(path: &Path, args: &Args) -> i32 {
+    let loaded = match load(path) {
+        Ok(loaded) => loaded,
+        Err(error) => return fail(error),
+    };
+    let program = Program::new(&loaded.decls);
+    let support = args.count("--min-support", 2);
+    let max_intent = args.count("--max-intent", 3);
+    let (found, truncated) = crate::abstraction::candidates(&program, support, max_intent);
+    print!("{}", crate::abstraction::text(&found, truncated));
+    0
+}
+
 fn cmd_imply(path: &Path, args: &Args) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
@@ -1881,6 +1894,10 @@ fn usage() {
     println!("  ask PATH [--json] [--one]   the next question, ranked by what one answer settles");
     println!("  novel PATH --attribute N [--holds IDS]");
     println!("  imply PATH [--json] [--max-antecedent N] [--min-support N]");
+    println!("  abstract PATH [--min-support N] [--max-intent N]");
+    println!(
+        "                               concepts the attributes already hold but nobody named"
+    );
     println!(
         "                               is a proposed attribute new, redundant, or a recombination"
     );
@@ -1943,6 +1960,7 @@ fn is_command(name: &str) -> bool {
             | "ask"
             | "novel"
             | "imply"
+            | "abstract"
             | "cost"
             | "weigh"
             | "cat"
@@ -1987,6 +2005,7 @@ const VALUE_FLAGS: &[&str] = &[
     "--against",
     "--max-antecedent",
     "--min-support",
+    "--max-intent",
 ];
 
 impl Args {
@@ -2167,6 +2186,7 @@ pub fn run() -> i32 {
                 args.option("--policy").unwrap_or("harmless"),
             )
         }
+        "abstract" => cmd_abstract(&path, &args),
         "fca" => cmd_fca(&path),
         "pattern" => {
             let Some(name) = args.at(1) else {

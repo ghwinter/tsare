@@ -8,6 +8,14 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `abstract FILE [--min-support N] [--max-intent N]` — concept declarations the attribute table
+  supports but nobody wrote. A candidate needs three things: at least two facts, an extent no
+  named concept already has, and a witness pair (one fact in, one out). The third is what keeps a
+  proposal from being a prettier name for "all of these". Candidates whose members are
+  indistinguishable in the recorded vocabulary are dropped — that is a `W-COLLIDE`, and naming it
+  adds a synonym rather than a distinction. Each proposal prints as a `concept` block that can be
+  pasted back and compiles clean.
+
 - `argue FILE --against OTHER` and `confront LEFT RIGHT` — an objection refers to the rule it
   objects to, so the pair only compiles together. `argue --against` computes the attack graph
   over the merge and reports the conclusions of `FILE`; `confront` shows which rule attacks

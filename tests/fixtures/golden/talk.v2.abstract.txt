@@ -1,0 +1,22 @@
+2 candidate concept(s)
+
+1. 3 fact(s): F_DARK, F_MULTI, F_NONE
+   intent: total = 40
+   (one attribute: the concept would be a synonym for that value)
+   witness: F_DARK in, F_COMP out
+   concept C_PROPOSED_1 {
+     name: "total = 40",
+     grounded_by: [F_DARK, F_MULTI, F_NONE],
+     against: [F_COMP]
+   }
+
+2. 2 fact(s): F_COMP, F_DARK
+   intent: competitors = 3
+   (one attribute: the concept would be a synonym for that value)
+   witness: F_COMP in, F_MULTI out
+   concept C_PROPOSED_2 {
+     name: "competitors = 3",
+     grounded_by: [F_COMP, F_DARK],
+     against: [F_MULTI]
+   }
+

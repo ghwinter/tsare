@@ -1121,3 +1121,49 @@ fn a_universal_claim_is_bound_only_to_an_enumerable_extent() {
         .iter()
         .any(|item| item.code == "W-OVERCLAIM" && item.message.contains("P_ALL")));
 }
+
+/// An abstraction is proposed only when it covers two facts, is not already a named concept, and
+/// separates one fact from another.  The last condition is what keeps a proposal from being a
+/// prettier name for "all of these": a concept whose extent is everything distinguishes nothing.
+#[test]
+fn an_abstraction_is_proposed_only_when_it_separates_something() {
+    let source = concat!(
+        "fact F_1 { claim: \"a\", evidence: tool(\"t\"), attrs: { size: 3, kind: first, region: east } }\n",
+        "fact F_2 { claim: \"b\", evidence: tool(\"t\"), attrs: { size: 3, kind: first, region: west } }\n",
+        "fact F_3 { claim: \"c\", evidence: tool(\"t\"), attrs: { size: 3, kind: second, region: east } }\n",
+        "fact F_4 { claim: \"d\", evidence: tool(\"t\"), attrs: { size: 9, kind: first, region: east } }\n",
+    );
+    let declared = decls(source);
+    let program = Program::new(&declared);
+    let (found, truncated) = tsare::abstraction::candidates(&program, 2, 3);
+    assert!(!truncated);
+    let pair = found
+        .iter()
+        .find(|candidate| candidate.intent.len() == 2)
+        .expect("a two-attribute class exists");
+    assert_eq!(pair.extent, vec!["F_1".to_string(), "F_2".to_string()]);
+    // the witness is a pair, not a count
+    assert!(pair.extent.contains(&pair.inside));
+    assert!(!pair.extent.contains(&pair.outside));
+
+    // naming it already removes it from the proposals
+    let named = format!("{source}concept C_ONE {{ name: \"one\", grounded_by: [F_1, F_2] }}\n");
+    let declared = decls(&named);
+    let program = Program::new(&declared);
+    let (after, _) = tsare::abstraction::candidates(&program, 2, 3);
+    assert!(!after
+        .iter()
+        .any(|candidate| candidate.extent == vec!["F_1".to_string(), "F_2".to_string()]));
+
+    // the proposal pastes back clean: it has an extent, a counterexample and a clause
+    let pasted = format!(
+        "{source}concept C_PROPOSED_1 {{ name: \"size = 3 and kind = first\", grounded_by: [F_1, F_2], against: [F_3] }}\n"
+    );
+    let found = check(&decls(&pasted));
+    assert!(
+        !found
+            .iter()
+            .any(|item| item.code == "E-COLLAPSE" || item.code == "W-UNTESTED"),
+        "{found:#?}"
+    );
+}

@@ -128,6 +128,7 @@ const COMMANDS: &[(&str, &[&str])] = &[
     ("weigh", &[]),
     ("cat", &[]),
     ("outline", &[]),
+    ("abstract", &[]),
     ("moves", &[]),
     ("assumptions", &[]),
     ("audit", &[]),
