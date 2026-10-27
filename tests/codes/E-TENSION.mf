@@ -1,0 +1,2 @@
+value V_UP { metric: "speed", direction: max, unit: "u", threshold: 1 }
+value V_DOWN { metric: "speed", direction: min, unit: "u", threshold: 1 }

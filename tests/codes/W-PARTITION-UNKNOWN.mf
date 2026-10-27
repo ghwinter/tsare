@@ -1,0 +1,6 @@
+fact F_A { claim: "a", evidence: user }
+fact F_B { claim: "b", evidence: user }
+hypothesis H_A { assumes: [F_B], predicts: "p", test: "t" }
+hypothesis H_B { assumes: [F_B], predicts: "q", test: "u", rival: H_A }
+question Q_A { asks: "w?", answers: ["x", "y"], separates: [H_A, H_B] }
+partition P_A { elements: [F_A], closure: unknown, closes_with: [Q_A] }

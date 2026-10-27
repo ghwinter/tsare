@@ -1,0 +1,2 @@
+fact F_A { claim: "a", evidence: user }
+concept C_A { name: "a", grounded_by: [F_A] }

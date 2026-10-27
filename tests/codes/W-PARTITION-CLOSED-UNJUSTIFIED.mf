@@ -1,0 +1,3 @@
+fact F_A { claim: "a", evidence: user, attrs: { kind: first } }
+concept C_A { name: "first", grounded_by: [F_A] }
+partition P_A { dimension: C_A, elements: [F_A], closure: closed }

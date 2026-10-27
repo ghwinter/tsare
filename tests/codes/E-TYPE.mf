@@ -1,0 +1,1 @@
+fact F_A { claim: "a", evidence: user, scope: 3 }

@@ -1,0 +1,1 @@
+fact F_A { claim: "a", evidence: tool("t"), out: "0000" }

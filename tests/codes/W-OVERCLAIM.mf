@@ -1,0 +1,1 @@
+fact F_A { claim: "all of them hold", evidence: user, scope: "everything" }

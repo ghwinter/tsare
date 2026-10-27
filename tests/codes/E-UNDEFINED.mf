@@ -1,0 +1,1 @@
+proposition P_A { statement: "a", from: [NOPE] }

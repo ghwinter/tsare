@@ -1,0 +1,5 @@
+fact F_A { claim: "f", evidence: user }
+proposition P_A { statement: "s", from: [F_A] }
+warrant W_A { claim: "r", from: [P_B], to: P_A, basis: [F_A] }
+proposition P_B { statement: "b", uses: [C_A] }
+concept C_A { name: "c", grounded_by: [F_A] }

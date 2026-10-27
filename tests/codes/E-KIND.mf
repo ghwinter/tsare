@@ -1,0 +1,2 @@
+layer L_A { name: "l", exposes: [C_A] }
+concept C_A { name: "c", grounded_by: [L_A] }

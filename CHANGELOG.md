@@ -8,6 +8,12 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `tests/codes.rs` — the engine signing for its own vocabulary. Every code in `explain::CODES`
+  must be turned on by something the repository produces: one small document per code in
+  `tests/codes/`, the golden snapshots for the codes only a two-document command emits, and
+  direct assertions for parsing, the kernel and goal files. 73 codes, 66 of them from a single
+  document. Before this the six fixtures turned on eight.
+
 - `supersedes: [ID]` on every kind — withdrawal appends, it does not delete. The superseded
   declaration stays in the document and references to it still resolve, but it grounds nothing,
   supports nothing and attacks nothing: `closure` and `engine` drop it, conclusions that leaned on

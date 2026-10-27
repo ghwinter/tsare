@@ -1,0 +1,4 @@
+fact F_1 { claim: "one", evidence: tool("t") }
+fact F_2 { claim: "two", evidence: tool("t") }
+concept C_ONE { name: "one", grounded_by: [F_1], against: [F_2] }
+concept C_TWO { name: "two", grounded_by: [F_1], against: [F_2] }

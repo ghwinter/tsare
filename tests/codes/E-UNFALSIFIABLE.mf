@@ -1,0 +1,2 @@
+fact F_A { claim: "f", evidence: user }
+hypothesis H_A { assumes: [F_A], predicts: "p" }

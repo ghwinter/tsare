@@ -1,0 +1,5 @@
+layer L_A { name: "a", exposes: [F_OTHER] }
+layer L_B { name: "b", exposes: [P_A] }
+fact F_OTHER { claim: "other", evidence: user, layer: L_A }
+fact F_A { claim: "f", evidence: user, layer: L_A }
+proposition P_A { statement: "s", from: [F_A], layer: L_B }

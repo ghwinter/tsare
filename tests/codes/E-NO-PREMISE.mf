@@ -1,0 +1,3 @@
+proposition P_A { statement: "a", from: [F_A] }
+fact F_A { claim: "f", evidence: user }
+warrant W_A { claim: "r", from: [] }

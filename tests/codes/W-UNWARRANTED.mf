@@ -1,0 +1,2 @@
+fact F_A { claim: "f", evidence: user }
+proposition P_A { statement: "s", from: [F_A] }

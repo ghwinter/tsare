@@ -1,0 +1,9 @@
+fact F_A { claim: "a", evidence: user, attrs: { kind: first } }
+concept C_A { name: "first", grounded_by: [F_A], against: [F_A] }
+partition P_A { dimension: C_A, elements: [F_A], closure: open, closes_with: [Q_A] }
+fact F_B { claim: "b", evidence: user }
+hypothesis H_A { assumes: [F_B], predicts: "p", test: "t" }
+hypothesis H_B { assumes: [F_B], predicts: "q", test: "u", rival: H_A }
+question Q_A { asks: "w?", answers: ["x", "y"], separates: [H_A, H_B] }
+proposition P_B { statement: "s", from: [F_A] }
+warrant W_A { claim: "r", from: [P_A], to: P_B, basis: [F_A] }

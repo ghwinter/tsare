@@ -1,0 +1,6 @@
+fact F_A {
+  claim: "the write-up finished",
+  evidence: tool("launch.sh"),
+  artifact: "tests/codes/artifact.txt",
+  out: "0000000000000000000000000000000000000000000000000000000000000000"
+}

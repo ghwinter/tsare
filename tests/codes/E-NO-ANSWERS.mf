@@ -1,0 +1,3 @@
+fact F_A { claim: "f", evidence: user }
+hypothesis H_A { assumes: [F_A], predicts: "p", test: "t" }
+question Q_A { asks: "which?", answers: ["only one"], separates: [H_A] }

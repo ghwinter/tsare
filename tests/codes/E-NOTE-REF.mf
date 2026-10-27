@@ -1,0 +1,2 @@
+note N_A { tag: hunch, text: "a thought" }
+proposition P_A { statement: "s", from: [N_A] }

@@ -1,0 +1,2 @@
+proposition P_A { statement: "a", from: [P_B] }
+proposition P_B { statement: "b", from: [P_A] }

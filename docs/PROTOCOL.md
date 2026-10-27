@@ -291,6 +291,12 @@ cargo test            # semantics + golden snapshots for every command
 cargo build --release # the binary
 ```
 
+`tests/codes.rs` holds the engine to its own claim: every code in `explain::CODES` must be turned
+on by something the repository can produce. Three sources, because not every diagnostic comes from
+one document — `tests/codes/*.mf` (the smallest single document per code), the golden snapshots
+(recorded output of the two-document commands), and direct assertions for parsing, the kernel and
+goal files. A code that nothing can produce is either unreachable or stale, and both are bugs.
+
 `tests/semantics.rs` holds properties (`an_attack_defeats_its_target`). `tests/golden.rs` holds
 the exact text of every command on six fixture documents, captured while the engine still
 agreed with v1 byte for byte. `UPDATE_GOLDEN=1 cargo test` rewrites them; read the diff first.

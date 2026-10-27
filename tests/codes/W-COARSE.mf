@@ -1,0 +1,4 @@
+fact F_A { claim: "a", evidence: user }
+hypothesis H_A { assumes: [F_A], predicts: "p", test: "t" }
+hypothesis H_B { assumes: [F_A], predicts: "q", test: "u", rival: H_A }
+question Q_A { asks: "w?", answers: ["only"], separates: [H_A, H_B] }

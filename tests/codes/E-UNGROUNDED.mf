@@ -1,0 +1,1 @@
+concept C_A { name: "a", grounded_by: [] }

@@ -1,0 +1,4 @@
+layer L_A { name: "l", exposes: [F_A] }
+fact F_A { claim: "f", evidence: user }
+law K_A { statement: "s", holds_in: L_A, checked_by: [F_A], requires: ["measured_by"] }
+proposition P_A { statement: "p", from: [K_A] }

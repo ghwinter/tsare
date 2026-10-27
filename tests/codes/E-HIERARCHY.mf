@@ -1,0 +1,4 @@
+fact F_1 { claim: "one", evidence: user }
+fact F_2 { claim: "two", evidence: user }
+concept C_PARENT { name: "parent", grounded_by: [F_1], against: [F_2] }
+concept C_CHILD { name: "child", parent: C_PARENT, grounded_by: [F_2], against: [F_1] }

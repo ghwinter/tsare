@@ -1,0 +1,3 @@
+fact F_A { claim: "a", evidence: user }
+concept C_A { name: "c", grounded_by: [F_A], against: [F_A] }
+blindspot B_A { cannot_express: "x", witness: [F_A], signature: [C_A] }

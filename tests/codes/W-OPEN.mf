@@ -1,0 +1,3 @@
+proposition P_A { statement: "a", status: open, uses: [C_A] }
+concept C_A { name: "c", grounded_by: [F_A] }
+fact F_A { claim: "f", evidence: user }

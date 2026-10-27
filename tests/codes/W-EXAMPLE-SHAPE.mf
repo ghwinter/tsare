@@ -1,0 +1,3 @@
+fact F_A { claim: "a", evidence: user, attrs: { kind: first } }
+fact F_B { claim: "b", evidence: user, attrs: { size: 3 } }
+concept C_A { name: "first", grounded_by: [F_A], against: [F_B] }

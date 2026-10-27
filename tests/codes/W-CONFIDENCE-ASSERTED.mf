@@ -1,0 +1,2 @@
+fact F_A { claim: "a", evidence: user }
+proposition P_A { statement: "s", from: [F_A], confidence: 0.7 }
