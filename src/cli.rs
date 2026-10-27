@@ -1875,11 +1875,7 @@ fn cmd_kinds() -> i32 {
 /// One line of the help screen and one name the dispatcher must accept.  They were two lists and
 /// they had already drifted -- `novel`'s description sat under `abstract` -- which is what two
 /// lists do.  The usage text keeps its shape: two spaces, the name, the arguments, the sentence.
-struct Command {
-    group: &'static str,
-    name: &'static str,
-    usage: &'static str,
-}
+struct Command(&'static str, &'static str, &'static str);
 
 const GROUPS: &[&str] = &["checking", "reasoning", "repairing", "emitting"];
 
@@ -1887,176 +1883,40 @@ const GROUPS: &[&str] = &["checking", "reasoning", "repairing", "emitting"];
 const HIDDEN: &[&str] = &["mcp"];
 
 const COMMANDS: &[Command] = &[
-    Command {
-        group: "checking",
-        name: "check",
-        usage: "check PATH [--json] [--goals F] [--sugar] [--cache]   parse and check (the default)",
-    },
-    Command {
-        group: "checking",
-        name: "project",
-        usage: "project DIR                                          the same, grouped by file",
-    },
-    Command {
-        group: "reasoning",
-        name: "engine",
-        usage: "engine PATH [--json]         held, conditional, blocked, chains, gates",
-    },
-    Command {
-        group: "reasoning",
-        name: "argue",
-        usage: "argue PATH [--against OTHER] which conclusions survive attack",
-    },
-    Command {
-        group: "reasoning",
-        name: "confront",
-        usage: "confront LEFT RIGHT          which rules attack which, and which attacks nobody answered",
-    },
-    Command {
-        group: "reasoning",
-        name: "derive",
-        usage: "derive PATH                  which conclusions are grounded in facts",
-    },
-    Command {
-        group: "reasoning",
-        name: "debt",
-        usage: "debt PATH [--all]            which facts transitively gate a conclusion",
-    },
-    Command {
-        group: "reasoning",
-        name: "impact",
-        usage: "impact PATH                  dead facts, single support, load-bearing nodes",
-    },
-    Command {
-        group: "reasoning",
-        name: "next",
-        usage: "next PATH                    open decisions, ranked by what they touch",
-    },
-    Command {
-        group: "reasoning",
-        name: "ask",
-        usage: "ask PATH [--json] [--one]   the next question, ranked by what one answer settles",
-    },
-    Command {
-        group: "reasoning",
-        name: "novel",
-        usage: "novel PATH --attribute N [--holds IDS]\n                               is a proposed attribute new, redundant, or a recombination",
-    },
-    Command {
-        group: "reasoning",
-        name: "imply",
-        usage: "imply PATH [--json] [--max-antecedent N] [--min-support N]",
-    },
-    Command {
-        group: "reasoning",
-        name: "abstract",
-        usage: "abstract PATH [--min-support N] [--max-intent N]\n                               concepts the attributes already hold but nobody named",
-    },
-    Command {
-        group: "reasoning",
-        name: "cost",
-        usage: "cost PATH [--top N]          external confirmations the document demands",
-    },
-    Command {
-        group: "reasoning",
-        name: "weigh",
-        usage: "weigh PATH [--threshold X]   confidence propagated by min/max",
-    },
-    Command {
-        group: "reasoning",
-        name: "fca",
-        usage: "fca PATH                     what a concept's examples share, and what they imply",
-    },
-    Command {
-        group: "reasoning",
-        name: "cat",
-        usage: "cat PATH                     the pipeline read as a category",
-    },
-    Command {
-        group: "reasoning",
-        name: "moves",
-        usage: "moves PATH                   six representation moves as candidates",
-    },
-    Command {
-        group: "reasoning",
-        name: "assumptions",
-        usage: "assumptions PATH [--top N]   load-bearing declarations without support",
-    },
-    Command {
-        group: "reasoning",
-        name: "whatif",
-        usage: "whatif PATH NAME             what falls when one assumption is removed",
-    },
-    Command {
-        group: "reasoning",
-        name: "kinds",
-        usage: "kinds                        the obligation table: what each kind owes",
-    },
-    Command {
-        group: "repairing",
-        name: "fix",
-        usage: "fix PATH [--apply OUT]          verified repair candidates, and applying them",
-    },
-    Command {
-        group: "repairing",
-        name: "suggest",
-        usage: "suggest PATH [--json]           repairs with an applicability",
-    },
-    Command {
-        group: "repairing",
-        name: "apply",
-        usage: "apply PATH [--dry-run]          splice machine repairs and recompile",
-    },
-    Command {
-        group: "repairing",
-        name: "propose",
-        usage: "propose PATH --proposals F [--policy P] [--apply]\n                                  gate values an outside model wants to fill in\n                                  policies: harmless (default), strict, improve",
-    },
-    Command {
-        group: "emitting",
-        name: "outline",
-        usage: "outline PATH                        the document read as prose, grounds in the margin",
-    },
-    Command {
-        group: "emitting",
-        name: "build",
-        usage: "build PATH [--out DIR] [--goals F]   obligations, clauses, open items, predicates",
-    },
-    Command {
-        group: "emitting",
-        name: "graph",
-        usage: "graph PATH [--out FILE]             the relation net as Mermaid",
-    },
-    Command {
-        group: "emitting",
-        name: "map",
-        usage: "map LEFT RIGHT [--top N]            structure mapping between two documents",
-    },
-    Command {
-        group: "emitting",
-        name: "induce",
-        usage: "induce PATH                         the clause each concept's examples support",
-    },
-    Command {
-        group: "emitting",
-        name: "pattern",
-        usage: "pattern PATH CONCEPT [--vars]       the structure that separates the examples",
-    },
-    Command {
-        group: "emitting",
-        name: "audit",
-        usage: "audit PATH                          can a kind be written with a smaller vocabulary",
-    },
-    Command {
-        group: "emitting",
-        name: "egraph",
-        usage: "egraph PATH [--write OUT]           merge equivalent declarations, rewrite references",
-    },
-    Command {
-        group: "emitting",
-        name: "mem",
-        usage: "mem [--recall CODE...] [--k N]      the case store: audit it, or recall situations",
-    },
+        Command("checking", "check", "check PATH [--json] [--goals F] [--sugar] [--cache]   parse and check (the default)"),
+        Command("checking", "project", "project DIR                                          the same, grouped by file"),
+        Command("reasoning", "engine", "engine PATH [--json]         held, conditional, blocked, chains, gates"),
+        Command("reasoning", "argue", "argue PATH [--against OTHER] which conclusions survive attack"),
+        Command("reasoning", "confront", "confront LEFT RIGHT          which rules attack which, and which attacks nobody answered"),
+        Command("reasoning", "derive", "derive PATH                  which conclusions are grounded in facts"),
+        Command("reasoning", "debt", "debt PATH [--all]            which facts transitively gate a conclusion"),
+        Command("reasoning", "impact", "impact PATH                  dead facts, single support, load-bearing nodes"),
+        Command("reasoning", "next", "next PATH                    open decisions, ranked by what they touch"),
+        Command("reasoning", "ask", "ask PATH [--json] [--one]   the next question, ranked by what one answer settles"),
+        Command("reasoning", "novel", "novel PATH --attribute N [--holds IDS]\n                               is a proposed attribute new, redundant, or a recombination"),
+        Command("reasoning", "imply", "imply PATH [--json] [--max-antecedent N] [--min-support N]"),
+        Command("reasoning", "abstract", "abstract PATH [--min-support N] [--max-intent N]\n                               concepts the attributes already hold but nobody named"),
+        Command("reasoning", "cost", "cost PATH [--top N]          external confirmations the document demands"),
+        Command("reasoning", "weigh", "weigh PATH [--threshold X]   confidence propagated by min/max"),
+        Command("reasoning", "fca", "fca PATH                     what a concept's examples share, and what they imply"),
+        Command("reasoning", "cat", "cat PATH                     the pipeline read as a category"),
+        Command("reasoning", "moves", "moves PATH                   six representation moves as candidates"),
+        Command("reasoning", "assumptions", "assumptions PATH [--top N]   load-bearing declarations without support"),
+        Command("reasoning", "whatif", "whatif PATH NAME             what falls when one assumption is removed"),
+        Command("reasoning", "kinds", "kinds                        the obligation table: what each kind owes"),
+        Command("repairing", "fix", "fix PATH [--apply OUT]          verified repair candidates, and applying them"),
+        Command("repairing", "suggest", "suggest PATH [--json]           repairs with an applicability"),
+        Command("repairing", "apply", "apply PATH [--dry-run]          splice machine repairs and recompile"),
+        Command("repairing", "propose", "propose PATH --proposals F [--policy P] [--apply]\n                                  gate values an outside model wants to fill in\n                                  policies: harmless (default), strict, improve"),
+        Command("emitting", "outline", "outline PATH                        the document read as prose, grounds in the margin"),
+        Command("emitting", "build", "build PATH [--out DIR] [--goals F]   obligations, clauses, open items, predicates"),
+        Command("emitting", "graph", "graph PATH [--out FILE]             the relation net as Mermaid"),
+        Command("emitting", "map", "map LEFT RIGHT [--top N]            structure mapping between two documents"),
+        Command("emitting", "induce", "induce PATH                         the clause each concept's examples support"),
+        Command("emitting", "pattern", "pattern PATH CONCEPT [--vars]       the structure that separates the examples"),
+        Command("emitting", "audit", "audit PATH                          can a kind be written with a smaller vocabulary"),
+        Command("emitting", "egraph", "egraph PATH [--write OUT]           merge equivalent declarations, rewrite references"),
+        Command("emitting", "mem", "mem [--recall CODE...] [--k N]      the case store: audit it, or recall situations"),
 ];
 
 fn usage() {
@@ -2073,8 +1933,8 @@ fn usage() {
     for group in GROUPS {
         println!();
         println!("{group}");
-        for command in COMMANDS.iter().filter(|command| command.group == *group) {
-            println!("  {}", command.usage);
+        for command in COMMANDS.iter().filter(|command| command.0 == *group) {
+            println!("  {}", command.2);
         }
     }
     println!();
@@ -2085,7 +1945,7 @@ fn usage() {
 }
 
 fn is_command(name: &str) -> bool {
-    COMMANDS.iter().any(|command| command.name == name) || HIDDEN.contains(&name)
+    COMMANDS.iter().any(|command| command.1 == name) || HIDDEN.contains(&name)
 }
 
 /// The arguments after the command, split into positional values and options.
