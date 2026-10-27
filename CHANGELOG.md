@@ -8,6 +8,11 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `tests/contract.rs` — the `--json` contract pinned by shape: the three envelopes of `check`,
+  `engine` and `suggest`, the six fields of a diagnostic in order, and the invariant that a code
+  starting with `E` carries severity `error`. Messages are deliberately not pinned; they are prose
+  and they improve.
+
 - `tests/codes.rs` — the engine signing for its own vocabulary. Every code in `explain::CODES`
   must be turned on by something the repository produces: one small document per code in
   `tests/codes/`, the golden snapshots for the codes only a two-document command emits, and

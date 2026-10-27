@@ -4,6 +4,7 @@ use std::collections::{HashMap, HashSet};
 
 pub(crate) mod collide;
 mod confidence;
+pub(crate) mod evidence;
 mod partition;
 
 use crate::closure;
@@ -264,15 +265,10 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
     check_remaining(decls, &mut out);
     confidence::check_confidence_flow(decls, &mut out);
     collide::check_collide(decls, &mut out);
+    evidence::check(decls, &mut out);
     check_tension(decls, &mut out);
     check_layer(decls, &mut out);
     check_refinements(decls, &mut out);
-    check_requirements(decls, &mut out);
-    check_retirement(decls, &mut out);
-    check_bindings(decls, &mut out);
-    check_verdicts(decls, &mut out);
-    check_dead_values(decls, &mut out);
-    check_artifacts(decls, &mut out);
     let result = closure::closure(decls);
     for (name, reason) in &result.conditional {
         let decl = decls.iter().find(|item| &item.name == name);
@@ -341,7 +337,7 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
     out
 }
 
-fn ids(value: &Val) -> Vec<String> {
+pub(crate) fn ids(value: &Val) -> Vec<String> {
     let mut out = Vec::new();
     refs(value, &mut out);
     out
@@ -477,7 +473,7 @@ fn check_collapse(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     }
 }
 
-fn string_field<'a>(decl: &'a Decl, key: &str) -> Option<&'a str> {
+pub(crate) fn string_field<'a>(decl: &'a Decl, key: &str) -> Option<&'a str> {
     decl.fields
         .iter()
         .find(|(name, _)| name == key)
@@ -487,7 +483,7 @@ fn string_field<'a>(decl: &'a Decl, key: &str) -> Option<&'a str> {
         })
 }
 
-fn id_field<'a>(decl: &'a Decl, key: &str) -> Option<&'a str> {
+pub(crate) fn id_field<'a>(decl: &'a Decl, key: &str) -> Option<&'a str> {
     decl.fields
         .iter()
         .find(|(name, _)| name == key)
@@ -604,286 +600,6 @@ fn check_refinements(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     }
 }
 
-/// A law may name the fields a declaration must carry in order to cite it (`requires`).  Without
-/// that, citing a principle is free: a reference is resolved for existence only, so a claim
-/// about button colour can stand on a law about instruments and nothing notices.  A requirement
-/// makes the citation cost the field the law is about.  It still cannot tell whether the value
-/// is the right one -- only that the claim paid for the name it used.
-fn check_requirements(decls: &[Decl], out: &mut Vec<Diagnostic>) {
-    let laws: std::collections::HashMap<&str, &Decl> = decls
-        .iter()
-        .filter(|decl| decl.kind == "law")
-        .map(|decl| (decl.name.as_str(), decl))
-        .collect();
-    for decl in decls.iter().filter(|decl| decl.kind != "law") {
-        for key in ["from", "basis", "checked_by"] {
-            for cited in field_ids(decl, key) {
-                let Some(law) = laws.get(cited.as_str()) else {
-                    continue;
-                };
-                for needed in string_items(law, "requires") {
-                    if carries(decl, &needed) {
-                        continue;
-                    }
-                    sem(
-                        decl,
-                        "W-UNSATISFIED",
-                        format!(
-                            "{} cites law {cited}, which requires {needed}, and declares no {needed}",
-                            decl.name
-                        ),
-                        Some(key),
-                        out,
-                    );
-                }
-            }
-        }
-    }
-}
-
-fn string_items(decl: &Decl, key: &str) -> Vec<String> {
-    let Some(value) = decl
-        .fields
-        .iter()
-        .find(|(name, _)| name == key)
-        .map(|(_, value)| value)
-    else {
-        return Vec::new();
-    };
-    match value {
-        Val::List(items) => items
-            .iter()
-            .filter_map(|item| match item {
-                Val::Str(text) => Some(text.clone()),
-                Val::Id(name) => Some(name.clone()),
-                _ => None,
-            })
-            .collect(),
-        Val::Str(text) => vec![text.clone()],
-        _ => Vec::new(),
-    }
-}
-
-/// A field is carried when it is present, is not a hole, and is not the empty list.
-fn carries(decl: &Decl, key: &str) -> bool {
-    let Some(value) = decl
-        .fields
-        .iter()
-        .find(|(name, _)| name == key)
-        .map(|(_, value)| value)
-    else {
-        return false;
-    };
-    !matches!(value, Val::Hole) && !matches!(value, Val::List(items) if items.is_empty())
-}
-
-/// A verdict is a claim about how strong the evidence is.  When the only witness is the model that
-/// made the claim, the verdict asserts a grade nothing reached: a model assessing its own guess is
-/// not an observation.  The fact stays legal; what it cannot do is settle a hypothesis.
-fn check_verdicts(decls: &[Decl], out: &mut Vec<Diagnostic>) {
-    let by_name: std::collections::HashMap<&str, &Decl> = decls
-        .iter()
-        .map(|decl| (decl.name.as_str(), decl))
-        .collect();
-    for decl in decls.iter().filter(|decl| decl.kind == "hypothesis") {
-        let Some(verdict) = id_field(decl, "verdict") else {
-            continue;
-        };
-        if verdict != "supported" && verdict != "refuted" {
-            continue;
-        }
-        let Some(witness) =
-            id_field(decl, "verdict_by").and_then(|name| by_name.get(name).copied())
-        else {
-            continue;
-        };
-        if id_field(witness, "evidence") != Some("model")
-            || string_field(witness, "confirmed_by").is_some()
-        {
-            continue;
-        }
-        sem(
-            decl,
-            "E-SELF-VERDICT",
-            format!(
-                "hypothesis {} is marked {verdict}, but {} is model-supplied and unconfirmed: a model judging its own guess is not an observation",
-                decl.name, witness.name
-            ),
-            Some("verdict"),
-            out,
-        );
-    }
-}
-
-/// A bound that no rule reads cannot change a decision.  `impact` reports facts no conclusion
-/// depends on; this is the same defect for the numbers a decision would have had to use.
-fn check_dead_values(decls: &[Decl], out: &mut Vec<Diagnostic>) {
-    let referenced: std::collections::HashSet<String> = decls
-        .iter()
-        .flat_map(|decl| decl.fields.iter())
-        .filter(|(key, _)| REF_KEYS.contains(&key.as_str()))
-        .flat_map(|(_, value)| ids(value))
-        .collect();
-    for decl in decls.iter().filter(|decl| decl.kind == "value") {
-        let decides = decl
-            .fields
-            .iter()
-            .any(|(key, _)| key == "threshold" || key == "priority");
-        if !decides || referenced.contains(&decl.name) {
-            continue;
-        }
-        sem(
-            decl,
-            "W-UNREAD",
-            format!(
-                "value {} declares a bound that no rule reads, so it cannot change a decision",
-                decl.name
-            ),
-            Some("threshold"),
-            out,
-        );
-    }
-}
-
-/// `out` is the hash of what the instrument produced.  Without it, `evidence: tool("bench.sh")`
-/// records that something ran, not what came out -- and a run that exits 0 while leaving a
-/// placeholder behind passes every other check in this file.  A path is read from the working
-/// directory; an unreadable artifact is unverified, never assumed good.
-fn check_artifacts(decls: &[Decl], out: &mut Vec<Diagnostic>) {
-    for decl in decls.iter().filter(|decl| decl.kind == "fact") {
-        let Some(expected) = string_field(decl, "out") else {
-            continue;
-        };
-        let Some(path) = string_field(decl, "artifact") else {
-            sem(
-                decl,
-                "W-OUT-UNVERIFIED",
-                format!(
-                    "fact {} declares out but names no artifact, so the hash is compared with nothing",
-                    decl.name
-                ),
-                Some("out"),
-                out,
-            );
-            continue;
-        };
-        let Ok(bytes) = std::fs::read(path) else {
-            sem(
-                decl,
-                "W-OUT-UNVERIFIED",
-                format!(
-                    "fact {} names artifact {path}, which cannot be read from here",
-                    decl.name
-                ),
-                Some("artifact"),
-                out,
-            );
-            continue;
-        };
-        let actual = crate::hash::hex(&bytes);
-        if !actual.eq_ignore_ascii_case(expected.trim()) {
-            sem(
-                decl,
-                "E-OUT-MISMATCH",
-                format!(
-                    "fact {} records {expected}, but {path} hashes to {actual}: the artifact is not what the document says it is",
-                    decl.name
-                ),
-                Some("out"),
-                out,
-            );
-        }
-    }
-}
-
-/// A universal claim is bound only when its domain is something the engine can enumerate: a
-/// concept's extent is its positives, a closed partition is its elements, a layer is the
-/// declarations it holds.  Anything else is a free variable wearing a name.
-fn check_bindings(decls: &[Decl], out: &mut Vec<Diagnostic>) {
-    let by_name: std::collections::HashMap<&str, &Decl> = decls
-        .iter()
-        .map(|decl| (decl.name.as_str(), decl))
-        .collect();
-    for decl in decls
-        .iter()
-        .filter(|decl| decl.kind == "fact" || decl.kind == "proposition")
-    {
-        for domain in list_field(decl, "over") {
-            let Some(target) = by_name.get(domain.as_str()) else {
-                continue;
-            };
-            let unbounded = match target.kind.as_str() {
-                "concept" if list_field(target, "grounded_by").is_empty() => {
-                    Some("the concept has no positive example")
-                }
-                "partition" if id_field(target, "closure") != Some("closed") => {
-                    Some("the partition is not closed")
-                }
-                "layer"
-                    if !decls
-                        .iter()
-                        .any(|other| id_field(other, "layer") == Some(target.name.as_str())) =>
-                {
-                    Some("the layer holds no declaration")
-                }
-                "concept" | "partition" | "layer" => None,
-                _ => Some("only a concept, a closed partition or a layer can be a domain"),
-            };
-            let Some(reason) = unbounded else {
-                continue;
-            };
-            sem(
-                decl,
-                "E-SCOPE-UNBOUNDED",
-                format!(
-                    "{} ranges over {domain}, whose extent cannot be enumerated: {reason}",
-                    decl.name
-                ),
-                Some("over"),
-                out,
-            );
-        }
-    }
-}
-
-/// A reference to a retired declaration resolves -- nothing was deleted -- but the ground behind it
-/// was withdrawn.  Saying nothing would let a document keep leaning on what it already replaced.
-fn check_retirement(decls: &[Decl], out: &mut Vec<Diagnostic>) {
-    let gone = crate::closure::retired(decls);
-    if gone.is_empty() {
-        return;
-    }
-    for decl in decls {
-        // one warning per name, at the first field that cites it: a declaration that cites the
-        // same withdrawn ground twice is still one mistake
-        let mut reported: std::collections::HashSet<(String, String)> =
-            std::collections::HashSet::new();
-        for (key, value) in &decl.fields {
-            if !REF_KEYS.contains(&key.as_str()) {
-                continue;
-            }
-            for name in ids(value) {
-                if !gone.contains(&name) || name == decl.name {
-                    continue;
-                }
-                if !reported.insert((decl.name.clone(), name.clone())) {
-                    continue;
-                }
-                sem(
-                    decl,
-                    "W-RETIRED",
-                    format!(
-                        "{} cites {name}, which is retired: the reference resolves, the ground does not",
-                        decl.name
-                    ),
-                    Some(key),
-                    out,
-                );
-            }
-        }
-    }
-}
-
 fn check_layer(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     let mut exposes: std::collections::HashMap<&str, Vec<String>> =
         std::collections::HashMap::new();
@@ -951,7 +667,7 @@ fn field_pos(decl: &Decl, key: &str) -> (usize, usize) {
     (decl.line, decl.col)
 }
 
-fn list_field(decl: &Decl, key: &str) -> Vec<String> {
+pub(crate) fn list_field(decl: &Decl, key: &str) -> Vec<String> {
     field_ids(decl, key)
 }
 
@@ -968,7 +684,7 @@ fn attr_keys(decl: &Decl) -> HashSet<String> {
     }
 }
 
-fn sem(
+pub(crate) fn sem(
     decl: &Decl,
     code: &'static str,
     message: String,
@@ -1034,7 +750,7 @@ fn check_semantics(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                     }
                     // "at all" is an idiom, not a universal claim: drop it before looking for
                     // the words that do claim universality
-                    if universal_text(claim) && !carries(decl, "over") {
+                    if universal_text(claim) && !evidence::carries(decl, "over") {
                         sem(
                             decl,
                             "W-OVERCLAIM",
@@ -1128,7 +844,7 @@ fn check_semantics(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                 // a proposition has no `scope:` field at all, so a universal one is unbound
                 // until it names the domain it ranges over
                 if string_field(decl, "statement").is_some_and(universal_text)
-                    && !carries(decl, "over")
+                    && !evidence::carries(decl, "over")
                 {
                     sem(
                         decl,
