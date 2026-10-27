@@ -31,7 +31,7 @@ fn text_result(text: String, failed: bool) -> String {
 }
 
 const TOOLS: &str = r#"{"tools":[
-{"name":"check","description":"Parse and check a .mf document or directory; returns the diagnostics as text.","inputSchema":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"]}},
+{"name":"check","description":"Parse and check a .tsare document or directory; returns the diagnostics as text.","inputSchema":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"]}},
 {"name":"argue","description":"Which conclusions survive attack.","inputSchema":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"]}},
 {"name":"derive","description":"Which conclusions are grounded in facts.","inputSchema":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"]}},
 {"name":"fix","description":"Verified repair candidates, with what each would cost.","inputSchema":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"]}},

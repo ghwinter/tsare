@@ -1,0 +1,29 @@
+# CLAIM.mf -- an external claim, checked against the kernel.
+#
+# It is not a bad claim. It is a claim that skipped the admissions the kernel asks for: it lives
+# in the governed layer and stands on none of that layer's laws, its number has no instrument,
+# and it redefines a name the kernel owns.
+
+fact F_BENCH {
+  claim: "the new pipeline is about three times faster on our workload",
+  evidence: model
+}
+
+proposition P_FASTER {
+  statement: "the new pipeline is fast enough for production",
+  from: [F_OBLIGATIONS],
+  layer: L_THINKING
+}
+
+warrant W_FASTER {
+  claim: "three times faster is fast enough",
+  from: [F_OBLIGATIONS],
+  to: P_FASTER
+}
+
+# The second failure: a name the kernel already owns.
+law K_NUMBER {
+  statement: "numbers are fine without an instrument",
+  holds_in: L_THINKING,
+  checked_by: [F_BENCH]
+}

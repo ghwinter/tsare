@@ -1,4 +1,4 @@
-kind audit: <fixtures>/relational.v2.mf
+kind audit: <fixtures>/relational.v2.tsare
   law      absent
   value    absent
   layer    absent

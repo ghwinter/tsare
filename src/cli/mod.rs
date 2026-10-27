@@ -70,7 +70,7 @@ pub fn load_for_check(path: &Path) -> Result<Loaded, String> {
         let mut files: Vec<PathBuf> = fs::read_dir(path)
             .map_err(|error| format!("{}: {error}", path.display()))?
             .filter_map(|entry| entry.ok().map(|item| item.path()))
-            .filter(|item| item.extension().map(|ext| ext == "mf").unwrap_or(false))
+            .filter(|item| item.extension().map(|ext| ext == "tsare").unwrap_or(false))
             .collect();
         files.sort();
         let mut decls = Vec::new();
@@ -283,7 +283,7 @@ fn usage() {
     println!("usage: tsare [COMMAND] PATH [options]");
     println!("       tsare kinds | mem | --explain CODE | --version | --help");
     println!();
-    println!("PATH is a .mf document, a directory of them, or - for standard input.");
+    println!("PATH is a .tsare document, a directory of them, or - for standard input.");
     for group in GROUPS {
         println!();
         println!("{group}");

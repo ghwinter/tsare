@@ -1,9 +1,9 @@
 {
   "diagnostics": [
-    {"code": "W-COLLIDE", "severity": "warning", "file": "<fixtures>/relational.v2.mf", "line": 9, "col": 10, "message": "F_A1 and F_A2 and F_B1 record the same evidence and the same attributes, so this vocabulary cannot tell them apart"},
-    {"code": "W-COLLIDE", "severity": "warning", "file": "<fixtures>/relational.v2.mf", "line": 15, "col": 10, "message": "F_A2 and F_A1 and F_B1 record the same evidence and the same attributes, so this vocabulary cannot tell them apart"},
-    {"code": "W-COLLIDE", "severity": "warning", "file": "<fixtures>/relational.v2.mf", "line": 21, "col": 10, "message": "F_B1 and F_A1 and F_A2 record the same evidence and the same attributes, so this vocabulary cannot tell them apart"},
-    {"code": "W-UNWARRANTED-BASIS", "severity": "warning", "file": "<fixtures>/relational.v2.mf", "line": 59, "col": 10, "message": "warrant W_X states a rule, but nothing makes the rule acceptable"}
+    {"code": "W-COLLIDE", "severity": "warning", "file": "<fixtures>/relational.v2.tsare", "line": 9, "col": 10, "message": "F_A1 and F_A2 and F_B1 record the same evidence and the same attributes, so this vocabulary cannot tell them apart"},
+    {"code": "W-COLLIDE", "severity": "warning", "file": "<fixtures>/relational.v2.tsare", "line": 15, "col": 10, "message": "F_A2 and F_A1 and F_B1 record the same evidence and the same attributes, so this vocabulary cannot tell them apart"},
+    {"code": "W-COLLIDE", "severity": "warning", "file": "<fixtures>/relational.v2.tsare", "line": 21, "col": 10, "message": "F_B1 and F_A1 and F_A2 record the same evidence and the same attributes, so this vocabulary cannot tell them apart"},
+    {"code": "W-UNWARRANTED-BASIS", "severity": "warning", "file": "<fixtures>/relational.v2.tsare", "line": 59, "col": 10, "message": "warrant W_X states a rule, but nothing makes the rule acceptable"}
 ],
   "errors": 0,
   "warnings": 4

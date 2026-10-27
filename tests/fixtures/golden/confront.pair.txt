@@ -1,9 +1,9 @@
-confront <temp>/engine-golden-confront/claim.mf <temp>/engine-golden-confront/objection.mf
+confront <temp>/engine-golden-confront/claim.tsare <temp>/engine-golden-confront/objection.tsare
 
-<temp>/engine-golden-confront/objection.mf attacks <temp>/engine-golden-confront/claim.mf (1):
+<temp>/engine-golden-confront/objection.tsare attacks <temp>/engine-golden-confront/claim.tsare (1):
   W_SLOW -> W_FAST   W-UNANSWERED
 
-<temp>/engine-golden-confront/claim.mf attacks <temp>/engine-golden-confront/objection.mf (0):
+<temp>/engine-golden-confront/claim.tsare attacks <temp>/engine-golden-confront/objection.tsare (0):
 
-1 attack(s) across the pair, 1 unanswered on <temp>/engine-golden-confront/claim.mf
-W-UNANSWERED: W_FAST is attacked by W_SLOW, and <temp>/engine-golden-confront/claim.mf has no rule that attacks W_SLOW back
+1 attack(s) across the pair, 1 unanswered on <temp>/engine-golden-confront/claim.tsare
+W-UNANSWERED: W_FAST is attacked by W_SLOW, and <temp>/engine-golden-confront/claim.tsare has no rule that attacks W_SLOW back

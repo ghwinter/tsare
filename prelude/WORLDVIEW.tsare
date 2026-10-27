@@ -1,0 +1,134 @@
+# OUTLINE.mf -- a worldview, written in the language and checked by the language.
+#
+# Not a manifesto.  Every sentence is a field, every ground is a reference, every category
+# carries a counterexample, and the claim that the categories are exhaustive is itself a
+# question with two rival answers.  It compiles, or it is an opinion.
+
+layer L_SAID {
+  name: "a saying, before anyone but its author looks at it",
+  exposes: [C_EXTERNAL, C_SELF_WITNESS, P_THESIS, H_ONLY_EXTERNAL, H_POINTER_COUNTS]
+}
+
+layer L_CHECKED {
+  name: "a saying with something outside its author behind it",
+  exposes: [F_ANY, F_MODEL, F_QUESTION]
+}
+
+fact F_KINDS {
+  claim: "the language has twelve kinds of declaration, and each carries a decidable obligation",
+  evidence: code("src/specs.rs"),
+  scope: "the twelve kinds in this build"
+}
+
+fact F_ANY {
+  claim: "a cited ground is resolved for existence, not for relevance",
+  evidence: code("src/check/mod.rs"),
+  scope: "every from, basis and checked_by field"
+}
+
+fact F_MODEL {
+  claim: "a fact whose only witness is a model is admitted with a warning and passed on",
+  evidence: code("src/check/confidence.rs"),
+  scope: "every fact in this build"
+}
+
+fact F_QUESTION {
+  claim: "a question must name the hypotheses it separates, so it cannot be decorative",
+  evidence: code("src/specs.rs"),
+  scope: "every question in this build",
+  attrs: {about: "questions"}
+}
+
+# The categories.  Each one is grounded by a fact and contrasted with another one, because a
+# category with neither is a mood.
+
+concept C_EXTERNAL {
+  name: "a saying that something other than its author can settle",
+  grounded_by: [F_KINDS],
+  against: [F_MODEL]
+}
+
+concept C_SELF_WITNESS {
+  name: "a saying whose only witness is the one who said it",
+  grounded_by: [F_MODEL],
+  against: [F_KINDS]
+}
+
+concept C_POINTER {
+  name: "a named ground that resolves but is not shown to apply",
+  grounded_by: [F_ANY],
+  against: [F_QUESTION]
+}
+
+concept C_OPEN {
+  name: "a gap written down as a question instead of filled with a default",
+  grounded_by: [F_QUESTION],
+  against: [F_ANY]
+}
+
+# The whole outline, in one line.
+proposition P_THESIS {
+  statement: "What someone else can check is what has been said; what only you can check is what has been thought. 能被别人查的，才叫说出来；只有你能查的，叫想到了。",
+  uses: [C_EXTERNAL, C_SELF_WITNESS],
+  from: [F_KINDS, F_MODEL],
+  by: deductive,
+  layer: L_SAID
+}
+
+warrant W_THESIS {
+  claim: "a saying with an external witness is what the word said means; one with only its author is what thought means",
+  from: [F_KINDS, F_MODEL],
+  to: P_THESIS,
+  basis: [C_EXTERNAL]
+}
+
+# Is that every way a saying can stand?  Two rivals, and no evidence yet for either.
+question Q_STANDING {
+  asks: "is standing outside the author the only axis, or can a saying stand on a ground nobody has checked?",
+  answers: ["only external standing counts", "a cited ground counts even when its relevance is unshown"],
+  separates: [H_ONLY_EXTERNAL, H_POINTER_COUNTS],
+  to: user,
+  layer: L_CHECKED
+}
+
+hypothesis H_ONLY_EXTERNAL {
+  assumes: [P_THESIS],
+  predicts: "no claim ever stands on a cited-but-unapplied ground alone",
+  test: "find a claim that only cites a law and is accepted; HOLE.mf does exactly that",
+  verdict: open,
+  layer: L_SAID
+}
+
+hypothesis H_POINTER_COUNTS {
+  assumes: [C_POINTER],
+  predicts: "a claim citing an unrelated law is accepted as grounded, because only resolution is checked",
+  test: "tsare check HOLE.mf --against KERNEL.mf admits P_TASTE and reports no E-UNPRINCIPLED",
+  rival: H_ONLY_EXTERNAL,
+  verdict: open,
+  layer: L_SAID
+}
+
+# Every way a saying can stand.  Unknown rather than open: the partition names no dimension,
+# so it may not claim exhaustiveness -- the question above is what would find one.
+partition PT_STANDING {
+  of: P_THESIS,
+  elements: [C_EXTERNAL, C_SELF_WITNESS, C_POINTER],
+  closure: unknown,
+  basis: [F_ANY],
+  closes_with: [Q_STANDING],
+  layer: L_CHECKED
+}
+
+law K_EXTERNAL {
+  statement: "a saying is admitted only when its witness is not its author",
+  holds_in: L_SAID,
+  checked_by: [F_KINDS]
+}
+
+# The lower layer signs for the upper one; nothing in the upper layer signs for itself.
+law K_CHECKED_SIGNS {
+  statement: "the checked layer is what the said layer stands on, and no saying stands on itself",
+  holds_in: L_CHECKED,
+  checked_by: [F_MODEL],
+  refines: L_SAID
+}

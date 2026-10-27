@@ -54,7 +54,7 @@ fn every_tool_it_lists_is_dispatched() {
 fn the_judgement_tools_answer_with_text() {
     let dir = std::env::temp_dir().join("tsare-mcp-test");
     std::fs::create_dir_all(&dir).expect("temp dir");
-    let path = dir.join("doc.mf");
+    let path = dir.join("doc.tsare");
     std::fs::write(
         &path,
         r#"fact F_A { claim: "one", evidence: tool("t"), attrs: { items: 1, urgent: 0 } }

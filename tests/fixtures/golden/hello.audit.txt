@@ -1,4 +1,4 @@
-kind audit: <fixtures>/hello.mf
+kind audit: <fixtures>/hello.tsare
   law      absent
   value    present  lost: -                            added: W-UNWARRANTED          rewrite adds diagnostics
   layer    absent

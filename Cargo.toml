@@ -14,9 +14,10 @@ categories = ["development-tools", "text-processing"]
 include = [
     "/src/**",
     "/tests/**",
-    "/SELF.mf",
+    "/SELF.tsare",
     "/docs/PROTOCOL.md",
-    "/docs/REPO.mf",
+    "/docs/REPO.tsare",
+    "/prelude/*.tsare",
     "/Cargo.toml",
     "/README.md",
     "/LICENSE",

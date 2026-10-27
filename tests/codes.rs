@@ -2,12 +2,12 @@
 //!
 //! A code nothing can produce is a code nobody can rely on: it may be unreachable, its wording may
 //! have gone stale, or it may fire only in shapes we stopped writing.  This is the check the
-//! engine owes itself -- the `F_CHECKS` fact in `SELF.mf` says every diagnostic has an explanation,
+//! engine owes itself -- the `F_CHECKS` fact in `SELF.tsare` says every diagnostic has an explanation,
 //! and this file is what makes that claim mean something.
 //!
 //! Three sources, because not every code can come from one document:
 //!
-//! 1. `tests/codes/*.mf` -- the smallest single document per code;
+//! 1. `tests/codes/*.tsare` -- the smallest single document per code;
 //! 2. `tests/fixtures/golden/*.txt` -- recorded output of the binary, which covers the codes that
 //!    only a two-document command or a goal file produces;
 //! 3. parsing and the kernel, asserted directly below because they are not `check`.
@@ -86,7 +86,7 @@ fn every_diagnostic_has_a_document_that_turns_it_on() {
     let mut files: Vec<PathBuf> = std::fs::read_dir(corpus())
         .expect("tests/codes exists")
         .filter_map(|entry| entry.ok().map(|item| item.path()))
-        .filter(|path| path.extension().map(|ext| ext == "mf").unwrap_or(false))
+        .filter(|path| path.extension().map(|ext| ext == "tsare").unwrap_or(false))
         .collect();
     files.sort();
     for path in &files {

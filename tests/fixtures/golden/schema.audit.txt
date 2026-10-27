@@ -1,4 +1,4 @@
-kind audit: <fixtures>/schema.mf
+kind audit: <fixtures>/schema.tsare
   law      absent
   value    absent
   layer    absent

@@ -6,7 +6,7 @@ prints the smallest edit that would make it checkable.
 
 It does not make a model smarter, and it does not make a claim true.
 
-A `.mf` document is a set of typed declarations — facts, concepts, propositions,
+A `.tsare` document is a set of typed declarations — facts, concepts, propositions,
 hypotheses, questions, blind spots, values, warrants, laws, layers, partitions, notes — and the
 compiler decides whether each one can be checked at all, what it still owes, and what follows
 from it.
@@ -14,16 +14,16 @@ from it.
 It does not judge truth. It judges whether a claim is checkable.
 
 ```powershell
-$ tsare check SELF.mf
+$ tsare check SELF.tsare
 
-SELF.mf:13:13: warning[W-UNCONFIRMED]: fact F_ENUM_FORM was supplied by a model, not by the user or a tool
+SELF.tsare:13:13: warning[W-UNCONFIRMED]: fact F_ENUM_FORM was supplied by a model, not by the user or a tool
  13 |   evidence: model
     |             ^^^^^
 ```
 
 ## Use it from an agent
 
-The point is not that a human types `.mf` files. It is that an agent, before it asserts
+The point is not that a human types `.tsare` files. It is that an agent, before it asserts
 something, can write the claim as code and have a deterministic checker say whether the claim
 is anchored, whether a rule connects it to its support, and what is missing.
 
@@ -31,8 +31,8 @@ The loop to install in an agent is one line long: write the claim, compile it, r
 what compiles, and report the refusals with the corrected version.
 
 ```powershell
-tsare check claim.mf        # what is wrong with it
-tsare fix claim.mf          # the smallest edits that would fix it
+tsare check claim.tsare        # what is wrong with it
+tsare fix claim.tsare          # the smallest edits that would fix it
 tsare --explain E-VACUOUS   # what a diagnostic means
 ```
 
@@ -76,9 +76,9 @@ warrant W_FAST {
 ```
 
 ```powershell
-tsare check docs\REPO.mf             # 0 error(s), 0 warning(s)
-tsare engine docs\REPO.mf            # held, conditional, blocked
-Get-Content SELF.mf | tsare check -  # a document may arrive on stdin
+tsare check docs\REPO.tsare             # 0 error(s), 0 warning(s)
+tsare engine docs\REPO.tsare            # held, conditional, blocked
+Get-Content SELF.tsare | tsare check -  # a document may arrive on stdin
 ```
 
 `check`, `engine` and `suggest` answer `--json` for machines; every other command prints text.
@@ -125,7 +125,7 @@ cargo test --release
 `tests/semantics.rs` states the properties (an attack defeats its target, a number cannot
 exceed its support, a closed list is contradicted by its own attributes). `tests/golden.rs`
 pins the exact text of every command against six fixture documents; `UPDATE_GOLDEN=1` rewrites
-them, and the diff is the review. `SELF.mf` is the repository describing itself, compiled by
+them, and the diff is the review. `SELF.tsare` is the repository describing itself, compiled by
 the compiler it argues about; a test fails if it stops compiling cleanly.
 
 ## Layout
@@ -133,8 +133,8 @@ the compiler it argues about; a test fails if it stops compiling cleanly.
 ```
 src/            the compiler: syntax, checks, reasons, analyses, repairs, output
 tests/          properties, golden snapshots, fixtures
-docs/           PROTOCOL.md (the machine contract) and REPO.mf (the repository as declarations)
-SELF.mf         the same project described again, from a different angle; a test compiles it
+docs/           PROTOCOL.md (the machine contract) and REPO.tsare (the repository as declarations)
+SELF.tsare         the same project described again, from a different angle; a test compiles it
 ```
 
 Only what the build, the tests or the published package need is tracked. The rounds of

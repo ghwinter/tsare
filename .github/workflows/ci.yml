@@ -22,9 +22,13 @@ jobs:
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test --release
 
-      # The two documents the tests read are there, and they compile.
-      - run: cargo run --release --quiet -- check SELF.mf
-      - run: cargo run --release --quiet -- check docs/REPO.mf
+      # The documents the tests read are there, and they compile.  One per invocation on purpose:
+      # `check DIR` merges a directory into one program, and the prelude files are separate worlds.
+      - run: cargo run --release --quiet -- check SELF.tsare
+      - run: cargo run --release --quiet -- check docs/REPO.tsare
+      - run: cargo run --release --quiet -- check prelude/KERNEL.tsare
+      - run: cargo run --release --quiet -- check prelude/WORLDVIEW.tsare
+      - run: cargo run --release --quiet -- check prelude/PROCESS.tsare
 
       # Default-deny .gitignore hides new files instead of reporting them.  This is the alarm.
       - name: nothing is untracked

@@ -1,6 +1,6 @@
 # Projection
 
-`<fixtures>/hier.v2.mf`
+`<fixtures>/hier.v2.tsare`
 
 Quoted text is a field, copied verbatim: a paraphrase of a claim is a new claim.
 The indented note under each quote is the projection's own -- what the sentence

@@ -1,4 +1,4 @@
-kind audit: <fixtures>/talk.v2.mf
+kind audit: <fixtures>/talk.v2.tsare
   law      absent
   value    present  lost: W-UNREAD                     added: W-UNCONFIRMED          obligation survives in another code
   layer    absent

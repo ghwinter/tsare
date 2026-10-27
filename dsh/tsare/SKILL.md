@@ -1,6 +1,6 @@
 ---
 name: tsare
-description: Compile a claim before asserting it. Write the claim as a .mf document and run tsare — it decides whether the claim can be checked at all, what it still owes, and whether the recorded vocabulary can tell two objects apart. Deterministic; no model inside.
+description: Compile a claim before asserting it. Write the claim as a .tsare document and run tsare — it decides whether the claim can be checked at all, what it still owes, and whether the recorded vocabulary can tell two objects apart. Deterministic; no model inside.
 ---
 
 # tsare
@@ -15,7 +15,7 @@ reader will rely on it. Four cases, not every sentence:
 
 ## The loop
 
-Write the claim as declarations in `claim.mf`:
+Write the claim as declarations in `claim.tsare`:
 
     fact F_TRACE { claim: "the trace shows 14ms", evidence: tool("trace, 200 runs") }
     value V_BUDGET { metric: "frame_ms", direction: max, unit: "ms", threshold: 16, measured_by: "trace" }
@@ -24,11 +24,11 @@ Write the claim as declarations in `claim.mf`:
 
 Then:
 
-    tsare check claim.mf          # errors block; warnings must be reported, not hidden
-    tsare ask claim.mf --one      # the next question the document needs
-    tsare novel claim.mf --attribute X --holds F_A,F_B   # is X new, redundant, or a recombination?
-    tsare imply claim.mf          # the laws the attribute table already holds
-    tsare fix claim.mf            # the smallest edits that would make it checkable
+    tsare check claim.tsare          # errors block; warnings must be reported, not hidden
+    tsare ask claim.tsare --one      # the next question the document needs
+    tsare novel claim.tsare --attribute X --holds F_A,F_B   # is X new, redundant, or a recombination?
+    tsare imply claim.tsare          # the laws the attribute table already holds
+    tsare fix claim.tsare            # the smallest edits that would make it checkable
     tsare --explain CODE          # what a diagnostic means
 
 ## Rules

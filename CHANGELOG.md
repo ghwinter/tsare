@@ -8,6 +8,11 @@ All notable changes are recorded here. The format follows
 
 ### Changed
 
+- The document extension is `.tsare`. `.mf` collided with Java manifests and carried the name of
+  a project this one split away from; 105 documents were renamed and every reference with them.
+  The header line is unchanged (`tsare 1`), because the tool and the format now share a name. The
+  generated `predicates.py` header also stopped saying `mf7`, which nothing had noticed.
+
 - `src/cli.rs` (2099 lines) is now `src/cli/`: `mod.rs` holds the argument model, the dispatch
   path and the help table; the commands live in four files that follow the groups the help screen
   already names — `checking`, `reasoning`, `repairing`, `emitting`. Nothing gained a feature; the
@@ -16,6 +21,12 @@ All notable changes are recorded here. The format follows
   function and prints.
 
 ### Added
+
+- `prelude/` — the documents this project admits, and one it does not: the six principles
+  (`KERNEL.tsare`), a claim that skips them (`VIOLATION.tsare`), the categories
+  (`WORLDVIEW.tsare`), and what makes a sentence sayable at all (`PROCESS.tsare`). They are
+  provisional the way an unstable ABI is: compiled in CI, and `tests/prelude.rs` fails if the
+  kernel stops refusing the violation. A prelude nothing ever fails against is decoration.
 
 - `tests/contract.rs` — the `--json` contract pinned by shape: the three envelopes of `check`,
   `engine` and `suggest`, the six fields of a diagnostic in order, and the invariant that a code
@@ -76,7 +87,7 @@ All notable changes are recorded here. The format follows
   would assert an evidence grade nothing reached. The fact stays legal; it just cannot decide.
 
 - `W-UNREAD` — a `value` that declares `threshold` or `priority` which no rule reads. A bound
-  nothing cites cannot change a decision. It fired four times on `tests/fixtures/talk.v2.mf` the
+  nothing cites cannot change a decision. It fired four times on `tests/fixtures/talk.v2.tsare` the
   first time it ran: four thresholds in that document were decoration.
 
 - `law requires: ["field", ...]`: a law may name what citing it costs. A declaration that cites
@@ -162,7 +173,7 @@ The version that learns to say what it cannot tell apart, and to say which forma
 ### Changed
 
 - The tree tracks what the build, the tests or the package need, and nothing else: `src/`,
-  `tests/`, four root documents, `docs/PROTOCOL.md`, `docs/REPO.mf` and `SELF.mf`. The rounds of
+  `tests/`, four root documents, `docs/PROTOCOL.md`, `docs/REPO.tsare` and `SELF.tsare`. The rounds of
   documents, the examples, the experiment harness and the integration notes stay out of git.
 - `cargo package` carries the same list, so the published crate contains no stray README.
 

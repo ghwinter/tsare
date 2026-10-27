@@ -28,13 +28,19 @@
 !/README.md
 !/CHANGELOG.md
 !/CONTRIBUTING.md
-!/SELF.mf
+!/SELF.tsare
 !/docs
 
 # Inside docs/, only the two files a test or a code comment points at.
 /docs/*
 !/docs/PROTOCOL.md
-!/docs/REPO.mf
+!/docs/REPO.tsare
+
+# The prelude: what this project admits, compiled and tested.  Provisional, not decorative --
+# `tests/prelude.rs` fails if the kernel stops refusing the document that violates it.
+!/prelude
+/prelude/*
+!/prelude/*.tsare
 
 # The skill is part of the artifact: without it a clone cannot be installed into a harness.
 !/dsh

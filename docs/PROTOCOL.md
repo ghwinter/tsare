@@ -99,7 +99,7 @@ the cheaper way to keep the tool reachable.
 ```json
 {
   "diagnostics": [
-    {"code": "E-UNDEFINED", "severity": "error", "file": "02-claims.mf",
+    {"code": "E-UNDEFINED", "severity": "error", "file": "02-claims.tsare",
      "line": 2, "col": 41, "message": "..."}
   ],
   "errors": 1, "warnings": 2
@@ -126,7 +126,7 @@ the cheaper way to keep the tool reachable.
 {
   "suggestions": [
     {"applicability": "MachineApplicable", "message": "drop the duplicate",
-     "file": "a.mf", "line": 19, "replacement": "..."}
+     "file": "a.tsare", "line": 19, "replacement": "..."}
   ]
 }
 ```
@@ -137,6 +137,24 @@ Applicability is one of `MachineApplicable`, `MaybeIncorrect`, `HasPlaceholders`
 A suggestion names a `span` and a `replacement` for exactly that span. A deletion is an empty
 replacement over the removed declaration. `span` may be `null` when the repair inserts
 something with no existing declaration to replace.
+
+## The prelude
+
+`prelude/` holds the documents this project admits, and one that it does not:
+
+| file | what it is |
+| --- | --- |
+| `KERNEL.tsare` | the six principles a claim is held to, each backed by a fact in the document |
+| `VIOLATION.tsare` | a claim that skips them: it redefines a name the kernel owns and sits in a governed layer citing none of its laws |
+| `WORLDVIEW.tsare` | the categories, and the partition whose exhaustiveness is an open question |
+| `PROCESS.tsare` | what makes a sentence sayable at all: a bound domain, a re-playable witness, a knowable limit |
+
+These are **provisional the way an unstable ABI is provisional**. They are compiled in CI, and
+`tests/prelude.rs` fails if the kernel stops refusing `VIOLATION.tsare` — so a revision has to
+show up as a diff and a failing test rather than as a paragraph somewhere. The warnings they
+carry are deliberate: `PROCESS.tsare` keeps a universal unbound because the only honest fix is to
+weaken the sentence, and `KERNEL.tsare` over-claims about its own kind table because a document
+cannot enumerate the language's own type system.
 
 ## Directories
 
@@ -282,7 +300,7 @@ which is the failure the language exists to prevent. A declared hole is visible,
 attached to its own question.
 
 A partition is not yet a premise in the fixpoint: `argue` and `derive` do not use one to
-discharge anything. `SELF.mf` records that as a blind spot rather than guessing either way.
+discharge anything. `SELF.tsare` records that as a blind spot rather than guessing either way.
 
 ## Acceptance
 
@@ -293,7 +311,7 @@ cargo build --release # the binary
 
 `tests/codes.rs` holds the engine to its own claim: every code in `explain::CODES` must be turned
 on by something the repository can produce. Three sources, because not every diagnostic comes from
-one document — `tests/codes/*.mf` (the smallest single document per code), the golden snapshots
+one document — `tests/codes/*.tsare` (the smallest single document per code), the golden snapshots
 (recorded output of the two-document commands), and direct assertions for parsing, the kernel and
 goal files. A code that nothing can produce is either unreachable or stale, and both are bugs.
 

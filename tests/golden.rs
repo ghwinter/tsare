@@ -24,7 +24,7 @@ fn documents() -> Vec<PathBuf> {
     let mut out: Vec<PathBuf> = std::fs::read_dir(fixtures())
         .expect("fixtures directory")
         .filter_map(|entry| entry.ok().map(|item| item.path()))
-        .filter(|path| path.extension().map(|ext| ext == "mf").unwrap_or(false))
+        .filter(|path| path.extension().map(|ext| ext == "tsare").unwrap_or(false))
         .collect();
     out.sort();
     out
@@ -241,7 +241,7 @@ fn map_aligns_every_pair() {
 }
 
 /// The help screen and the dispatch table are two lists, and a command that is only in the
-/// first is treated as a path: `tsare ask doc.mf` then says the file `ask` does not exist.
+/// first is treated as a path: `tsare ask doc.tsare` then says the file `ask` does not exist.
 /// This walks the help screen and fails on exactly that message.
 #[test]
 fn every_command_in_the_help_screen_is_dispatched() {
@@ -250,7 +250,7 @@ fn every_command_in_the_help_screen_is_dispatched() {
     // dirties the source tree is a test the CI cleanliness step then fails on.
     let dir = std::env::temp_dir().join("engine-golden-dispatch");
     std::fs::create_dir_all(&dir).expect("temp dir");
-    let probe = dir.join("probe.mf");
+    let probe = dir.join("probe.tsare");
     std::fs::copy(&documents()[0], &probe).expect("copy the fixture");
     let fixture = probe.display().to_string();
     // `mcp` speaks a protocol on standard input and would wait for a client here
@@ -294,7 +294,7 @@ fn every_command_in_the_help_screen_is_dispatched() {
 fn imply_reports_the_laws_the_table_already_holds() {
     let dir = std::env::temp_dir().join("engine-golden-imply");
     std::fs::create_dir_all(&dir).expect("temp dir");
-    let path = dir.join("imply.mf");
+    let path = dir.join("imply.tsare");
     std::fs::write(
         &path,
         r#"fact F_1 { claim: "1", evidence: tool("t"), attrs: { items: 1, urgent: 0 } }
@@ -338,7 +338,7 @@ fact F_5 { claim: "5", evidence: tool("t"), attrs: { items: 5, urgent: 0 } }
 fn ask_names_the_attribute_that_would_decide_a_missing_element() {
     let dir = std::env::temp_dir().join("engine-golden-ask");
     std::fs::create_dir_all(&dir).expect("temp dir");
-    let path = dir.join("ask.mf");
+    let path = dir.join("ask.tsare");
     std::fs::write(
         &path,
         r#"fact F_A { claim: "a", evidence: tool("t"), attrs: { kind: first } }
@@ -359,7 +359,7 @@ partition P_SOME { dimension: C_THINGS, elements: [F_A, F_B], closure: open }
 fn ask_answers_a_collision_in_json() {
     let dir = std::env::temp_dir().join("engine-golden-ask-json");
     std::fs::create_dir_all(&dir).expect("temp dir");
-    let path = dir.join("collision.mf");
+    let path = dir.join("collision.tsare");
     std::fs::write(
         &path,
         r#"fact F_A { claim: "one", evidence: tool("survey"), attrs: { asked: 32, total: 40 } }
@@ -380,7 +380,7 @@ fact F_B { claim: "two", evidence: tool("survey"), attrs: { total: 40, asked: 32
 fn novel_decides_whether_a_predicate_is_new() {
     let dir = std::env::temp_dir().join("engine-golden-novel");
     std::fs::create_dir_all(&dir).expect("temp dir");
-    let path = dir.join("novel.mf");
+    let path = dir.join("novel.tsare");
     std::fs::write(
         &path,
         r#"fact F_A { claim: "a", evidence: tool("t"), attrs: { size: 3, kind: first } }
@@ -407,8 +407,8 @@ fact F_C { claim: "c", evidence: tool("t"), attrs: { size: 9, kind: second } }
 fn a_pair_of_documents_can_only_be_checked_together() {
     let dir = std::env::temp_dir().join("engine-golden-confront");
     std::fs::create_dir_all(&dir).expect("temp dir");
-    let a = dir.join("claim.mf");
-    let b = dir.join("objection.mf");
+    let a = dir.join("claim.tsare");
+    let b = dir.join("objection.tsare");
     std::fs::write(
         &a,
         r#"fact F_BENCH { claim: "the new path is three times faster", evidence: tool("bench.sh") }

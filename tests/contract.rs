@@ -90,27 +90,27 @@ fn followed_by_colon(chars: &mut std::iter::Peekable<std::str::CharIndices<'_>>)
 
 #[test]
 fn the_json_contract_does_not_drift() {
-    let checked = run(&["check", &fixture("talk.v2.mf"), "--json"]);
+    let checked = run(&["check", &fixture("talk.v2.tsare"), "--json"]);
     assert_eq!(
         top_keys(&checked),
         ["diagnostics", "errors", "warnings"],
         "{checked}"
     );
 
-    let engine = run(&["engine", &fixture("ungrounded.mf"), "--json"]);
+    let engine = run(&["engine", &fixture("ungrounded.tsare"), "--json"]);
     assert_eq!(
         top_keys(&engine),
         ["held", "conditional", "blocked", "chains", "gates"],
         "{engine}"
     );
 
-    let suggest = run(&["suggest", &fixture("talk.v2.mf"), "--json"]);
+    let suggest = run(&["suggest", &fixture("talk.v2.tsare"), "--json"]);
     assert_eq!(top_keys(&suggest), ["suggestions"], "{suggest}");
 }
 
 #[test]
 fn a_diagnostic_object_keeps_its_six_fields_in_order() {
-    let checked = run(&["check", &fixture("talk.v2.mf"), "--json"]);
+    let checked = run(&["check", &fixture("talk.v2.tsare"), "--json"]);
     let first = checked
         .lines()
         .find(|line| line.trim_start().starts_with("{\"code\""))
@@ -127,7 +127,7 @@ fn a_diagnostic_object_keeps_its_six_fields_in_order() {
 
 #[test]
 fn severity_follows_the_code_prefix() {
-    let checked = run(&["check", &fixture("talk.v2.mf"), "--json"]);
+    let checked = run(&["check", &fixture("talk.v2.tsare"), "--json"]);
     let mut seen = 0;
     for line in checked.lines() {
         let line = line.trim();

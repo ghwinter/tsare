@@ -621,7 +621,7 @@ proposition P { statement: "a claim on a principle", from: [K], layer: L }
 
 #[test]
 fn the_self_document_compiles_without_errors() {
-    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("SELF.mf");
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("SELF.tsare");
     let text =
         std::fs::read_to_string(&path).unwrap_or_else(|_| panic!("{} is missing", path.display()));
     let declared = parse(&text).expect("the self document parses");
@@ -694,7 +694,7 @@ fn a_missing_separator_is_an_error() {
 
 #[test]
 fn a_session_owns_order_counts_and_shape() {
-    let mut session = tsare::session::Session::new("doc.mf");
+    let mut session = tsare::session::Session::new("doc.tsare");
     session.emit(tsare::check::Diagnostic {
         code: "W-HOLE",
         message: "later".to_string(),
@@ -726,7 +726,7 @@ fn a_session_owns_order_counts_and_shape() {
         "sorted by position"
     );
     // with the source, the text form is the rendered form
-    let rendered = tsare::session::Session::new("doc.mf")
+    let rendered = tsare::session::Session::new("doc.tsare")
         .with_source("x\nfact F { claim: \"y\" }\n")
         .text();
     assert!(rendered.is_empty(), "an empty session prints nothing");
@@ -736,11 +736,11 @@ fn a_session_owns_order_counts_and_shape() {
 fn a_directory_is_rendered_file_by_file() {
     let sources = vec![
         (
-            "a.mf".to_string(),
+            "a.tsare".to_string(),
             "fact F_A { claim: \"x\" }\n".to_string(),
         ),
         (
-            "b.mf".to_string(),
+            "b.tsare".to_string(),
             "fact F_B { claim: \"y\" }\n".to_string(),
         ),
     ];
@@ -752,7 +752,7 @@ fn a_directory_is_rendered_file_by_file() {
         col: 18,
         end_line: 1,
         end_col: 21,
-        file: "b.mf".to_string(),
+        file: "b.tsare".to_string(),
     });
     session.emit(tsare::check::Diagnostic {
         code: "E-MISSING",
@@ -761,17 +761,17 @@ fn a_directory_is_rendered_file_by_file() {
         col: 1,
         end_line: 1,
         end_col: 4,
-        file: "a.mf".to_string(),
+        file: "a.tsare".to_string(),
     });
     let text = session.text();
-    assert!(text.contains("b.mf:1:18: error[E-TYPE]"), "{text}");
-    assert!(text.contains("a.mf:1:1: error[E-MISSING]"), "{text}");
+    assert!(text.contains("b.tsare:1:18: error[E-TYPE]"), "{text}");
+    assert!(text.contains("a.tsare:1:1: error[E-MISSING]"), "{text}");
     assert!(
         text.contains("claim"),
         "the source line is printed for each file: {text}"
     );
     assert!(
-        text.find("a.mf").unwrap() < text.find("b.mf").unwrap(),
+        text.find("a.tsare").unwrap() < text.find("b.tsare").unwrap(),
         "files in load order"
     );
 }
@@ -802,16 +802,16 @@ fn a_document_can_arrive_on_standard_input() {
 fn the_repository_document_compiles_and_learns() {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("docs")
-        .join("REPO.mf");
+        .join("REPO.tsare");
     let text =
         std::fs::read_to_string(&path).unwrap_or_else(|_| panic!("{} is missing", path.display()));
-    let declared = parse(&text).expect("docs/REPO.mf parses");
+    let declared = parse(&text).expect("docs/REPO.tsare parses");
     let errors: Vec<&str> = check(&declared)
         .iter()
         .filter(|item| item.code.starts_with("E-"))
         .map(|item| item.code)
         .collect();
-    assert!(errors.is_empty(), "docs/REPO.mf reports {errors:?}");
+    assert!(errors.is_empty(), "docs/REPO.tsare reports {errors:?}");
     let program = Program::new(&declared);
     let learnings = learnings_of(&program);
     assert!(
@@ -888,7 +888,7 @@ fn the_content_hash_is_a_function_of_the_bytes() {
 
 #[test]
 fn the_store_reader_reads_the_records_it_wrote() {
-    let line = r#"{"doc": "a.mf", "codes": ["E-UNDEFINED", "W-HOLE"], "action": "mechanical", "before": {"errors": 2, "cost": 1}, "after": {"errors": 1, "cost": 1}, "checker": "tsare-0.1"}"#;
+    let line = r#"{"doc": "a.tsare", "codes": ["E-UNDEFINED", "W-HOLE"], "action": "mechanical", "before": {"errors": 2, "cost": 1}, "after": {"errors": 1, "cost": 1}, "checker": "tsare-0.1"}"#;
     let entry = tsare::json::parse(line).expect("parse");
     assert_eq!(
         entry
@@ -900,7 +900,7 @@ fn the_store_reader_reads_the_records_it_wrote() {
     assert!(tsare::cases::improved(&entry));
     assert_eq!(
         tsare::json::serialize(&entry),
-        r#"{"doc": "a.mf", "codes": ["E-UNDEFINED", "W-HOLE"], "action": "mechanical", "before": {"errors": 2, "cost": 1}, "after": {"errors": 1, "cost": 1}, "checker": "tsare-0.1"}"#
+        r#"{"doc": "a.tsare", "codes": ["E-UNDEFINED", "W-HOLE"], "action": "mechanical", "before": {"errors": 2, "cost": 1}, "after": {"errors": 1, "cost": 1}, "checker": "tsare-0.1"}"#
     );
     assert_eq!(
         tsare::cases::list_repr(&["A".to_string(), "B".to_string()]),
@@ -932,7 +932,7 @@ fn a_projection_quotes_the_sentence_and_keeps_its_ground_in_the_margin() {
         "layer L_X { name: \"shipping\", exposes: [P_A] }\nfact F_A { claim: \"the build is green\", evidence: model }\nproposition P_A { statement: \"it is ready\", from: [F_A], layer: L_X }\n",
     );
     let program = Program::new(&declared);
-    let text = tsare::outline::markdown(&program, &check(program.decls), "t.mf");
+    let text = tsare::outline::markdown(&program, &check(program.decls), "t.tsare");
     assert!(text.contains("> the build is green"), "{text}");
     assert!(text.contains("## L_X"), "{text}");
     assert!(text.contains("evidence: model"), "{text}");

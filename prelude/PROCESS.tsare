@@ -1,0 +1,122 @@
+# PROCESS.mf -- 「结论无法还原过程」这句话，本身能不能被说满。
+#
+# 这份文档是一次自我施用：把"话不能说满"这条判断写成可检查的声明，让工具来判断我。
+# 它故意留了一条红 —— 理由在文件末尾。
+
+layer L_PROCESS {
+  name: "产生结论的过程：工具看不见，只能在接口上看见它",
+  exposes: [C_INTERFACE, F_LIMIT]
+}
+
+layer L_STATEMENT {
+  name: "说出来的一句话：工具能看见它的全部",
+  exposes: [F_ALL_HOLD, C_QUANTIFIED]
+}
+
+# ε-δ 之所以不可反驳，是因为 δ 是别人能重新算出来的对象，不是一段说明。
+fact F_LIMIT {
+  claim: "极限的定义不可反驳，是因为每个量词都绑在一个可数的域上，每个存在断言都跟一个可被重算的构造",
+  evidence: user,
+  scope: "实数上的极限定义，以及同形的定义"
+}
+
+# 这句是模型给的，所以它自己就是"待确认"的一个例子。
+fact F_COMPRESS {
+  claim: "一个结论丢掉的是量词的绑定关系与回到过程的入口，不是内容",
+  evidence: model
+}
+
+# 这一句没有绑定域。工具会拒绝它，且这是对的（见文末）。
+fact F_ALL_HOLD {
+  claim: "所有能说满的话，都是量词被绑定的话",
+  evidence: user
+}
+
+concept C_INTERFACE {
+  name: "结论上留给过程的一个把手：一个引用、一个仪器、一次外部确认",
+  grounded_by: [F_LIMIT],
+  against: [F_COMPRESS]
+}
+
+concept C_QUANTIFIED {
+  name: "一句话里每个量词都绑到一个可数的域上，每个断言都跟一个可重算的对象",
+  grounded_by: [F_COMPRESS],
+  against: [F_LIMIT]
+}
+
+law K_SAYABLE {
+  statement: "一句话能被说满，当且仅当它的量词有绑定、谓词有定义域、判定有限步",
+  holds_in: L_STATEMENT,
+  checked_by: [F_ALL_HOLD]
+}
+
+law K_REPLAY {
+  statement: "能说满的地方，就是过程可以被重放的地方；不能被重放的判断只能被标记，不能被断言",
+  holds_in: L_PROCESS,
+  checked_by: [F_LIMIT],
+  refines: L_STATEMENT
+}
+
+# 压缩损失有多大，没有仪器能测。写成洞，不写成一个像样的默认值。
+value V_LOST {
+  metric: "conclusion_to_process_compression",
+  direction: max,
+  unit: "characters",
+  threshold: 0,
+  measured_by: ?
+}
+
+hypothesis H_RECOVER {
+  assumes: [F_LIMIT],
+  predicts: "对形式化的推导，过程可以从结论重建：证明就是结论的一部分，检查器可以重跑它",
+  test: "取一个 Lean 定理，只给陈述，让检查器重建证明；再从陈述加证明重跑一遍"
+}
+
+hypothesis H_LOST {
+  assumes: [F_COMPRESS],
+  predicts: "对研究过程，结论丢弃被放弃的分支，重建出的过程不唯一",
+  test: "取一段有记录的实验过程，只给结论，统计重建出的分支数与原文记录的放弃分支数",
+  rival: H_RECOVER,
+  verdict: open
+}
+
+question Q_PROCESS {
+  asks: "一个结论能否唯一还原产生它的过程？",
+  answers: ["能：过程是结论的函数", "不能：至少丢失了被放弃的分支"],
+  separates: [H_RECOVER, H_LOST],
+  to: user
+}
+
+# 一次记录的运行。记录里只有它落在阈值内，没有"跑了几次"。
+fact F_BENCH {
+  claim: "在记录下来的那一次运行里，这条管道落在阈值内",
+  evidence: tool("bench.sh"),
+  scope: "一次运行"
+}
+
+# 两个结论：一个是按流程复现出来的，一个是赶巧跑出来的。文档记下的是同一组字段。
+proposition P_REPLICATED {
+  statement: "这条管道足够快：三个独立进程各跑一次，都在阈值内",
+  from: [F_BENCH],
+  layer: L_PROCESS
+}
+
+proposition P_LUCKY {
+  statement: "这条管道足够快：只跑了一次，恰好落在阈值内",
+  from: [F_BENCH],
+  layer: L_PROCESS
+}
+
+# 这是这个项目的地界，不是它的缺陷：两条记录一模一样，工具没有理由偏好任何一条。
+blindspot B_PROCESS {
+  cannot_express: "工具无法表达'这两个结论的推导过程不同，因此可信度不同'——过程不在记录里，只有结论在",
+  witness: [P_REPLICATED, P_LUCKY],
+  signature: [C_INTERFACE],
+  closes_with: [Q_PROCESS]
+}
+
+# 为什么 F_ALL_HOLD 不补 scope：
+# 补一个字符串（"一切能说满的句子"）就能让它变绿，而没有任何东西被绑定 ——
+# 那正好是这份文件在说的那种错。真正能让它变绿的，是把"所有"绑到一个工具能枚举的域上，
+# 例如 C_QUANTIFIED 的外延；但那样它就不再是原来那句话了，它变弱了。
+# 能说满的代价是说得少。这一行留在红上，是记录这个代价，不是欠账。

@@ -11,7 +11,7 @@ stays outside the binary.
 cargo fmt --all --check
 cargo clippy --all-targets -- -D warnings
 cargo test --release
-cargo run --release --quiet -- check SELF.mf docs/REPO.mf
+cargo run --release --quiet -- check SELF.tsare docs/REPO.tsare
 ```
 
 ## Rules the code keeps

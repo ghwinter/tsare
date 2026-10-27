@@ -1,0 +1,97 @@
+# KERNEL.mf -- six principles, and the one document that signs for them.
+#
+# A kernel is not a constitution. It is a prelude: the shapes a claim has to have before the
+# engine will admit it, written in the same language the claim is written in, so the kernel
+# passes its own checks or it is not a kernel.
+
+layer L_THINKING {
+  name: "how a claim is admitted",
+  exposes: [F_OBLIGATIONS, F_CHECKS]
+}
+
+layer L_ENGINE {
+  name: "what the checker actually enforces",
+  exposes: [F_CHECKS, F_OBLIGATIONS]
+}
+
+# 这两条事实从 0.6.5 起带 W-OVERCLAIM，而且**不应该被修掉**：
+# 它们断言的全称域是「这个 build 的十二种 kind」「这个 build 的码与命令」，
+# 那个域在 Rust 里可枚举（specs.rs / explain.rs），在文档里没有对应声明，
+# 所以 `over:` 绑不到东西。这是内核的**表达力代价**，不是写法问题：
+# 引擎不能把自己的类型系统当量词域。真要修，只有两条路——把句子写弱（"本文档里的…"），
+# 或者给 kinds 建一份 .mf 镜像；后者正是我们反复拒绝的漂移源。
+
+fact F_OBLIGATIONS {
+  claim: "every declaration kind carries a decidable obligation",
+  evidence: code("src/specs.rs"),
+  scope: "the twelve kinds in this build"
+}
+
+fact F_CHECKS {
+  claim: "every diagnostic has an explanation, and the golden tests pin every command's text",
+  evidence: code("tests/semantics.rs, tests/golden.rs"),
+  scope: "the codes and commands in this build"
+}
+
+# 1. Nothing is admitted because its author believes it.
+law K_GROUNDED {
+  statement: "a claim is admitted only when something other than its author can check it",
+  holds_in: L_THINKING,
+  checked_by: [F_CHECKS]
+}
+
+# 2. A hypothesis that nothing could refute is not a hypothesis.
+law K_UNFALSIFIABLE {
+  statement: "a guess is admitted only with a test or a rival, never on its own confidence",
+  holds_in: L_THINKING,
+  checked_by: [F_OBLIGATIONS]
+}
+
+# 3. A number without an instrument is an opinion in a number's clothing.
+#
+# `requires` is what a citation costs.  Nothing that can cite a law carries `measured_by`, so
+# this principle cannot be cited past: it has to be met by a value that was measured.
+law K_NUMBER {
+  statement: "a number is admitted only together with the instrument that measured it",
+  holds_in: L_THINKING,
+  checked_by: [F_OBLIGATIONS],
+  requires: ["measured_by"]
+}
+
+# 4. An "all" with no scope is a claim about nothing in particular.
+law K_SCOPE {
+  statement: "a universal claim names the range it covers, or it is not admitted",
+  holds_in: L_THINKING,
+  checked_by: [F_OBLIGATIONS],
+  requires: ["scope"]
+}
+
+# 5. An abstraction is admitted only when a lower layer signs for it.
+law K_ABSTRACTION {
+  statement: "a layer hides detail only when a law at another layer says it implements that layer",
+  holds_in: L_THINKING,
+  checked_by: [F_OBLIGATIONS]
+}
+
+# 6. Not knowing is a state to record, not a gap to fill with a plausible default.
+law K_UNKNOWN {
+  statement: "an unknown is written as a hole or a question, never as a silent default",
+  holds_in: L_THINKING,
+  checked_by: [F_OBLIGATIONS]
+}
+
+# The signature: the engine is the one layer that can say any of the six is enforced.
+law K_ENGINE_SIGNS {
+  statement: "each principle above is backed by a check that fails when it is violated",
+  holds_in: L_ENGINE,
+  checked_by: [F_CHECKS],
+  refines: L_THINKING
+}
+
+value V_PRINCIPLES {
+  metric: "principles_in_the_kernel",
+  direction: max,
+  unit: "count",
+  threshold: 10,
+  measured_by: "this file"
+}
