@@ -6,6 +6,15 @@ All notable changes are recorded here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- `src/cli.rs` (2099 lines) is now `src/cli/`: `mod.rs` holds the argument model, the dispatch
+  path and the help table; the commands live in four files that follow the groups the help screen
+  already names — `checking`, `reasoning`, `repairing`, `emitting`. Nothing gained a feature; the
+  largest source file is now `check/mod.rs` at 1286 lines instead of 2099. The rules the split
+  keeps: one dispatch path, one place that decides, and a command that loads, calls one library
+  function and prints.
+
 ### Added
 
 - `tests/contract.rs` — the `--json` contract pinned by shape: the three envelopes of `check`,
