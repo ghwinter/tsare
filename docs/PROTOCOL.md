@@ -185,6 +185,7 @@ checked against what was declared.
 | `W-OUT-UNVERIFIED` | a hash with no artifact, or an artifact that cannot be read — unverifiable, not wrong |
 | `E-SELF-VERDICT` | a verdict is compared with the evidence grade of the fact that decides it; `evidence: model` cannot decide |
 | `W-UNREAD` | a `value` with `threshold`/`priority` is compared with the set of names any rule references |
+| `E-SCOPE-UNBOUNDED` | a universal claim's `over:` is compared with what the engine can enumerate — concept positives, closed partition elements, a layer's contents |
 | `W-PARTITION-UNKNOWN` | a pile with no dimension may be written and may not discharge anything |
 
 ## Gatekeeping values from outside

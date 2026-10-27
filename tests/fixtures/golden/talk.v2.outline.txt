@@ -17,7 +17,7 @@ stands on, who checks it, and what is still owed.
 > 40 人里的 12 人点名多选，竞品都没有做
 
   evidence: tool("survey 2026-10, n=40") | attrs: asked: 12; total: 40; competitors: 0 | obligation: check (ready)
-  ! W-OVERCLAIM: fact F_MULTI is a universal claim with no scope
+  ! W-OVERCLAIM: fact F_MULTI is universal and binds no domain: `scope:` is prose, so it cannot be enumerated; bind it with `over:`
 
 ### F_NONE -- fact
 
@@ -30,7 +30,7 @@ stands on, who checks it, and what is still owed.
 > 三个竞品都有暗色模式
 
   evidence: tool("manual review") | attrs: competitors: 3 | obligation: check (ready)
-  ! W-OVERCLAIM: fact F_COMP is a universal claim with no scope
+  ! W-OVERCLAIM: fact F_COMP is universal and binds no domain: `scope:` is prose, so it cannot be enumerated; bind it with `over:`
 
 ### F_THEME_FAST -- fact
 

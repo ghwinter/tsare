@@ -32,6 +32,7 @@ pub const REF_KEYS: &[&str] = &[
     "dimension",
     "elements",
     "of",
+    "over",
 ];
 
 /// Values that name a procedure rather than a declaration.
@@ -267,6 +268,7 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
     check_layer(decls, &mut out);
     check_refinements(decls, &mut out);
     check_requirements(decls, &mut out);
+    check_bindings(decls, &mut out);
     check_verdicts(decls, &mut out);
     check_dead_values(decls, &mut out);
     check_artifacts(decls, &mut out);
@@ -492,6 +494,18 @@ fn id_field<'a>(decl: &'a Decl, key: &str) -> Option<&'a str> {
             Val::Id(text) => Some(text.as_str()),
             _ => None,
         })
+}
+
+/// Words that make a sentence universal.  This is a surface cue, not the criterion: the criterion
+/// is whether the domain is bound with `over:`.  The cue is deliberately generous on `都`, which is
+/// also an adverb: a false positive here costs one line (`over:` naming the set, or a reword), and
+/// naming the set is the improvement the warning is asking for anyway.
+fn universal_text(text: &str) -> bool {
+    // "at all" is an idiom, not a universal claim
+    let lowered = text.replace("at all", "").replace("after all", "");
+    ["所有", "全部", "每", "都", "always", "every", "all "]
+        .iter()
+        .any(|word| lowered.contains(word))
 }
 
 fn num_field(decl: &Decl, key: &str) -> Option<f64> {
@@ -781,6 +795,56 @@ fn check_artifacts(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     }
 }
 
+/// A universal claim is bound only when its domain is something the engine can enumerate: a
+/// concept's extent is its positives, a closed partition is its elements, a layer is the
+/// declarations it holds.  Anything else is a free variable wearing a name.
+fn check_bindings(decls: &[Decl], out: &mut Vec<Diagnostic>) {
+    let by_name: std::collections::HashMap<&str, &Decl> = decls
+        .iter()
+        .map(|decl| (decl.name.as_str(), decl))
+        .collect();
+    for decl in decls
+        .iter()
+        .filter(|decl| decl.kind == "fact" || decl.kind == "proposition")
+    {
+        for domain in list_field(decl, "over") {
+            let Some(target) = by_name.get(domain.as_str()) else {
+                continue;
+            };
+            let unbounded = match target.kind.as_str() {
+                "concept" if list_field(target, "grounded_by").is_empty() => {
+                    Some("the concept has no positive example")
+                }
+                "partition" if id_field(target, "closure") != Some("closed") => {
+                    Some("the partition is not closed")
+                }
+                "layer"
+                    if !decls
+                        .iter()
+                        .any(|other| id_field(other, "layer") == Some(target.name.as_str())) =>
+                {
+                    Some("the layer holds no declaration")
+                }
+                "concept" | "partition" | "layer" => None,
+                _ => Some("only a concept, a closed partition or a layer can be a domain"),
+            };
+            let Some(reason) = unbounded else {
+                continue;
+            };
+            sem(
+                decl,
+                "E-SCOPE-UNBOUNDED",
+                format!(
+                    "{} ranges over {domain}, whose extent cannot be enumerated: {reason}",
+                    decl.name
+                ),
+                Some("over"),
+                out,
+            );
+        }
+    }
+}
+
 fn check_layer(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     let mut exposes: std::collections::HashMap<&str, Vec<String>> =
         std::collections::HashMap::new();
@@ -931,15 +995,14 @@ fn check_semantics(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                     }
                     // "at all" is an idiom, not a universal claim: drop it before looking for
                     // the words that do claim universality
-                    let lowered = claim.replace("at all", "").replace("after all", "");
-                    let universal = ["所有", "都", "全部", "always", "every", "all "];
-                    if universal.iter().any(|word| lowered.contains(word))
-                        && string_field(decl, "scope").is_none()
-                    {
+                    if universal_text(claim) && !carries(decl, "over") {
                         sem(
                             decl,
                             "W-OVERCLAIM",
-                            format!("fact {} is a universal claim with no scope", decl.name),
+                            format!(
+                                "fact {} is universal and binds no domain: `scope:` is prose, so it cannot be enumerated; bind it with `over:`",
+                                decl.name
+                            ),
                             Some("claim"),
                             out,
                         );
@@ -1020,6 +1083,22 @@ fn check_semantics(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                             decl.name
                         ),
                         Some("from"),
+                        out,
+                    );
+                }
+                // a proposition has no `scope:` field at all, so a universal one is unbound
+                // until it names the domain it ranges over
+                if string_field(decl, "statement").is_some_and(universal_text)
+                    && !carries(decl, "over")
+                {
+                    sem(
+                        decl,
+                        "W-OVERCLAIM",
+                        format!(
+                            "proposition {} is universal and binds no domain: add `over:` naming the extent it covers",
+                            decl.name
+                        ),
+                        Some("statement"),
                         out,
                     );
                 }

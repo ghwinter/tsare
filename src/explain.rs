@@ -36,6 +36,7 @@ pub const CODES: &[&str] = &[
     "E-PARTITION-UNKNOWN-USED",
     "E-OUT-MISMATCH",
     "E-SELF-VERDICT",
+    "E-SCOPE-UNBOUNDED",
     "E-SYNTAX",
     "E-TENSION",
     "E-TYPE",
@@ -151,6 +152,11 @@ pub fn explain(code: &str) -> Option<&'static str> {
             A model assessing its own guess is not an observation; the verdict would assert an\n\
             evidence grade nothing reached.\n\
             Fix: decide it with a tool or a person, or leave `verdict: open`.",
+        "E-SCOPE-UNBOUNDED" => "A universal claim binds its domain to something whose extent cannot be enumerated.\n\
+            A concept's extent is its positive examples, a closed partition is its elements, a layer\n\
+            is the declarations it holds. Anything else is a free variable wearing a name: the\n\
+            sentence looks quantified and quantifies over nothing.\n\
+            Fix: bind `over:` to an enumerable extent, or weaken the sentence.",
         "E-SYNTAX" => "The document does not parse: a string is unterminated, a bracket is missing, or a value is not a value.\n\
             Fix: the caret points at the first token that could not start what the grammar expected.",
         "E-TENSION" => "Two values constrain the same metric in opposite directions and neither has a priority.\n\

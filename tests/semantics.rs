@@ -1064,3 +1064,60 @@ fn an_artifact_that_does_not_match_its_hash_is_refused() {
         .iter()
         .any(|item| item.code == "W-OUT-UNVERIFIED"));
 }
+
+/// A universal claim is bound only when its domain is an extent the engine can list.  Naming the
+/// domain in prose is not binding it: `scope:` is a string, and a string cannot be enumerated.
+/// `over:` points at something with an extent -- a concept's positives, a closed partition's
+/// elements, a layer's declarations -- and anything else is a free variable with a name.
+#[test]
+fn a_universal_claim_is_bound_only_to_an_enumerable_extent() {
+    let bound = concat!(
+        "fact F_A { claim: \"a\", evidence: tool(\"t\") }\n",
+        "concept C_ALL { name: \"everything counted\", grounded_by: [F_A] }\n",
+        "fact F_UNIVERSAL { claim: \"all of them hold\", evidence: user, over: [C_ALL] }\n",
+    );
+    assert!(!check(&decls(bound))
+        .iter()
+        .any(|item| item.code == "W-OVERCLAIM" || item.code == "E-SCOPE-UNBOUNDED"));
+
+    // a prose scope is not a binding
+    let named =
+        "fact F_UNIVERSAL { claim: \"all of them hold\", evidence: user, scope: \"everything\" }\n";
+    assert!(check(&decls(named))
+        .iter()
+        .any(|item| item.code == "W-OVERCLAIM"));
+
+    // a fact is not a domain
+    let wrong_kind = concat!(
+        "fact F_A { claim: \"a\", evidence: tool(\"t\") }\n",
+        "fact F_UNIVERSAL { claim: \"all of them hold\", evidence: user, over: [F_A] }\n",
+    );
+    assert!(check(&decls(wrong_kind))
+        .iter()
+        .any(|item| item.code == "E-SCOPE-UNBOUNDED"));
+
+    // an open list cannot bound a universal; a closed one can
+    let open = concat!(
+        "fact F_A { claim: \"a\", evidence: tool(\"t\") }\n",
+        "concept C_ALL { name: \"c\", grounded_by: [F_A] }\n",
+        "partition P_OPEN { dimension: C_ALL, elements: [F_A], closure: open }\n",
+        "fact F_UNIVERSAL { claim: \"all of them hold\", evidence: user, over: [P_OPEN] }\n",
+    );
+    assert!(check(&decls(open))
+        .iter()
+        .any(|item| item.code == "E-SCOPE-UNBOUNDED"));
+    let closed = open.replace("closure: open", "closure: closed");
+    assert!(!check(&decls(&closed))
+        .iter()
+        .any(|item| item.code == "E-SCOPE-UNBOUNDED"));
+
+    // a universal proposition has no `scope:` field at all, so `over:` is its only binding
+    let proposition = concat!(
+        "concept C_ALL { name: \"c\", grounded_by: [F_A] }\n",
+        "fact F_A { claim: \"a\", evidence: tool(\"t\") }\n",
+        "proposition P_ALL { statement: \"all of them hold\", from: [F_A] }\n",
+    );
+    assert!(check(&decls(proposition))
+        .iter()
+        .any(|item| item.code == "W-OVERCLAIM" && item.message.contains("P_ALL")));
+}

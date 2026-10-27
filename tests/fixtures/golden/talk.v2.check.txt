@@ -1,8 +1,8 @@
-<fixtures>/talk.v2.mf:12:10: warning[W-OVERCLAIM]: fact F_MULTI is a universal claim with no scope
+<fixtures>/talk.v2.mf:12:10: warning[W-OVERCLAIM]: fact F_MULTI is universal and binds no domain: `scope:` is prose, so it cannot be enumerated; bind it with `over:`
  12 |   claim: "40 人里的 12 人点名多选，竞品都没有做",
     |          ^^^^^^^^^^^^^^^^^^^^^^^^
 
-<fixtures>/talk.v2.mf:24:10: warning[W-OVERCLAIM]: fact F_COMP is a universal claim with no scope
+<fixtures>/talk.v2.mf:24:10: warning[W-OVERCLAIM]: fact F_COMP is universal and binds no domain: `scope:` is prose, so it cannot be enumerated; bind it with `over:`
  24 |   claim: "三个竞品都有暗色模式",
     |          ^^^^^^^^^^^^
 

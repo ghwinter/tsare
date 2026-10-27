@@ -8,6 +8,14 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `fact over:` / `proposition over:` — the domain a universal claim ranges over. A universal is
+  bound only when its domain can be enumerated: a concept's positive examples, a closed
+  partition's elements, or a layer's declarations. Binding it to anything else is
+  `E-SCOPE-UNBOUNDED`. `scope:` stops being a silencer: it is prose, and prose cannot be
+  enumerated, so a universal carrying `scope:` and no `over:` is still `W-OVERCLAIM`. That is
+  the point — naming a domain is not binding one. Propositions are covered as well, and they have
+  no `scope:` field at all, so `over:` is their only binding.
+
 - `fact artifact:` + `fact out:` — the hash of what the instrument produced. `evidence: tool(...)`
   records that something ran; `out` records what came out, and a mismatch is `E-OUT-MISMATCH`.
   A hash with nothing to compare against is `W-OUT-UNVERIFIED`, which is not the same as wrong.
