@@ -106,3 +106,18 @@ pub fn text(pattern: &Pattern) -> String {
     }
     out
 }
+
+/// A hole-template for the meet: the shared constraints as a comment, every position as `?`.
+/// This is the draft a reader has to fill in -- the pattern says what the family looks like, and
+/// the holes are exactly the decisions a substitution has to make.
+pub fn draft(pattern: &Pattern, name: &str) -> String {
+    let mut out = format!("# {}\n", text(pattern));
+    out.push_str(&format!("{} {} {{\n", pattern.kind, name));
+    let fields: Vec<&String> = pattern.fields.keys().collect();
+    for (index, field) in fields.iter().enumerate() {
+        let comma = if index + 1 == fields.len() { "" } else { "," };
+        out.push_str(&format!("  {field}: ?{comma}\n"));
+    }
+    out.push_str("}\n");
+    out
+}

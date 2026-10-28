@@ -117,6 +117,11 @@ All notable changes are recorded here. The format follows
   and anything below both is below it). It generalises over **shapes**, not content: two facts with
   different sentences still share `claim:text`. Different kinds have no meet, and the API says so by
   returning nothing rather than inventing a top.
+- `meet PATH LEFT RIGHT` — the most general form two declarations share, and the hole-template that
+  fills what is left. It prints the shared constraints as a line and the draft as a declaration with
+  `?` in every position, which is valid input: the pattern says what the family looks like, and the
+  holes are the decisions a substitution still has to make. Two declarations of different kinds have
+  no meet, and the command says so instead of inventing one.
 ### Added
 
 - `E-SUPERSEDE-UNDEFINED` — a `supersedes` field that names nothing, or names itself. A withdrawal

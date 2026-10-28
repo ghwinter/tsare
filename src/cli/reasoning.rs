@@ -428,6 +428,41 @@ pub(crate) fn cmd_abstract(path: &Path, args: &Args) -> i32 {
 
 /// The forms a document's declarations share, and the positions that vary inside each form.
 /// A form with one instance is not a structure, so only shared ones are printed.
+/// The meet of two declarations: the most general form both satisfy, and the draft that fills the
+/// remaining positions.  Content is invisible here -- this generalises over shapes.
+pub(crate) fn cmd_meet(path: &Path, args: &Args) -> i32 {
+    let (Some(left), Some(right)) = (args.at(1), args.at(2)) else {
+        return fail("usage: meet PATH LEFT RIGHT".to_string());
+    };
+    let loaded = match load(path) {
+        Ok(loaded) => loaded,
+        Err(error) => return fail(error),
+    };
+    let program = Program::new(&loaded.decls);
+    let (Some(first), Some(second)) = (
+        crate::generalize::pattern_of(&program, left),
+        crate::generalize::pattern_of(&program, right),
+    ) else {
+        return fail(format!(
+            "meet: {left} and {right} must both be declared in the document"
+        ));
+    };
+    match crate::generalize::meet(&first, &second) {
+        None => {
+            println!(
+                "{left} and {right} have no meet: {} and {}",
+                first.kind, second.kind
+            );
+            1
+        }
+        Some(joined) => {
+            println!("{}", crate::generalize::text(&joined));
+            println!();
+            print!("{}", crate::generalize::draft(&joined, "NAME"));
+            0
+        }
+    }
+}
 pub(crate) fn cmd_shape(path: &Path, top: usize, depth: usize, layers: bool) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,

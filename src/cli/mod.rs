@@ -249,6 +249,7 @@ const COMMANDS: &[Command] = &[
         Command("reasoning", "next", "next PATH                    open decisions, ranked by what they touch"),
         Command("reasoning", "ask", "ask PATH [--json] [--one]   the next question, ranked by what one answer settles"),
         Command("reasoning", "novel", "novel PATH --attribute N [--holds IDS]\n                               is a proposed attribute new, redundant, or a recombination"),
+        Command("reasoning", "meet", "meet PATH LEFT RIGHT        the most general form two declarations share, and the holes it leaves"),
         Command("reasoning", "shape", "shape PATH [--top N] [--depth D] [--layers]  the forms declarations share, and the positions that vary"),
         Command("reasoning", "imply", "imply PATH [--json] [--max-antecedent N] [--min-support N]"),
         Command("reasoning", "abstract", "abstract PATH [--min-support N] [--max-intent N]\n                               concepts the attributes already hold but nobody named"),
@@ -470,6 +471,7 @@ pub fn run() -> i32 {
         "next" => cmd_next(&path),
         "ask" => cmd_ask(&path, &args),
         "novel" => cmd_novel(&path, &args),
+        "meet" => cmd_meet(&path, &args),
         "shape" => cmd_shape(
             &path,
             args.count("--top", 8),
