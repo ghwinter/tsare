@@ -22,6 +22,12 @@ jobs:
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test --release
 
+      # The plugin is JavaScript the Rust tests cannot see; its own selftest is the only gate it
+      # has, and it needs no install: a fake ctx and a fake checker are in the directory.
+      - name: gate selftest
+        if: matrix.os == 'ubuntu-latest'
+        run: node dsh/tsare-gate/selftest.mjs
+
       # The documents the tests read are there, and they compile.  One per invocation on purpose:
       # `check DIR` merges a directory into one program, and the prelude files are separate worlds.
       - run: cargo run --release --quiet -- check SELF.tsare
