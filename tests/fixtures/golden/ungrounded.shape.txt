@@ -1,0 +1,7 @@
+1 shared form(s) over 6 declaration(s)
+
+1. fact x2  F_SCROLL, F_HEADLESS
+   claim: "the list scrolls at 60 f…" | "no rendering happens wit…"
+
+The variables are the positions above.  A substitution that leaves the rule standing is a
+claim about the whole class, not about one member.

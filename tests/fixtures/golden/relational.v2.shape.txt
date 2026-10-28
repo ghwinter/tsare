@@ -1,0 +1,15 @@
+3 shared form(s) over 12 declaration(s)
+
+1. fact x3  F_A1, F_A2, F_B1
+   claim: "A1 支持一条规则，也给它提供依据…" | "A2 支持一条规则，也给它提供依据…" | "B1 支持一条规则，但依据给了另一条规则…"
+2. proposition x3  P_ONE, P_TWO, P_THREE
+   statement: "结论一…" | "结论二…" | "结论三…"
+   from: [F_A1] | [F_A2] | [F_B1]
+3. warrant x3  W_S1, W_S2, W_Y
+   claim: "A1 既支持又担保这条规则…" | "A2 既支持又担保这条规则…" | "B1 只是另一条规则的依据…"
+   from: [F_A1] | [F_A2] | [F_C]
+   to: P_ONE | P_TWO | P_THREE
+   basis: [F_A1] | [F_A2] | [F_B1]
+
+The variables are the positions above.  A substitution that leaves the rule standing is a
+claim about the whole class, not about one member.

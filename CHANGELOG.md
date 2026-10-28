@@ -70,6 +70,14 @@ All notable changes are recorded here. The format follows
   on a principle the kernel had withdrawn, receive `W-RETIRED`, and still read as licensed.
   Measured before the fix: citing the retired law produced no `W-UNPRINCIPLED`, while citing
   nothing did.
+- `shape PATH [--top N]` — the forms a document's declarations share, and the positions that vary
+  inside each form. A form is the declaration's kind plus the shape of every field: the literal kind,
+  and for a reference the kind at the other end. Content does not enter the signature, so two claims
+  with nothing in common still fall into one class when the rest of the declaration has the same
+  form. Classes of one are dropped -- a form with one instance is that declaration, not a structure.
+  On `SELF.tsare` (44 declarations) it finds 8 shared forms, among them five warrants that all name
+  one fact as both premise and licence; on `relational.v2.tsare` the warrant class puts `W_Y`'s
+  `basis` next to its `from` in the same table, which is the difference that fixture exists to show.
 ### Added
 
 - `E-SUPERSEDE-UNDEFINED` — a `supersedes` field that names nothing, or names itself. A withdrawal

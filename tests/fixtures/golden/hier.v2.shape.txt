@@ -1,0 +1,12 @@
+2 shared form(s) over 8 declaration(s)
+
+1. fact x4  F_SCROLL, F_RESIZE, F_LAUNCH, F_IDLE
+   claim: "滚动时一帧 8ms…" | "拉伸窗口时一帧 10ms…" | "冷启动首帧 900ms…" | "空闲时不渲染任何一帧…"
+2. concept x2  C_VERY_FAST, C_SLOW
+   name: "半帧之内…" | "明显卡顿…"
+   grounded_by: [F_SCROLL] | [F_LAUNCH]
+   against: [F_RESIZE] | [F_SCROLL]
+   parent: C_FAST | C_TIMED
+
+The variables are the positions above.  A substitution that leaves the rule standing is a
+claim about the whole class, not about one member.

@@ -37,6 +37,7 @@ pub mod program;
 pub mod propose;
 pub mod render;
 pub mod session;
+pub mod shape;
 pub mod specs;
 pub mod sugar;
 pub mod syntax;

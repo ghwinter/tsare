@@ -1455,3 +1455,40 @@ fn a_retired_kernel_law_stops_grounding() {
         "standing on the live law is licensed"
     );
 }
+
+/// A shared form is a quotient: declarations grouped by their shape, with the positions that vary
+/// written down.  Content does not enter the signature -- two claims with completely different text
+/// belong to the same class when the rest of the declaration has the same form.
+#[test]
+fn declarations_of_the_same_form_fall_into_one_class() {
+    let source = concat!(
+        "fact F_A { claim: \"a\", evidence: tool(\"t\") }\n",
+        "fact F_B { claim: \"b\", evidence: tool(\"t\") }\n",
+        "proposition P_ONE { statement: \"one\", from: [F_A] }\n",
+        "proposition P_TWO { statement: \"two\", from: [F_B] }\n",
+        "warrant W_ONE { claim: \"r\", from: [F_A], to: P_ONE }\n",
+        "warrant W_TWO { claim: \"s\", from: [F_B], to: P_TWO }\n",
+    );
+    let declared = decls(source);
+    let program = Program::new(&declared);
+    let groups = tsare::shape::shapes(&program);
+    let rules: Vec<&tsare::shape::ShapeGroup> = groups
+        .iter()
+        .filter(|group| group.kind == "warrant")
+        .collect();
+    assert_eq!(rules.len(), 1, "the two rules share one form");
+    assert_eq!(rules[0].members.len(), 2);
+    let fields: Vec<&str> = rules[0]
+        .variables
+        .iter()
+        .map(|(field, _)| field.as_str())
+        .collect();
+    assert!(
+        fields.contains(&"from") && fields.contains(&"to"),
+        "{fields:?}"
+    );
+
+    // a form with one instance is a declaration, not a structure
+    let single = decls("fact F_ONLY { claim: \"x\", evidence: user }\n");
+    assert!(tsare::shape::shapes(&Program::new(&single)).is_empty());
+}

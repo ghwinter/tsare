@@ -1,0 +1,29 @@
+7 shared form(s) over 27 declaration(s)
+
+1. concept x3  C_POPULAR, C_ELEGANT, C_SWIFT
+   name: "竞品都有的功能…" | "可读的界面…" | "主题切换不打断操作…"
+   grounded_by: [F_COMP] | [F_CONTRAST_OK] | [F_THEME_FAST]
+   against: [F_MULTI] | [F_CONTRAST_LOW] | [F_THEME_SLOW]
+2. fact x3  F_DARK, F_MULTI, F_NONE
+   claim: "40 人里的 32 人点名暗色模式…" | "40 人里的 12 人点名多选，竞品都没有做…" | "设置搜索没有人点名…"
+3. hypothesis x3  H_NOVELTY, H_CONTRAST, H_MOTION
+   assumes: [P_IMPORTANT] | [P_ELEGANT]
+   predicts: "留存上涨来自新鲜感，八周后回落到基线…" | "用户对界面的评价主要由正文对比度决定…" | "用户对界面的评价主要由过渡动效决定…"
+   test: "上线四周与八周各测一次留存…" | "五位用户按对比度评分，再按动效评分…"
+4. value x3  V_CONTRAST, V_THEME_SWITCH, V_RETENTION
+   metric: "contrast_ratio…" | "theme_switch_ms…" | "retention_delta_pp…"
+   direction: min | max
+   unit: "ratio…" | "ms…" | "pp…"
+   threshold: 4.5 | 16 | 0
+   measured_by: "contrast checker on ever…" | "trace theme switch…" | "cohort comparison after …"
+5. fact x2  F_CONTRAST_OK, F_CONTRAST_LOW
+   claim: "暗色主题的正文对比度是 7.2…" | "灰色次要文字的对比度是 2.8…"
+6. fact x2  F_THEME_FAST, F_THEME_SLOW
+   claim: "换主题只要 12ms…" | "换主题要 40ms，因为整表重绘…"
+7. value x2  V_SPEED, V_QUALITY
+   direction: max | min
+   threshold: 6 | 2
+   priority: 1 | 2
+
+The variables are the positions above.  A substitution that leaves the rule standing is a
+claim about the whole class, not about one member.

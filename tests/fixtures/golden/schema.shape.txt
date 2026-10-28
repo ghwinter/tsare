@@ -1,0 +1,9 @@
+2 shared form(s) over 6 declaration(s)
+
+1. fact x2  F_TRACE, F_HEADLESS
+   claim: "the list renders at 60 f…" | "nothing renders with --h…"
+2. proposition x2  P_SMOOTH, P_STABLE
+   statement: "scrolling feels smooth…" | "frame times stay under 1…"
+
+The variables are the positions above.  A substitution that leaves the rule standing is a
+claim about the whole class, not about one member.

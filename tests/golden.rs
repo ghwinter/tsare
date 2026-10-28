@@ -135,6 +135,7 @@ const COMMANDS: &[(&str, &[&str])] = &[
     ("egraph", &[]),
     ("fix", &[]),
     ("induce", &[]),
+    ("shape", &[]),
 ];
 
 #[test]
