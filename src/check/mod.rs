@@ -35,6 +35,7 @@ pub const REF_KEYS: &[&str] = &[
     "elements",
     "of",
     "over",
+    "signature",
 ];
 
 /// Values that name a procedure rather than a declaration.

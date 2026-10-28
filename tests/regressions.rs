@@ -60,3 +60,25 @@ fn a_cache_hit_is_the_same_report_as_a_fresh_check() {
     assert_eq!(fresh, hit, "a cache hit must replay the same report");
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn a_blindspot_signature_is_a_resolved_concept_reference() {
+    // Defect: `signature` was missing from check::REF_KEYS, so neither resolution nor kind
+    // checking ran on a blind spot's concept list.
+    let found = tsare::check::check(&parse(include_str!(
+        "../docs/repro/signature-undefined.tsare"
+    )));
+    assert!(
+        found
+            .iter()
+            .any(|item| item.code == "E-UNDEFINED" && item.message.contains("C_MISSING")),
+        "{found:#?}"
+    );
+    let found = tsare::check::check(&parse(include_str!("../docs/repro/signature-kind.tsare")));
+    assert!(
+        found
+            .iter()
+            .any(|item| item.code == "E-KIND" && item.message.contains("F_A")),
+        "{found:#?}"
+    );
+}
