@@ -58,7 +58,15 @@ pub(crate) fn cmd_check(
     // error in the files that did not, so fixing the first syntax error revealed the next.  The
     // semantic diagnostics are computed over what parsed, and the syntax diagnostics stay.
     {
-        let cacheable = use_cache && !sugar && !path.is_dir();
+        // The cache key is the source text, but E-OUT-MISMATCH reads an artifact's bytes.  A
+        // document that names one is not content-addressed: its answer depends on files outside
+        // the source, so replaying it would answer the old state.
+        let names_artifact = loaded.decls.iter().any(|decl| {
+            decl.fields
+                .iter()
+                .any(|(key, _)| key == "artifact" || key == "out")
+        });
+        let cacheable = use_cache && !sugar && !path.is_dir() && !names_artifact;
         let cache_key = if cacheable {
             Some(crate::cache::key(&loaded.text))
         } else {

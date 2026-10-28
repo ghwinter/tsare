@@ -429,3 +429,5 @@ the exact text of every command on six fixture documents. `UPDATE_GOLDEN=1 cargo
 them; read the diff first.
 
 
+The content-addressed cache is bypassed for a document that names an `artifact:` or `out:` field: the
+artifact's bytes are part of the answer, and the cache key is only the source text.

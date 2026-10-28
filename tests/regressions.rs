@@ -744,3 +744,33 @@ fn a_confirmed_model_fact_can_license_a_rule() {
         "{found:#?}"
     );
 }
+
+#[test]
+fn a_cached_check_does_not_outlive_the_artifact_it_read() {
+    // Defect: the cache key is the source bytes, but E-OUT-MISMATCH compares an artifact's
+    // bytes. After the artifact changed, `check --cache` replayed the old clean report while a
+    // plain check reported the mismatch: two answers for the same document and the same state.
+    let dir = temp("cache-artifact");
+    let artifact = dir.join("artifact.log");
+    std::fs::write(&artifact, b"version one\n").expect("write the artifact");
+    let digest = tsare::hash::hex(b"version one\n");
+    std::fs::write(
+        dir.join("doc.tsare"),
+        format!(
+            "fact F {{ claim: \"x\", evidence: tool(\"t\"), artifact: \"artifact.log\", out: \"{digest}\" }}\n"
+        ),
+    )
+    .expect("write the document");
+    let run = |extra: &[&str]| {
+        let mut args = vec!["check", "doc.tsare", "--json"];
+        args.extend_from_slice(extra);
+        stdout(&run_in(&dir, &args))
+    };
+    let _miss = run(&["--cache"]);
+    std::fs::write(&artifact, b"version two\n").expect("change the artifact");
+    let cached = run(&["--cache"]);
+    let plain = run(&[]);
+    assert!(plain.contains("E-OUT-MISMATCH"), "{plain}");
+    assert!(cached.contains("E-OUT-MISMATCH"), "{cached}");
+    let _ = std::fs::remove_dir_all(&dir);
+}
