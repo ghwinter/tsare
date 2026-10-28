@@ -80,3 +80,6 @@ Thumbs.db
 # The hook and the rule it enforces are part of the repository, not of one clone.
 !/.githooks
 !/.githooks/commit-msg
+# Regenerable and machine-specific: one line per invocation, with the temp paths of the run.
+# scripts/matrix.py rebuilds them; the summaries beside them are the tracked evidence.
+/tests/fixtures/harden/artifacts/matrix-*.jsonl
