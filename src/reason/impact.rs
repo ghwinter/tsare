@@ -166,6 +166,20 @@ pub fn decisions(prog: &Program) -> Vec<Decision> {
         }
     }
     for question in prog.of_kind("question") {
+        // A question closes when every hypothesis it separates has a verdict.  The answer lives
+        // on the hypotheses, not on the question, so without this an answered question stays on
+        // the list forever and teaches the reader that the list is noise.
+        let separated = f_ids(question, "separates");
+        let settled = !separated.is_empty()
+            && separated.iter().all(|name| {
+                prog.get(name)
+                    .and_then(|decl| f_id(decl, "verdict"))
+                    .map(|verdict| verdict != "open")
+                    .unwrap_or(false)
+            });
+        if settled {
+            continue;
+        }
         rows.push(Decision {
             label: format!("{} (question)", question.name),
             node: question.name.clone(),

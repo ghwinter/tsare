@@ -127,6 +127,15 @@ All notable changes are recorded here. The format follows
   talked into agreeing, and it is the primitive a question like "should this idea be written in that
   document instead" needs. Measured: `SELF.tsare` against `docs/REPO.tsare` gives 5 shared, 16 only
   there, 12 only here; `KERNEL.tsare` against `WORLDVIEW.tsare` gives 3 shared.
+
+### Fixed
+
+- `next` no longer lists a question whose separated hypotheses all carry a verdict. The answer
+  lives on the hypotheses, not on the question, so an answered question stayed on the list forever:
+  the founding example (`5.md:183-187`) could not converge, because `ask` named the question, the
+  answer was recorded, and `next` still called it open. Measured: no corpus document changes --
+  none yet has a question with every hypothesis settled.
+
 ### Added
 
 - `E-SUPERSEDE-CYCLE` — a `supersedes` graph that closes on itself. A withdraws B and B withdraws

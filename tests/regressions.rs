@@ -888,3 +888,28 @@ fn a_withdrawal_chain_is_not_a_cycle() {
         "{found:#?}"
     );
 }
+
+#[test]
+fn an_answered_question_is_not_an_open_decision() {
+    // Defect: decisions() listed every question, so a question whose separated hypotheses all
+    // carried a verdict stayed on `next` forever. The founding example (5.md:183-187) therefore
+    // could not converge: ask, answer, and `next` still named the question as open.
+    let answered = parse(
+        "fact F_A { claim: \"a\", evidence: user }\n\
+         hypothesis H_ONE { assumes: [F_A], predicts: \"one\", verdict: refuted, verdict_by: F_A }\n\
+         hypothesis H_TWO { assumes: [F_A], predicts: \"two\", verdict: supported, verdict_by: F_A }\n\
+         question Q { asks: \"which?\", answers: [\"one\", \"two\"], separates: [H_ONE, H_TWO] }\n",
+    );
+    let rows = tsare::impact::decisions(&tsare::program::Program::new(&answered));
+    let names: Vec<&str> = rows.iter().map(|row| row.node.as_str()).collect();
+    assert!(!names.contains(&"Q"), "{names:?}");
+
+    let open = parse(
+        "fact F_A { claim: \"a\", evidence: user }\n\
+         hypothesis H_ONE { assumes: [F_A], predicts: \"one\", verdict: open, rival: H_TWO }\n\
+         hypothesis H_TWO { assumes: [F_A], predicts: \"two\", verdict: open, rival: H_ONE }\n\
+         question Q { asks: \"which?\", answers: [\"one\", \"two\"], separates: [H_ONE, H_TWO] }\n",
+    );
+    let rows = tsare::impact::decisions(&tsare::program::Program::new(&open));
+    assert!(rows.iter().any(|row| row.node == "Q"));
+}
