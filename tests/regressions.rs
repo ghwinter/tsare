@@ -135,3 +135,46 @@ fn engine_lists_conditional_rows_in_a_stable_order() {
     sorted.sort();
     assert_eq!(names, sorted, "the rows are printed in name order");
 }
+
+#[test]
+fn a_misspelled_option_is_refused_not_ignored() {
+    // Defect: every --word that was not a known value flag became a flag the dispatcher
+    // ignored, so --strcit checked without the gate while the caller believed it was gated.
+    let output = Command::new(binary())
+        .args(["check", "docs/repro/engine-order.tsare", "--strcit"])
+        .current_dir(root())
+        .output()
+        .expect("run the binary");
+    let text = stdout(&output);
+    assert_eq!(output.status.code(), Some(2), "{text}");
+    assert!(text.contains("unknown option --strcit"), "{text}");
+}
+
+#[test]
+fn propose_apply_with_a_later_option_still_writes_the_document() {
+    // Defect: --apply was in VALUE_FLAGS, so --apply --policy harmless consumed --policy as
+    // the output path (fix's meaning) and cmd_propose never saw the flag. The proposal was
+    // reported admitted and the file was left unchanged.
+    let dir = temp("propose-apply");
+    let doc = dir.join("target.tsare");
+    std::fs::copy(root().join("docs/repro/propose-target.tsare"), &doc).expect("copy reproducer");
+    let proposals = root().join("docs/repro/proposals.json");
+    let output = run_in(
+        &dir,
+        &[
+            "propose",
+            "target.tsare",
+            "--proposals",
+            proposals.to_str().unwrap(),
+            "--apply",
+            "--policy",
+            "harmless",
+        ],
+    );
+    let text = stdout(&output);
+    assert_eq!(output.status.code(), Some(0), "{text}");
+    assert!(text.contains("1 admitted"), "{text}");
+    let written = std::fs::read_to_string(&doc).expect("read the document");
+    assert!(written.contains("evidence: user"), "not applied: {written}");
+    let _ = std::fs::remove_dir_all(&dir);
+}
