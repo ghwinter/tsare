@@ -21,6 +21,20 @@ SELF.tsare:13:13: warning[W-UNCONFIRMED]: fact F_ENUM_FORM was supplied by a mod
     |             ^^^^^
 ```
 
+## Why this exists
+
+A model predicts the next token. It has no structure of its own to hold a commitment in: what it
+asserted forty turns ago, which number it invented, whether "it works" was ever run. In a long
+session that shows up as drift -- a definition that quietly changes, a plan that loses its
+constraints, a status that was never checked.
+
+tsare is the structure the model does not have, kept outside it. Commitments are written as
+declarations, and a deterministic binary -- no model, no network, no clock -- says what each one
+still owes. The model proposes, the binary verifies, the human confirms.
+
+It is for the work where the model's own context cannot be trusted to hold: long-running sessions,
+complex tasks, and anything creative enough that "sounds right" is the failure mode.
+
 ## Use it from an agent
 
 The point is not that a human types `.tsare` files. It is that an agent, before it asserts
@@ -107,7 +121,7 @@ closure.
 ## What it is not
 
 Not classical inductive logic programming. The learner searches attribute literals and edge
-paths and stops at a three-literal conjunction, so a rule like
+paths, so a rule like
 `grandparent(X,Z) :- parent(X,Y), parent(Y,Z)` cannot be written: there are no variables to
 unify and no Horn clauses to resolve. What it does have is ILP's control loop — background,
 positive and negative examples, a biased search, coverage — with the schema playing the part of

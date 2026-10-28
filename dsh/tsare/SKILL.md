@@ -1,11 +1,16 @@
 ---
 name: tsare
-description: Compile a claim before asserting it. Write the claim as a .tsare document and run tsare — it decides whether the claim can be checked at all, what it still owes, and whether the recorded vocabulary can tell two objects apart. Deterministic; no model inside.
+description: An external reasoning engine for an LLM that has no reasoning structure of its own. A commitment is written as a .tsare document and a deterministic binary says whether it can be checked at all, what it still owes, and whether the recorded vocabulary can tell two objects apart. No model inside.
 ---
 
 # tsare
 
-Use this when a claim, a number, a plan or a design decision is about to be asserted and a
+A model predicts the next token; it has no structure of its own to hold a commitment in. tsare is
+that structure, kept outside it, for long sessions and complex tasks where "sounds right" is the
+failure mode. It does not make a claim true. It says whether the claim can be checked, and what it
+still owes.
+
+Use it when a claim, a number, a plan or a design decision is about to be asserted and a
 reader will rely on it. Four cases, not every sentence:
 
 1. you are about to conclude something;
