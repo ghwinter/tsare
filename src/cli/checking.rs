@@ -36,7 +36,30 @@ pub(crate) fn cmd_check(
                 syntax: Vec::new(),
                 sources: Vec::new(),
             },
-            Err(error) => return fail(format!("{}: {error}", path.display())),
+            Err(error) => {
+                // `--json` is a promise about the shape of the output; a parse error is output
+                // like any other, so it goes through the session instead of to the console.
+                let diagnostic = crate::check::Diagnostic {
+                    code: error.code,
+                    message: error.message,
+                    line: error.line,
+                    col: error.col,
+                    end_line: error.line,
+                    end_col: error.col + 1,
+                    file: path.display().to_string(),
+                    witness: None,
+                };
+                let mut session =
+                    crate::session::Session::new(path.display().to_string()).with_source(&expanded);
+                session.emit(diagnostic);
+                if json {
+                    println!("{}", session.json());
+                } else {
+                    print!("{}", session.text());
+                    println!("{}", session.summary());
+                }
+                return session.exit_code();
+            }
         }
     } else {
         match load_for_check(path) {
@@ -160,6 +183,10 @@ pub(crate) fn check_against(
         let mut session =
             crate::session::Session::new(kernel_name.clone()).with_source(&kernel.text);
         session.extend(other_errors);
+        if json {
+            println!("{}", session.json());
+            return 1;
+        }
         print!("{}", session.text());
         println!("{}", session.summary());
         println!(
