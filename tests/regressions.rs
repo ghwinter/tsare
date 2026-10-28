@@ -239,3 +239,31 @@ fn derive_does_not_ground_a_conclusion_in_a_retired_fact() {
         result.conditional
     );
 }
+
+#[test]
+fn a_class_conclusion_connects_its_rule_to_every_target() {
+    // Defect: a warrant may conclude a class of propositions (concludes:), and engine/derive
+    // used closure::applications for that while check and argue looked only at 	o:. The same
+    // rule was a connection for two commands and no rule at all for two others.
+    let decls = parse(include_str!("../docs/48-concludes.tsare"));
+    let found = tsare::check::check(&decls);
+    assert!(
+        !found
+            .iter()
+            .any(|item| item.code == "W-UNWARRANTED" && item.message.contains("P_OPEN")),
+        "{found:#?}"
+    );
+    let program = tsare::program::Program::new(&decls);
+    let rows = tsare::argue::conclusions(&program);
+    for name in ["P_OPEN_ONE", "P_OPEN_TWO"] {
+        let row = rows.iter().find(|row| row.name == name).expect(name);
+        assert_eq!(row.status, "supported", "{name}: {}", row.why);
+    }
+    let result = tsare::closure::engine(&decls);
+    for name in ["P_OPEN_ONE", "P_OPEN_TWO"] {
+        assert!(
+            result.held.contains(&name.to_string()),
+            "{name} is not held"
+        );
+    }
+}

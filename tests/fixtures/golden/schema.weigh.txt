@@ -1,3 +1,3 @@
 threshold 0.7
-  P_SMOOTH            --  asserted
-  P_STABLE            --  asserted
+  P_SMOOTH          1.00  derived  ok    W_RULE=1.00
+  P_STABLE          1.00  derived  ok    W_RULE=1.00

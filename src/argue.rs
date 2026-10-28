@@ -14,7 +14,7 @@
 
 use std::collections::HashMap;
 
-use crate::closure::{field_ids, grounded_sets, id_field};
+use crate::closure::{field_ids, grounded_sets};
 use crate::program::Program;
 
 pub struct Conclusion {
@@ -26,13 +26,13 @@ pub struct Conclusion {
 pub fn conclusions(prog: &Program) -> Vec<Conclusion> {
     let (inside, outside) = grounded_sets(prog.decls);
     let mut by_conclusion: HashMap<String, Vec<String>> = HashMap::new();
-    for warrant in prog.of_kind("warrant") {
-        if let Some(conclusion) = id_field(warrant, "to") {
-            by_conclusion
-                .entry(conclusion.to_string())
-                .or_default()
-                .push(warrant.name.clone());
-        }
+    // `concludes:` names a class of propositions; a rule that concludes a class concludes each
+    // member, and this list is the same one the fixpoint uses.
+    for rule in crate::closure::applications(prog.decls) {
+        by_conclusion
+            .entry(rule.target)
+            .or_default()
+            .push(rule.warrant);
     }
 
     let mut rows = Vec::new();

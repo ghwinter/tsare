@@ -14,7 +14,7 @@
 //! the document never declares.
 
 use crate::closure::grounded;
-use crate::program::{f_id, f_ids, f_num, has_field, Program};
+use crate::program::{f_ids, f_num, has_field, Program};
 
 pub struct Weight {
     pub name: String,
@@ -31,10 +31,12 @@ pub fn weights(prog: &Program) -> Vec<Weight> {
     let inside = grounded(prog.decls);
     let mut rows = Vec::new();
     for proposition in prog.of_kind("proposition") {
-        let rules: Vec<&crate::syntax::Decl> = prog
-            .of_kind("warrant")
+        // A warrant reaches a proposition by `to:` or by belonging to the class `concludes:`
+        // names; both are in closure::applications, and weighing must read the same list.
+        let rules: Vec<&crate::syntax::Decl> = crate::closure::applications(prog.decls)
             .into_iter()
-            .filter(|warrant| f_id(warrant, "to") == Some(proposition.name.as_str()))
+            .filter(|rule| rule.target == proposition.name)
+            .filter_map(|rule| prog.get(&rule.warrant))
             .collect();
         if rules.is_empty() {
             rows.push(Weight {

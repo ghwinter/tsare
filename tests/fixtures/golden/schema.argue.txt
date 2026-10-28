@@ -1,2 +1,2 @@
-P_SMOOTH  asserted   no rule
-P_STABLE  asserted   no rule
+P_SMOOTH  supported  W_RULE
+P_STABLE  supported  W_RULE

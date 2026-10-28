@@ -779,15 +779,12 @@ fn is_incomplete(decl: &Decl) -> bool {
 }
 
 fn check_semantics(decls: &[Decl], out: &mut Vec<Diagnostic>) {
-    let warranty_targets: std::collections::HashSet<String> = decls
-        .iter()
-        .filter(|decl| decl.kind == "warrant" || decl.kind == "proposition")
-        .flat_map(|decl| {
-            decl.fields
-                .iter()
-                .filter(|(key, _)| key == "to")
-                .flat_map(|(_, value)| ids(value))
-        })
+    // A rule connects its premises to a conclusion either by naming it (`to`) or by naming a
+    // class it belongs to (`concludes`).  This is the set the fixpoint uses, so the "nothing
+    // connects them" warning must use it too.
+    let warranty_targets: std::collections::HashSet<String> = crate::closure::applications(decls)
+        .into_iter()
+        .map(|rule| rule.target)
         .collect();
 
     for decl in decls {

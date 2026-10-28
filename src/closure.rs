@@ -170,13 +170,13 @@ pub fn grounded_sets(decls: &[Decl]) -> (HashSet<String>, HashSet<String>) {
 
 pub fn statuses(decls: &[Decl], inside: &HashSet<String>) -> HashMap<String, String> {
     let mut by_conclusion: HashMap<String, Vec<String>> = HashMap::new();
-    for decl in decls.iter().filter(|decl| decl.kind == "warrant") {
-        if let Some(target) = id_field(decl, "to") {
-            by_conclusion
-                .entry(target.to_string())
-                .or_default()
-                .push(decl.name.clone());
-        }
+    // `concludes:` is a rule about a class, not a rule about one name; the class members are
+    // applications too, so this must read the same list the fixpoint reads.
+    for rule in applications(decls) {
+        by_conclusion
+            .entry(rule.target)
+            .or_default()
+            .push(rule.warrant);
     }
     let mut out = HashMap::new();
     for decl in decls.iter().filter(|decl| decl.kind == "proposition") {
@@ -279,16 +279,11 @@ pub struct EngineResult {
 
 fn support_edges(decls: &[Decl]) -> HashMap<String, Vec<String>> {
     let mut edges: HashMap<String, Vec<String>> = HashMap::new();
+    for rule in applications(decls) {
+        edges.entry(rule.target).or_default().extend(rule.premises);
+    }
     for decl in decls {
         match decl.kind.as_str() {
-            "warrant" => {
-                if let Some(target) = id_field(decl, "to") {
-                    edges
-                        .entry(target.to_string())
-                        .or_default()
-                        .extend(field_ids(decl, "from"));
-                }
-            }
             "proposition" => {
                 edges
                     .entry(decl.name.clone())
