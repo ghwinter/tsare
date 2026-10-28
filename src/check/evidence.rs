@@ -393,6 +393,24 @@ fn check_retirement(decls: &[Decl], out: &mut Vec<Diagnostic>) {
             );
         }
     }
+    // A retirement is a decision, and every other decision in this language has to say why.  A
+    // warning rather than an error: an old document that withdrew something is still readable, but
+    // a reader cannot tell a considered withdrawal from a quiet one.
+    for decl in decls {
+        if list_field(decl, "supersedes").is_empty() || !list_field(decl, "because").is_empty() {
+            continue;
+        }
+        sem(
+            decl,
+            "W-RETIRED-UNBASED",
+            format!(
+                "{} withdraws a declaration and gives no reason: `because:` names what makes the withdrawal right",
+                decl.name
+            ),
+            Some("supersedes"),
+            out,
+        );
+    }
     let gone = crate::closure::retired(decls);
     if gone.is_empty() {
         return;

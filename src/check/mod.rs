@@ -13,6 +13,7 @@ use crate::syntax::{Decl, Val};
 
 pub const REF_KEYS: &[&str] = &[
     "from",
+    "because",
     "to",
     "grounded_by",
     "against",

@@ -1,0 +1,2 @@
+fact F_OLD { claim: "old", evidence: user }
+fact F_NEW { claim: "new", evidence: user, supersedes: [F_OLD] }

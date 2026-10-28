@@ -52,6 +52,12 @@ All notable changes are recorded here. The format follows
 
   Known limit, in the code: `97 tests` and `第 3 条` are not caught, because there is no criterion
   yet for counting or for ordinals.
+- `because:` and `W-RETIRED-UNBASED` — a declaration that withdraws another now says what makes the
+  withdrawal right, in the same place every other decision does. The warning fires when a
+  `supersedes` carries no `because:`; it is a warning rather than an error because an old document
+  that withdrew something is still readable, and the reader only loses the ability to tell a
+  considered withdrawal from a quiet one. `because` is a reference field, so a reason that names
+  nothing is `E-UNDEFINED`, and a declaration cited as a reason counts as affected by `impact`.
 ### Added
 
 - `E-SUPERSEDE-UNDEFINED` — a `supersedes` field that names nothing, or names itself. A withdrawal

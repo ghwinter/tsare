@@ -71,6 +71,7 @@ pub const CODES: &[&str] = &[
     "W-PARTITION-UNKNOWN",
     "W-PARTITION-UNLEARNED",
     "W-RETIRED",
+    "W-RETIRED-UNBASED",
     "W-UNANSWERED",
     "W-UNCONFIRMED",
     "W-UNPRINCIPLED",
@@ -240,6 +241,10 @@ pub fn explain(code: &str) -> Option<&'static str> {
             Fix: answer the question it names, or add a dimension.",
         "W-PARTITION-UNLEARNED" => "A partition leans on a dimension whose own examples no recorded attribute separates.\n\
             Fix: record the attribute that distinguishes them.",
+        "W-RETIRED-UNBASED" => "A declaration withdraws another and gives no reason.\n\
+            Every other decision in this language has to name what makes it right; a retirement is a\n\
+            decision too, and a reader cannot tell a considered withdrawal from a quiet one.\n\
+            Fix: add `because: [<id>]` naming the evidence, or drop `supersedes`.",
         "W-RETIRED" => "A declaration cites one that was retired by a supersedes field.\n\
             The reference still resolves -- withdrawal appends, it does not delete -- but the ground\n\
             behind it is gone, so anything leaning on it is leaning on what was replaced.\n\

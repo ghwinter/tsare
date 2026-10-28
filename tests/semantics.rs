@@ -1333,3 +1333,45 @@ fn a_stated_quantity_needs_the_value_that_measured_it() {
         "an identifier is not a measurement"
     );
 }
+
+/// A retirement is a decision, so it says why -- in the same place every other decision does.
+/// A warning rather than an error: an old document that withdrew something is still readable.
+#[test]
+fn a_withdrawal_that_gives_no_reason_is_reported_but_not_refused() {
+    let bare = concat!(
+        "fact F_OLD { claim: \"old\", evidence: user }\n",
+        "fact F_NEW { claim: \"new\", evidence: user, supersedes: [F_OLD] }\n",
+    );
+    let found = check(&decls(bare));
+    assert!(
+        found.iter().any(|item| item.code == "W-RETIRED-UNBASED"),
+        "{found:#?}"
+    );
+    assert!(
+        !found.iter().any(|item| item.code.starts_with("E-")),
+        "a missing reason is not an error: {found:#?}"
+    );
+
+    let reasoned = concat!(
+        "fact F_OLD { claim: \"old\", evidence: user }\n",
+        "fact F_WHY { claim: \"the instrument was wrong\", evidence: user }\n",
+        "fact F_NEW { claim: \"new\", evidence: user, supersedes: [F_OLD], because: [F_WHY] }\n",
+    );
+    assert!(
+        !check(&decls(reasoned))
+            .iter()
+            .any(|item| item.code == "W-RETIRED-UNBASED"),
+        "a stated reason silences it"
+    );
+
+    let dangling = concat!(
+        "fact F_OLD { claim: \"old\", evidence: user }\n",
+        "fact F_NEW { claim: \"new\", evidence: user, supersedes: [F_OLD], because: [NOPE] }\n",
+    );
+    assert!(
+        check(&decls(dangling))
+            .iter()
+            .any(|item| item.code == "E-UNDEFINED"),
+        "a reason that names nothing is an error"
+    );
+}
