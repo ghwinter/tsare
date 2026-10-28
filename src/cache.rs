@@ -14,7 +14,7 @@ use crate::json::{self, Json};
 /// Part of every key: a cache built by another checker must never be replayed.  The shape of a
 /// record is part of the checker's identity, so a report that gained a field gets a new salt rather
 /// than replaying entries that would silently carry an empty name.
-pub const SALT: &str = "tsare-0.2";
+pub const SALT: &str = "tsare-0.3";
 
 pub fn store_path() -> PathBuf {
     PathBuf::from(".tsare").join("check-cache.json")
@@ -36,10 +36,11 @@ pub fn dump(diagnostics: &[Diagnostic]) -> String {
         .iter()
         .map(|item| {
             format!(
-                "{{\"code\": \"{}\", \"message\": \"{}\", \"name\": \"{}\", \"line\": {}, \"col\": {}, \"end_line\": {}, \"end_col\": {}}}",
+                "{{\"code\": \"{}\", \"message\": \"{}\", \"name\": \"{}\", \"file\": \"{}\", \"line\": {}, \"col\": {}, \"end_line\": {}, \"end_col\": {}}}",
                 escape(item.code),
                 escape(&item.message),
                 escape(item.witness.as_deref().unwrap_or("")),
+                escape(&item.file),
                 item.line,
                 item.col,
                 item.end_line,
@@ -76,6 +77,10 @@ pub fn restore(payload: &Json) -> Vec<Diagnostic> {
                         .get("name")
                         .and_then(|value| value.as_str())
                         .unwrap_or("");
+                    let file = item
+                        .get("file")
+                        .and_then(|value| value.as_str())
+                        .unwrap_or("");
                     let end_line = item
                         .get("end_line")
                         .and_then(|value| value.as_f64())
@@ -93,7 +98,7 @@ pub fn restore(payload: &Json) -> Vec<Diagnostic> {
                         col,
                         end_line,
                         end_col,
-                        file: String::new(),
+                        file: file.to_string(),
                         witness: if name.is_empty() {
                             None
                         } else {
