@@ -1051,3 +1051,41 @@ pub(crate) fn cmd_kinds() -> i32 {
     }
     0
 }
+
+pub(crate) fn cmd_hint(path: &Path, json: bool) -> i32 {
+    let loaded = match load(path) {
+        Ok(loaded) => loaded,
+        Err(error) => return fail(error),
+    };
+    let program = Program::new(&loaded.decls);
+    let found = crate::hint::hints(&program);
+    if json {
+        let rows: Vec<J> = found
+            .iter()
+            .map(|hint| {
+                let free: Vec<J> = hint
+                    .free
+                    .iter()
+                    .map(|(field, values)| {
+                        obj(vec![
+                            ("field", J::Str(field.clone())),
+                            ("values", J::Num(*values as f64)),
+                        ])
+                    })
+                    .collect();
+                obj(vec![
+                    ("kind", J::Str(hint.kind.clone())),
+                    ("members", strings(&hint.members)),
+                    ("free", J::Arr(free)),
+                    ("layers", strings(&hint.layers)),
+                    ("unnamed", J::Bool(hint.unnamed)),
+                    ("template", J::Str(hint.template.clone())),
+                ])
+            })
+            .collect();
+        emit(obj(vec![("hints", J::Arr(rows))]));
+        return 0;
+    }
+    print!("{}", crate::hint::text(&found));
+    0
+}

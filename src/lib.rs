@@ -23,6 +23,7 @@ pub mod fix;
 pub mod generalize;
 pub mod graph;
 pub mod hash;
+pub mod hint;
 pub mod impact;
 pub mod imply;
 pub mod induce;

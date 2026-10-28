@@ -1931,3 +1931,26 @@ fn a_quoted_name_with_a_marker_does_not_panic_the_repair() {
     );
     let _ = suggestions(&decls(source));
 }
+
+/// A form whose members differ in a position a concept could name, and no concept in the
+/// document names it: the equation is there, the fill is missing.
+#[test]
+fn a_form_with_an_unnamed_dimension_is_a_hint() {
+    let source = concat!(
+        "fact F_A { claim: \"a\", evidence: user }\n",
+        "fact F_B { claim: \"b\", evidence: model }\n",
+    );
+    let found = tsare::hint::hints(&Program::new(&decls(source)));
+    assert_eq!(found.len(), 1);
+    assert!(found[0].free.iter().any(|(field, _)| field == "evidence"));
+    assert!(found[0].unnamed);
+    assert!(
+        found[0].template.contains("evidence: ?"),
+        "{}",
+        found[0].template
+    );
+    // a concept that names one member means the vocabulary has noticed the class
+    let named = format!("{source}concept C {{ name: \"c\", grounded_by: [F_A] }}\n");
+    let found = tsare::hint::hints(&Program::new(&decls(&named)));
+    assert!(!found[0].unnamed);
+}

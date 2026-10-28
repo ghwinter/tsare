@@ -63,6 +63,7 @@ answers `--json`.
 | `novel FILE --attribute N [--holds IDS]` | new, redundant, or a recombination: whether a proposed attribute is a distinction the recorded vocabulary already contains | |
 | `shape FILE [--top N] [--depth D] [--layers] [--against OTHER [--near N]] [--json]` | the forms declarations share, at a depth; `--layers` the forms that cross a layer, `--against` the forms two documents differ in, `--near` the closest unshared forms and how close they are | yes |
 | `meet FILE LEFT RIGHT` | the most general form two declarations share, and the fields where they differ | |
+| `hint FILE [--json]` | the concept a shared form implies and the document does not declare: the free positions, whether anything names them, and the equation with them open | yes |
 | `imply FILE [--json] [--max-antecedent N] [--min-support N]` | the laws the attribute table already holds, with support and a counterexample to the converse; bounded on purpose | yes |
 | `abstract FILE [--min-support N] [--max-intent N]` | concept declarations the attribute table supports but nobody wrote: extent, closed intent, and the witness pair that separates them | |
 | `cost FILE [--top N] [--json]` | external confirmations the document demands, and its longest chain | yes |
