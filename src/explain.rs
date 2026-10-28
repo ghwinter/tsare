@@ -192,7 +192,8 @@ pub fn explain(code: &str) -> Option<&'static str> {
         "E-VERSION" => "The first line declares a document format this build cannot read.\n\
             The document is not broken; the compiler is behind it.  A file with no such line is\n\
             format 1, which is what every document written before the line existed is.\n\
-            Fix: use a build that speaks that format, or the format's migration command.",
+            Fix: use a build that speaks that format. No migration command exists: the format has
+            not moved since 1, and the number moves only with a migration.",
         "E-WARRANT-MODE" => "A warrant must conclude exactly one of a named proposition or a class of them.\n\
             Fix: use `to:` for one conclusion, or `concludes:` for every match.",
         "E-WITNESS" => "A blind spot needs exactly two witnesses.\n\

@@ -701,7 +701,8 @@ fn explain_does_not_promise_a_migration_command_that_does_not_exist() {
     // There is no such command in the dispatch table, and the format has never moved, so the
     // sentence named a repair the tool cannot perform.
     let text = tsare::explain::explain("E-VERSION").expect("explained");
-    assert!(!text.contains("migration command"), "{text}");
+    assert!(!text.contains("format's migration command"), "{text}");
+    assert!(text.contains("No migration command exists"), "{text}");
 }
 
 #[test]
