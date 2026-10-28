@@ -834,3 +834,57 @@ fn the_uncovered_message_names_the_kinds_that_count() {
     assert!(message.contains("commitment"), "{message}");
     assert!(!message.contains("value or question"), "{message}");
 }
+
+#[test]
+fn a_withdrawal_cycle_is_one_error_and_it_names_the_loop() {
+    // Defect: A withdraws B and B withdraws A, so both are retired; `check` reported only the
+    // missing reasons, `engine` reported nothing held, and `derive` said every conclusion was
+    // grounded.  The edge is not a dependency, so nothing walked the graph.
+    let decls = parse(
+        "fact F_R { claim: \"r\", evidence: user }\n\
+         fact F_A { claim: \"a\", evidence: user, supersedes: [F_B], because: [F_R] }\n\
+         fact F_B { claim: \"b\", evidence: user, supersedes: [F_A], because: [F_R] }\n",
+    );
+    let found = tsare::check::check(&decls);
+    let cycles: Vec<_> = found
+        .iter()
+        .filter(|item| item.code == "E-SUPERSEDE-CYCLE")
+        .collect();
+    assert_eq!(cycles.len(), 1, "{found:#?}");
+    assert!(cycles[0].message.contains("F_A"), "{}", cycles[0].message);
+    assert!(cycles[0].message.contains("F_B"), "{}", cycles[0].message);
+}
+
+#[test]
+fn a_longer_withdrawal_cycle_is_still_one_error() {
+    let decls = parse(
+        "fact F_R { claim: \"r\", evidence: user }\n\
+         fact F_A { claim: \"a\", evidence: user, supersedes: [F_C], because: [F_R] }\n\
+         fact F_B { claim: \"b\", evidence: user, supersedes: [F_A], because: [F_R] }\n\
+         fact F_C { claim: \"c\", evidence: user, supersedes: [F_B], because: [F_R] }\n",
+    );
+    let found = tsare::check::check(&decls);
+    let cycles: Vec<_> = found
+        .iter()
+        .filter(|item| item.code == "E-SUPERSEDE-CYCLE")
+        .collect();
+    assert_eq!(cycles.len(), 1, "{found:#?}");
+    for name in ["F_A", "F_B", "F_C"] {
+        assert!(cycles[0].message.contains(name), "{}", cycles[0].message);
+    }
+}
+
+#[test]
+fn a_withdrawal_chain_is_not_a_cycle() {
+    let decls = parse(
+        "fact F_R { claim: \"r\", evidence: user }\n\
+         fact F_A { claim: \"a\", evidence: user }\n\
+         fact F_B { claim: \"b\", evidence: user, supersedes: [F_A], because: [F_R] }\n\
+         fact F_C { claim: \"c\", evidence: user, supersedes: [F_B], because: [F_R] }\n",
+    );
+    let found = tsare::check::check(&decls);
+    assert!(
+        found.iter().all(|item| item.code != "E-SUPERSEDE-CYCLE"),
+        "{found:#?}"
+    );
+}

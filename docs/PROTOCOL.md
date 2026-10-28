@@ -288,6 +288,7 @@ checked against what was declared.
 | `W-BARE-NUMBER` | a digit run with a unit in a `statement`/`claim` must be matched by a `value` carrying `measured_by` in `from:` or `basis:`; identifiers are not quantities |
 | `W-BASIS-NO-CRITERION` | a `basis` entry is compared with the criterion its own kind owes: a law is checked, a value measured, a proposition concluded, a fact not merely a model opinion |
 | `E-SUPERSEDE-UNDEFINED` | a `supersedes` name is resolved against the declared set; the edge is not a dependency, so nothing else would notice |
+| `E-SUPERSEDE-CYCLE` | the `supersedes` graph is walked for cycles; a loop means every member is withdrawn by another member, so none of them stands |
 | `W-RETIRED-UNBASED` | a declaration that carries `supersedes` must name what makes the withdrawal right in `because:`; a reference field, so the reason resolves |
 | `W-RETIRED` | a reference is compared with the set of names retired by `supersedes:`; it resolves, but it no longer grounds |
 | `W-UNSATISFIED` | a citation is compared with the fields the cited law declares it requires under `requires:` |

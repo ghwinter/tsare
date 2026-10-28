@@ -1,0 +1,3 @@
+fact F_R { claim: "the rename is the reason", evidence: user }
+fact F_A { claim: "a", evidence: user, supersedes: [F_B], because: [F_R] }
+fact F_B { claim: "b", evidence: user, supersedes: [F_A], because: [F_R] }

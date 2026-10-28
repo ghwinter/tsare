@@ -37,6 +37,7 @@ pub const CODES: &[&str] = &[
     "E-PARTITION-UNKNOWN-USED",
     "E-OUT-MISMATCH",
     "E-SELF-VERDICT",
+    "E-SUPERSEDE-CYCLE",
     "E-SUPERSEDE-UNDEFINED",
     "E-SCOPE-UNBOUNDED",
     "E-SYNTAX",
@@ -170,6 +171,11 @@ pub fn explain(code: &str) -> Option<&'static str> {
             Fix: bind `over:` to an enumerable extent, or weaken the sentence.",
         "E-SYNTAX" => "The document does not parse: a string is unterminated, a bracket is missing, or a value is not a value.\n\
             Fix: the caret points at the first token that could not start what the grammar expected.",
+        "E-SUPERSEDE-CYCLE" => "A chain of `supersedes` fields closes on itself: A withdraws B and B withdraws A, or a longer loop.\n\
+            Each member is withdrawn because of the next, so nothing in the cycle stands, and because\n\
+            `supersedes` is an edge rather than a dependency no other check walks it.\n\
+            Fix: break the loop. Re-ground one of them on something that stands, or withdraw it from\n\
+            a declaration that is not itself withdrawn.",
         "E-SUPERSEDE-UNDEFINED" => "A `supersedes` field names a declaration that does not exist.\n\
             A withdrawal that names nothing withdraws nothing, and because `supersedes` is an edge\n\
             rather than a dependency, a typo in it would otherwise be silent.\n\

@@ -393,6 +393,82 @@ fn check_retirement(decls: &[Decl], out: &mut Vec<Diagnostic>) {
             );
         }
     }
+    // A withdrawal is an edge, and the graph it forms has to be acyclic.  If A withdraws B and B
+    // withdraws A, each is withdrawn because of the other: neither stands, and because the edge is
+    // not a dependency no other check walks it.  Self-withdrawal is caught above; this catches the
+    // longer loops.
+    let by_name: std::collections::HashMap<&str, &Decl> = decls
+        .iter()
+        .map(|decl| (decl.name.as_str(), decl))
+        .collect();
+    let mut edges: std::collections::HashMap<&str, Vec<&str>> = std::collections::HashMap::new();
+    for decl in decls {
+        let mut targets: Vec<&str> = Vec::new();
+        for name in list_field(decl, "supersedes") {
+            if name == decl.name {
+                continue;
+            }
+            let Some(&target) = declared.get(name.as_str()) else {
+                continue;
+            };
+            if !targets.contains(&target) {
+                targets.push(target);
+            }
+        }
+        edges.insert(decl.name.as_str(), targets);
+    }
+    // Colours: 0 unreached, 1 on the current path, 2 finished.  The path is kept explicitly so a
+    // long chain of withdrawals cannot overflow the stack the way a recursive walk would.
+    let mut colour: std::collections::HashMap<&str, u8> =
+        decls.iter().map(|decl| (decl.name.as_str(), 0)).collect();
+    for decl in decls {
+        let start = decl.name.as_str();
+        if colour.get(start).copied().unwrap_or(2) != 0 {
+            continue;
+        }
+        colour.insert(start, 1);
+        let mut frames: Vec<(&str, usize)> = vec![(start, 0)];
+        while let Some((node, index)) = frames.pop() {
+            let children: &[&str] = edges.get(node).map(Vec::as_slice).unwrap_or(&[]);
+            if index == children.len() {
+                colour.insert(node, 2);
+                continue;
+            }
+            frames.push((node, index + 1));
+            let child = children[index];
+            match colour.get(child).copied().unwrap_or(2) {
+                0 => {
+                    colour.insert(child, 1);
+                    frames.push((child, 0));
+                }
+                1 => {
+                    let first = frames
+                        .iter()
+                        .position(|(name, _)| *name == child)
+                        .unwrap_or(0);
+                    let mut path: Vec<&str> =
+                        frames[first..].iter().map(|(name, _)| *name).collect();
+                    path.push(child);
+                    let Some(closer) = by_name.get(node).copied() else {
+                        continue;
+                    };
+                    sem(
+                        closer,
+                        "E-SUPERSEDE-CYCLE",
+                        format!(
+                            "{} is in a withdrawal cycle {}: each member is withdrawn because of \
+                             the next, so none of them stands",
+                            node,
+                            path.join(" -> ")
+                        ),
+                        Some("supersedes"),
+                        out,
+                    );
+                }
+                _ => {}
+            }
+        }
+    }
     // A retirement is a decision, and every other decision in this language has to say why.  A
     // warning rather than an error: an old document that withdrew something is still readable, but
     // a reader cannot tell a considered withdrawal from a quiet one.

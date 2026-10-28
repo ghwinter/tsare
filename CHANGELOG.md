@@ -129,6 +129,12 @@ All notable changes are recorded here. The format follows
   there, 12 only here; `KERNEL.tsare` against `WORLDVIEW.tsare` gives 3 shared.
 ### Added
 
+- `E-SUPERSEDE-CYCLE` — a `supersedes` graph that closes on itself. A withdraws B and B withdraws
+  A, so each is withdrawn because of the other and neither stands; `check` reported only the
+  missing `because:` lines, `engine` reported nothing held, and `derive` said every conclusion was
+  grounded. Self-withdrawal was already an error; the walk is iterative because a long chain must
+  not overflow the stack.
+
 - `E-SUPERSEDE-UNDEFINED` — a `supersedes` field that names nothing, or names itself. A withdrawal
   that leaves nothing standing withdraws nothing; because `supersedes` is an edge rather than a
   dependency, a typo in it was completely silent. The self-verification test caught this code
