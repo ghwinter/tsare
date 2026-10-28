@@ -509,12 +509,25 @@ pub(crate) fn id_field<'a>(decl: &'a Decl, key: &str) -> Option<&'a str> {
 /// is whether the domain is bound with `over:`.  The cue is deliberately generous on `都`, which is
 /// also an adverb: a false positive here costs one line (`over:` naming the set, or a reword), and
 /// naming the set is the improvement the warning is asking for anyway.
-fn universal_text(text: &str) -> bool {
-    // "at all" is an idiom, not a universal claim
-    let lowered = text.replace("at all", "").replace("after all", "");
-    ["所有", "全部", "每", "都", "always", "every", "all "]
+///
+/// English has spaces, so an English cue is matched as a word and not as a substring: `all ` used
+/// to fire inside `small` and `stall`, while a capitalised `All` did not fire at all.  Chinese has
+/// no such boundary; the character cues stay substring tests.
+pub(crate) fn universal_text(text: &str) -> bool {
+    // "at all" and "after all" are idioms, not universal claims
+    let lowered = text
+        .to_lowercase()
+        .replace("at all", "")
+        .replace("after all", "");
+    if ["所有", "全部", "每", "都"]
         .iter()
         .any(|word| lowered.contains(word))
+    {
+        return true;
+    }
+    lowered
+        .split(|ch: char| !ch.is_alphanumeric())
+        .any(|token| token == "all" || token == "always" || token.starts_with("every"))
 }
 
 fn num_field(decl: &Decl, key: &str) -> Option<f64> {

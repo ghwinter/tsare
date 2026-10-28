@@ -82,3 +82,29 @@ fn a_blindspot_signature_is_a_resolved_concept_reference() {
         "{found:#?}"
     );
 }
+
+#[test]
+fn universal_words_need_a_word_boundary() {
+    // Defect: the English cues were raw substrings, so "small" contains "all " and "stall" too,
+    // while capitalised "All" did not match.  Chinese cues have no spaces and stay substrings.
+    let codes = |source: &str| -> Vec<&'static str> {
+        tsare::check::check(&parse(source))
+            .into_iter()
+            .map(|item| item.code)
+            .collect()
+    };
+    assert!(
+        !codes(r#"fact F { claim: "the small cache cut latency", evidence: user }"#)
+            .contains(&"W-OVERCLAIM"),
+        "'small' is not 'all'"
+    );
+    assert!(
+        codes(r#"fact F { claim: "All of the runs passed", evidence: user }"#)
+            .contains(&"W-OVERCLAIM"),
+        "a capitalised All is still universal"
+    );
+    assert!(
+        codes(r#"fact F { claim: "所有请求都成功", evidence: user }"#).contains(&"W-OVERCLAIM"),
+        "所有 is universal"
+    );
+}

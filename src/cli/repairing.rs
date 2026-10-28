@@ -66,6 +66,10 @@ const NO_REPAIR: &[(&str, &str)] = &[
         "needs an attribute the examples share; only the author knows one",
     ),
     (
+        "W-OVERCLAIM",
+        "needs `over:` naming a set the engine can enumerate; that is content",
+    ),
+    (
         "E-CYCLE",
         "a cycle can be cut at any edge; which edge is a judgement",
     ),

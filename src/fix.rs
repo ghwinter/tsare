@@ -329,18 +329,6 @@ pub fn candidates(decls: &[Decl]) -> Vec<(String, Vec<Decl>)> {
                 add_warrant(decls, decl),
             ));
         }
-        if decl.kind == "fact" {
-            let claim = crate::program::f_str(decl, "claim").unwrap_or("");
-            let universal = ["所有", "都", "全部", "always", "every", "all "];
-            if universal.iter().any(|word| claim.contains(word))
-                && !decl.fields.iter().any(|(key, _)| key == "scope")
-            {
-                out.push((
-                    format!("{}: add `scope: ?`", decl.name),
-                    add_field(decls, &decl.name, "scope", Val::Hole),
-                ));
-            }
-        }
     }
     out
 }
