@@ -1,0 +1,5 @@
+# The gate as a profile bundle: a profile that lists this package in its
+# `dsh.profile.bundles` composes this row without editing its own patch layer.
+- insert:
+    - id: tsare-gate
+      name: tsare-gate
