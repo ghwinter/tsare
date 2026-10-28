@@ -1,5 +1,7 @@
 {
-  "diagnostics": [],
+  "diagnostics": [
+    {"code": "W-BARE-NUMBER", "severity": "warning", "file": "<fixtures>/schema.tsare", "line": 25, "col": 14, "message": "P_STABLE states a number and cites no measured value: nothing here says what produced it"}
+],
   "errors": 0,
-  "warnings": 0
+  "warnings": 1
 }

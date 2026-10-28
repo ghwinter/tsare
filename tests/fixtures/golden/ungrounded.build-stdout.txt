@@ -1,8 +1,12 @@
+<fixtures>/ungrounded.tsare:17:14: warning[W-BARE-NUMBER]: P_THRESHOLD states a number and cites no measured value: nothing here says what produced it
+ 17 |   statement: "users cannot tell 60 fps from 120 fps",
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 <fixtures>/ungrounded.tsare:21:1: warning[W-CONDITIONAL]: P_SMOOTH is supported only through an ungrounded premise: W_RENDER needs P_THRESHOLD (asserted)
  21 | proposition P_SMOOTH {
     | ^
 
-0 error(s), 1 warning(s)
+0 error(s), 2 warning(s)
 emitted <temp>/engine-golden-build-ungrounded/OBLIGATIONS.md
 emitted <temp>/engine-golden-build-ungrounded/LEARNED.md
 emitted <temp>/engine-golden-build-ungrounded/OPEN.md

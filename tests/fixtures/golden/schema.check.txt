@@ -1,1 +1,5 @@
-0 error(s), 0 warning(s)
+<fixtures>/schema.tsare:25:14: warning[W-BARE-NUMBER]: P_STABLE states a number and cites no measured value: nothing here says what produced it
+ 25 |   statement: "frame times stay under 16 ms while scrolling",
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+0 error(s), 1 warning(s)
