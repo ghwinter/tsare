@@ -32,19 +32,33 @@ The plugin runs no model, opens no network, and writes nothing but that template
 | `remindAfterTools` | `[]` | tool names that attach the diagnostics as context; empty means off |
 | `command` | none | argv override (`[file, ...args]`) for tests and wrappers |
 
-## Activate it in a profile
+## Install it into a profile
 
-The plugin is a package with `name` and `apply`; DSH profiles compose plugins through their own
-patch layer, so no change to DSH itself is needed. Add one entry to
-`$DSH_HOME/profiles/<name>/cordis.patch.yml`, install the package into that profile (a path
-dependency works), and the listeners are live for the next session:
+The package is a **profile bundle**: its own `cordis.patch.yml` inserts its row, so installing it
+is one command and needs no edit to your patch layer.
+
+```powershell
+$dsh = "$env:LOCALAPPDATA\Programs\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd"
+& $dsh plugin --profile desktop add "link:D:/GitHub/tsare/dsh/tsare-gate"
+```
+
+`link:` is pnpm's symlink protocol: the profile points at this directory, so a change to the plugin
+is live on the next start without reinstalling. The same command accepts `file:` tarballs,
+`github:owner/repo`, and a registry name once the package is published.
+
+Restart the app. Rollback is one command:
+
+```powershell
+& $dsh plugin --profile desktop remove tsare-gate
+```
+
+To change the config, override the row by id in the profile's own `cordis.patch.yml`:
 
 ```yaml
 - id: tsare-gate
-  name: 'tsare-gate'
   config:
     binary: tsare
-    ledger: SESSION.tsare
+    ledger: .tsare/session.tsare
     mode: errors
     remindAfterTools: [bash]
 ```

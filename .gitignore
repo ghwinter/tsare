@@ -69,3 +69,4 @@ Thumbs.db
 !/dsh/tsare-gate/verify-real.mjs
 !/dsh/tsare-gate/fake-tsare.mjs
 !/dsh/tsare-gate/README.md
+!/dsh/tsare-gate/cordis.patch.yml
