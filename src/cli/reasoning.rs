@@ -207,8 +207,10 @@ pub(crate) fn cmd_argue(path: &Path, against: Option<&Path>) -> i32 {
             "note: {errors} error(s) in {}; conclusions are computed on the resolved graph",
             path.display()
         );
+        1
+    } else {
+        0
     }
-    0
 }
 
 /// Two documents attacking each other.  The report is the argument, not a verdict: `check
@@ -384,8 +386,10 @@ pub(crate) fn cmd_impact(path: &Path) -> i32 {
     let errors = error_count(&diagnostics);
     if errors > 0 {
         println!("note: {errors} error(s); analyses ran on the resolved part");
+        1
+    } else {
+        0
     }
-    0
 }
 
 pub(crate) fn cmd_next(path: &Path, json: bool) -> i32 {
@@ -837,7 +841,11 @@ pub(crate) fn cmd_weigh(path: &Path, threshold: f64) -> i32 {
             detail.join("  ")
         );
     }
-    0
+    if errors > 0 {
+        1
+    } else {
+        0
+    }
 }
 
 pub(crate) fn cmd_cat(path: &Path) -> i32 {
@@ -872,6 +880,7 @@ pub(crate) fn cmd_cat(path: &Path) -> i32 {
         }
     }
     println!("checker: {} error(s)", error_count(&diagnostics));
+    let errors = error_count(&diagnostics);
     println!("stages:");
     for stage in crate::cat::stages() {
         println!(
@@ -881,7 +890,11 @@ pub(crate) fn cmd_cat(path: &Path) -> i32 {
             stage.why
         );
     }
-    0
+    if errors > 0 {
+        1
+    } else {
+        0
+    }
 }
 
 pub(crate) fn cmd_moves(path: &Path) -> i32 {

@@ -99,8 +99,10 @@ pub(crate) fn cmd_graph(path: &Path, out: Option<&str>) -> i32 {
     let errors = error_count(&diagnostics);
     if errors > 0 {
         println!("note: {errors} error(s); dangling edges are part of the picture");
+        1
+    } else {
+        0
     }
-    0
 }
 
 pub(crate) fn cmd_map(left: &Path, right: &Path, top: usize) -> i32 {
@@ -188,7 +190,11 @@ pub(crate) fn cmd_induce(path: &Path) -> i32 {
             println!("    {}. {answer}", index + 1);
         }
     }
-    0
+    if errors > 0 {
+        1
+    } else {
+        0
+    }
 }
 
 pub(crate) fn cmd_pattern(path: &Path, name: &str, with_vars: bool) -> i32 {

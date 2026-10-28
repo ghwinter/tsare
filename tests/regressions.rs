@@ -414,3 +414,33 @@ fn project_groups_every_file_the_way_check_does() {
     assert!(text.contains("E-SYNTAX"), "{text}");
     assert_eq!(output.status.code(), Some(1), "{text}");
 }
+
+#[test]
+fn a_command_that_reports_an_error_exits_nonzero() {
+    // Defect: argue, impact, weigh, cat, induce and graph printed "N error(s)" and returned 0,
+    // so a gate that read the exit status was told the analysis succeeded on a broken program.
+    // check, project and build already returned 1 for the same bytes.
+    let dir = temp("analysis-exits");
+    let doc = dir.join("broken.tsare");
+    std::fs::copy(root().join("docs/repro/project-dir/b.tsare"), &doc).expect("copy reproducer");
+    let graph_out = dir.join("graph.mmd");
+    let shown = doc.to_str().unwrap().to_string();
+    let cases: Vec<Vec<&str>> = vec![
+        vec!["argue", &shown],
+        vec!["impact", &shown],
+        vec!["weigh", &shown],
+        vec!["cat", &shown],
+        vec!["induce", &shown],
+        vec!["graph", &shown, "--out", graph_out.to_str().unwrap()],
+    ];
+    for argv in cases {
+        let output = run_in(root(), &argv);
+        assert_eq!(
+            output.status.code(),
+            Some(1),
+            "{argv:?}: {}",
+            stdout(&output)
+        );
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+}
