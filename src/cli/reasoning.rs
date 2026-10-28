@@ -463,12 +463,28 @@ pub(crate) fn cmd_meet(path: &Path, args: &Args) -> i32 {
         }
     }
 }
-pub(crate) fn cmd_shape(path: &Path, top: usize, depth: usize, layers: bool) -> i32 {
+pub(crate) fn cmd_shape(
+    path: &Path,
+    top: usize,
+    depth: usize,
+    layers: bool,
+    against: Option<&str>,
+) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
     };
     let program = Program::new(&loaded.decls);
+    if let Some(other) = against {
+        let other = match load(Path::new(other)) {
+            Ok(loaded) => loaded,
+            Err(error) => return fail(error),
+        };
+        let there = Program::new(&other.decls);
+        let difference = crate::shape::compare(&program, &there, depth);
+        print!("{}", crate::shape::difference_text(&difference, depth));
+        return 0;
+    }
     if layers {
         let fibres = crate::shape::fibres(&program, depth);
         print!("{}", crate::shape::fibre_text(&fibres, depth));

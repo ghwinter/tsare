@@ -272,3 +272,72 @@ claim about the whole class, not about one member.
     }
     out
 }
+
+/// Two documents read as sets of forms, and the difference between them.  This is how a structure is
+/// compared with another structure rather than a claim with a claim: what both frameworks have, what
+/// only one of them has.  Content never enters it, so the answer is about shape.
+pub struct Difference {
+    pub shared: Vec<String>,
+    pub only_here: Vec<String>,
+    pub only_there: Vec<String>,
+}
+
+fn forms(program: &Program, depth: usize) -> std::collections::BTreeMap<String, String> {
+    let mut out: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
+    for decl in program.decls {
+        let signature = signature_at(program, decl, depth);
+        out.entry(signature)
+            .or_insert_with(|| format!("{} {}", decl.kind, decl.name));
+    }
+    out
+}
+
+pub fn compare(here: &Program, there: &Program, depth: usize) -> Difference {
+    let left = forms(here, depth);
+    let right = forms(there, depth);
+    let shared = left
+        .keys()
+        .filter(|key| right.contains_key(*key))
+        .map(|key| left[key].clone())
+        .collect();
+    let only_here = left
+        .keys()
+        .filter(|key| !right.contains_key(*key))
+        .map(|key| left[key].clone())
+        .collect();
+    let only_there = right
+        .keys()
+        .filter(|key| !left.contains_key(*key))
+        .map(|key| right[key].clone())
+        .collect();
+    Difference {
+        shared,
+        only_here,
+        only_there,
+    }
+}
+
+pub fn difference_text(difference: &Difference, depth: usize) -> String {
+    let show = |items: &[String]| -> String {
+        if items.is_empty() {
+            return "none".to_string();
+        }
+        let mut shown: Vec<&str> = items.iter().take(8).map(String::as_str).collect();
+        let more = if items.len() > shown.len() {
+            ", …"
+        } else {
+            ""
+        };
+        shown.sort();
+        format!("{}{more}", shown.join(", "))
+    };
+    format!(
+        "forms at depth {depth}: {} shared, {} only here, {} only there\n  shared:     {}\n  only here:  {}\n  only there: {}\n",
+        difference.shared.len(),
+        difference.only_here.len(),
+        difference.only_there.len(),
+        show(&difference.shared),
+        show(&difference.only_here),
+        show(&difference.only_there)
+    )
+}

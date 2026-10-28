@@ -122,6 +122,11 @@ All notable changes are recorded here. The format follows
   `?` in every position, which is valid input: the pattern says what the family looks like, and the
   holes are the decisions a substitution still has to make. Two declarations of different kinds have
   no meet, and the command says so instead of inventing one.
+- `shape PATH --against OTHER` — two documents compared as structures rather than as texts: which
+  forms both use, which only one of them has. It is a set difference over signatures, so it cannot be
+  talked into agreeing, and it is the primitive a question like "should this idea be written in that
+  document instead" needs. Measured: `SELF.tsare` against `docs/REPO.tsare` gives 5 shared, 16 only
+  there, 12 only here; `KERNEL.tsare` against `WORLDVIEW.tsare` gives 3 shared.
 ### Added
 
 - `E-SUPERSEDE-UNDEFINED` — a `supersedes` field that names nothing, or names itself. A withdrawal
