@@ -1,0 +1,4 @@
+fact F_OLD { claim: "old", evidence: tool("t") }
+fact F_NEW { claim: "new", evidence: tool("t"), supersedes: [F_OLD], because: [F_OLD] }
+proposition P_FAST { statement: "under budget", from: [F_OLD] }
+warrant W_FAST { claim: "80 ms is under budget", from: [F_OLD], to: P_FAST, basis: [F_OLD] }

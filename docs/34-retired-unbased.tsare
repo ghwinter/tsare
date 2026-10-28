@@ -1,0 +1,29 @@
+# Decision recorded as an unreasoned retirement: the old threshold was withdrawn without saying
+# what made the withdrawal right, and the conclusion still cites it.
+#
+# The reference resolves -- withdrawal appends, it does not delete -- but the ground is gone. The
+# checker reports both the missing reason (W-RETIRED-UNBASED) and the citation of a withdrawn
+# declaration (W-RETIRED), and the conclusion becomes conditional in the engine.
+
+fact F_OLD_THRESHOLD {
+  claim: "the frame budget is 16ms",
+  evidence: user
+}
+
+fact F_NEW_THRESHOLD {
+  claim: "the frame budget is 20ms",
+  evidence: user,
+  supersedes: [F_OLD_THRESHOLD]
+}
+
+proposition P_WITHIN {
+  statement: "the frame lands inside the budget",
+  from: [F_OLD_THRESHOLD]
+}
+
+warrant W_WITHIN {
+  claim: "16ms bounds the frame",
+  from: [F_OLD_THRESHOLD],
+  to: P_WITHIN,
+  basis: [F_OLD_THRESHOLD]
+}

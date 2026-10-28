@@ -1,0 +1,21 @@
+tsare 1
+# Decision: the format line is written down when a document is meant to outlive the build that
+# read it. The line buys one thing -- a clean E-VERSION instead of a page of parse noise -- and it
+# is only worth writing when the document is a contract rather than a draft.
+
+fact F_FORMAT {
+  claim: "the document declares format 1 on its first line",
+  evidence: tool("head -1 docs/39-header.tsare")
+}
+
+proposition P_PORTABLE {
+  statement: "a future build can refuse this document with one true error",
+  from: [F_FORMAT]
+}
+
+warrant W_PORTABLE {
+  claim: "the version check runs before the parser",
+  from: [F_FORMAT],
+  to: P_PORTABLE,
+  basis: [F_FORMAT]
+}

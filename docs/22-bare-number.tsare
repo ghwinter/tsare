@@ -1,0 +1,34 @@
+# Research claim: p99 frame time fell from 22ms to 14ms after the cache change.
+#
+# The instrument is named in the fact below, but no `value` records it, so the sentence looks
+# measured while the document cannot say which bound the comparison used. The checker warns
+# W-BARE-NUMBER. Whether that is the right granularity for a before/after comparison is the open
+# question this file records.
+
+fact F_BEFORE_AFTER {
+  claim: "the benchmark harness recorded p99 at 22ms before and 14ms after",
+  evidence: tool("bench/p99.json")
+}
+
+proposition P_IMPROVED {
+  statement: "p99 frame time fell from 22 ms to 14 ms after the cache change",
+  from: [F_BEFORE_AFTER]
+}
+
+question Q_COMPARISON {
+  asks: "is a before/after comparison one quantity or two?",
+  answers: ["one metric with two readings", "two different instruments"],
+  separates: [H_PAIR, H_TWO]
+}
+
+hypothesis H_PAIR {
+  assumes: [F_BEFORE_AFTER],
+  predicts: "the same harness produced both readings, so they are comparable",
+  test: "check the harness revision recorded in both runs"
+}
+
+hypothesis H_TWO {
+  assumes: [F_BEFORE_AFTER],
+  predicts: "the harness changed between the runs, so the difference is not a difference",
+  rival: H_PAIR
+}

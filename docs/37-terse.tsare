@@ -1,0 +1,19 @@
+# Decision: one declared fact, one rule, one conclusion. Nothing is missing, so nothing warns.
+# This is the shape a terse document should have when the decision is already settled elsewhere.
+
+fact F_BUILD {
+  claim: "the release build compiles with no warnings",
+  evidence: tool("cargo build --release")
+}
+
+proposition P_SHIP {
+  statement: "the release build is clean enough to ship",
+  from: [F_BUILD]
+}
+
+warrant W_SHIP {
+  claim: "a warning-free release build is the shipping gate",
+  from: [F_BUILD],
+  to: P_SHIP,
+  basis: [F_BUILD]
+}

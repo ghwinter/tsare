@@ -1,0 +1,41 @@
+# Decision: the open list of supported surfaces is used as a premise, and that is exactly the
+# mistake this file records. The list says it is incomplete; the proposition below treats it as
+# complete. The checker refuses the use with W-PARTITION-OPEN-USED.
+#
+# The repair is to close the list with a basis, or to stop deriving anything from it. Rewording the
+# partition as closed would only move the lie into the declaration.
+
+fact F_CLI {
+  claim: "the CLI is a supported surface",
+  evidence: tool("surfaces.md"),
+  attrs: { surface: cli, stable: true }
+}
+
+fact F_MCP {
+  claim: "the MCP server is a supported surface",
+  evidence: tool("surfaces.md"),
+  attrs: { surface: mcp, stable: true }
+}
+
+fact F_LIBRARY {
+  claim: "the library API is not yet supported",
+  evidence: tool("surfaces.md"),
+  attrs: { surface: library, stable: false }
+}
+
+concept C_SURFACES {
+  name: "a surface this release commits to",
+  grounded_by: [F_CLI, F_MCP],
+  against: [F_LIBRARY]
+}
+
+partition E_SUPPORTED {
+  dimension: C_SURFACES,
+  elements: [F_CLI, F_MCP],
+  closure: open
+}
+
+proposition P_TWO_SURFACES {
+  statement: "this release supports exactly two surfaces",
+  from: [E_SUPPORTED]
+}

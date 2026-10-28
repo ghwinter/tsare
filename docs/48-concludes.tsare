@@ -1,0 +1,30 @@
+# Decision: a warrant may conclude a class of propositions instead of one named proposition.
+#
+# The class form exists so a rule can be written once for every proposition with a given status.
+# The decision recorded here is that the class form is a real mode: a document that uses it should
+# be argued exactly like one that names its conclusion, and no reader should have to add a `to:`
+# stub just to make the tools agree.
+
+fact F_TARGETS {
+  claim: "the project has two open propositions",
+  evidence: tool("tsare next docs/project")
+}
+
+proposition P_OPEN_ONE {
+  statement: "the retry bound is two attempts",
+  from: [F_TARGETS],
+  status: open
+}
+
+proposition P_OPEN_TWO {
+  statement: "the retry bound is four attempts",
+  from: [F_TARGETS],
+  status: open
+}
+
+warrant W_OPEN_CLASS {
+  claim: "an open bound stands on the measurement that will close it",
+  from: [F_TARGETS],
+  concludes: { status: open },
+  basis: [F_TARGETS]
+}

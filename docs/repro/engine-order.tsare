@@ -1,0 +1,6 @@
+fact F1 { claim: "1", evidence: tool("t") }
+fact F2 { claim: "2", evidence: tool("t") }
+proposition P1 { statement: "p1", from: [F1, F9] }
+proposition P2 { statement: "p2", from: [F2, F9] }
+warrant W1 { claim: "w1", from: [F1, F9], to: P1 }
+warrant W2 { claim: "w2", from: [F2, F9], to: P2 }

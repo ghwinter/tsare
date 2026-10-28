@@ -1,0 +1,13 @@
+# Decision recorded as a stale hash: the artifact was rebuilt after this fact was written, and the
+# recorded digest no longer matches the bytes. `evidence: tool(...)` says something ran; `out` says
+# what came out. A run that exits 0 while leaving a placeholder behind passes every other check,
+# which is why the comparison is an error rather than a warning.
+#
+# The repair is to re-run and record the new hash, not to delete the artifact.
+
+fact F_BINARY_STALE {
+  claim: "the release binary is 2435072 bytes",
+  evidence: tool("target/release/tsare.exe"),
+  artifact: "docs/artifacts/binary-size.txt",
+  out: "0000000000000000000000000000000000000000000000000000000000000000"
+}

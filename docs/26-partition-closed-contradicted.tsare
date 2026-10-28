@@ -1,0 +1,38 @@
+# Decision recorded as a false closure: the list below says the refusal reasons are all of them,
+# but the dimension records one more. The checker notices because closure is a claim about a set
+# the document already contains, not a rhetorical flourish.
+#
+# The repair is to add the missing element or to declare the list open. The file is kept as the
+# record of the review that forgot the fourth reason.
+
+fact F_NO_PROOF {
+  claim: "a proof language was refused for decidability",
+  evidence: tool("design/review.md")
+}
+
+fact F_NO_NETWORK {
+  claim: "a network check was refused for hermeticity",
+  evidence: tool("design/review.md")
+}
+
+fact F_NO_ADVICE {
+  claim: "generated advice was refused because no checker verifies it",
+  evidence: tool("design/review.md")
+}
+
+fact F_WHY_CLOSED {
+  claim: "the review enumerated the refusal criteria",
+  evidence: tool("design/review.md")
+}
+
+concept C_REFUSED {
+  name: "an addition refused in this review",
+  grounded_by: [F_NO_PROOF, F_NO_NETWORK, F_NO_ADVICE]
+}
+
+partition E_REFUSED {
+  dimension: C_REFUSED,
+  elements: [F_NO_PROOF, F_NO_NETWORK],
+  closure: closed,
+  basis: [F_WHY_CLOSED]
+}

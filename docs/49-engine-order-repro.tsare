@@ -1,0 +1,70 @@
+# Research note: four conclusions all wait on one assumption, and the engine lists them in a
+# different order on every process. The conclusion set is stable; the presentation is not.
+#
+# This is the same defect as 03-engine-order, written with four rows instead of two so a repeated
+# run is very unlikely to agree by accident. The measurement is the corpus matrix: four runs, four
+# orders.
+
+fact F_ASSUMED {
+  claim: "the retry bound is two attempts",
+  evidence: model
+}
+
+fact F_MEASURED {
+  claim: "the retry counter is exposed on the metrics endpoint",
+  evidence: tool("metrics/retry.txt")
+}
+
+hypothesis H_ASSUMPTION {
+  assumes: [F_ASSUMED],
+  predicts: "the retry bound stays at two attempts through the release",
+  test: "run the retry torture suite against the release candidate"
+}
+
+proposition P_QUEUE {
+  statement: "the queue drains inside the request budget",
+  from: [H_ASSUMPTION]
+}
+
+proposition P_STORE {
+  statement: "the store keeps acknowledged writes",
+  from: [H_ASSUMPTION]
+}
+
+proposition P_RETRY {
+  statement: "a retry cannot duplicate a write",
+  from: [H_ASSUMPTION]
+}
+
+proposition P_ALERT {
+  statement: "the alert fires before the retry bound is reached",
+  from: [H_ASSUMPTION]
+}
+
+warrant W_QUEUE {
+  claim: "the retry bound is what makes the queue budget hold",
+  from: [H_ASSUMPTION],
+  to: P_QUEUE,
+  basis: [F_MEASURED]
+}
+
+warrant W_STORE {
+  claim: "the retry bound is what keeps the store whole",
+  from: [H_ASSUMPTION],
+  to: P_STORE,
+  basis: [F_MEASURED]
+}
+
+warrant W_RETRY {
+  claim: "the retry bound is what prevents a duplicate write",
+  from: [H_ASSUMPTION],
+  to: P_RETRY,
+  basis: [F_MEASURED]
+}
+
+warrant W_ALERT {
+  claim: "the retry bound is what the alert is calibrated against",
+  from: [H_ASSUMPTION],
+  to: P_ALERT,
+  basis: [F_MEASURED]
+}

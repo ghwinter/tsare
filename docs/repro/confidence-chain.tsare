@@ -1,0 +1,5 @@
+fact F { claim: "measured", evidence: tool("t"), confidence: 0.9 }
+proposition P1 { statement: "p1", from: [F], confidence: 0.9 }
+warrant W1 { claim: "w1", from: [F], to: P1 }
+proposition P2 { statement: "p2", from: [P1], confidence: 0.95 }
+warrant W2 { claim: "w2", from: [P1], to: P2 }

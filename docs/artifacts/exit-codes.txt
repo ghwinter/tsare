@@ -1,0 +1,18 @@
+command                     exit  summary line
+check                        1   1 error(s), 0 warning(s)
+argue                        0   note: 1 error(s) in docs/repro/project-dir/b.tsare; conclusions are computed on the resolved graph
+impact                       0   note: 1 error(s); analyses ran on the resolved part
+weigh                        0   1 error(s); weights are computed on the resolved part
+cat                          0   checker: 1 error(s)
+induce                       0   note: 1 error(s) in docs/repro/project-dir/b.tsare; learning ran on what resolved
+derive                       0   
+debt                         0   
+next                         0   
+ask                          0   
+outline                      0   
+audit                        0   
+egraph                       0   
+fix                          0   
+suggest                      0   
+project                      1   1 error(s), 0 warning(s)
+build                        1   1 error(s), 0 warning(s)

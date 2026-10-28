@@ -1,0 +1,28 @@
+# Decision: a model's claim may be used once a person has confirmed it, and the confirmation is a
+# recorded field rather than a change of evidence.
+#
+# The alternative was to edit `evidence: model` into `evidence: user`. That was rejected because it
+# erases where the sentence came from: the model proposed it, and a person checked it.
+
+fact F_PROPOSED {
+  claim: "the JSON field order is stable across releases",
+  evidence: model,
+  confirmed_by: "release manager, 2026-10-20"
+}
+
+fact F_RELEASE_NOTE {
+  claim: "the release note records the same field order",
+  evidence: doc("CHANGELOG.md")
+}
+
+proposition P_ORDER_STABLE {
+  statement: "consumers may key on the diagnostic field order",
+  from: [F_PROPOSED, F_RELEASE_NOTE]
+}
+
+warrant W_ORDER_STABLE {
+  claim: "a confirmed proposal and the release note agree about the order",
+  from: [F_PROPOSED, F_RELEASE_NOTE],
+  to: P_ORDER_STABLE,
+  basis: [F_RELEASE_NOTE]
+}

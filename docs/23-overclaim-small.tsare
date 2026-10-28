@@ -1,0 +1,22 @@
+# Decision: the small cache is kept, because it removes a disk read on the hot path.
+#
+# This is an ordinary engineering sentence, recorded here because the checker reads "small " as the
+# word "all " and calls the sentence universal. The fix is not to reword the decision: the word
+# boundary is the defect, and this file is the reproducer.
+
+fact F_SMALL_CACHE {
+  claim: "the small cache cut cold latency",
+  evidence: tool("bench/cold.txt")
+}
+
+proposition P_KEEP_CACHE {
+  statement: "keep the small cache",
+  from: [F_SMALL_CACHE]
+}
+
+warrant W_KEEP_CACHE {
+  claim: "one disk read removed on the hot path pays for the memory",
+  from: [F_SMALL_CACHE],
+  to: P_KEEP_CACHE,
+  basis: [F_SMALL_CACHE]
+}

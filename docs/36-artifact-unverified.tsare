@@ -1,0 +1,12 @@
+# Decision recorded as an unverified artifact: the fact records the hash it expects, but the file
+# it names is not in this checkout. An unverifiable claim is not a false one, and it is not evidence
+# either; the checker says so with W-OUT-UNVERIFIED.
+#
+# The repair is to add the artifact, or to drop `out` and accept that the evidence is a name.
+
+fact F_MEASURED_ELSEWHERE {
+  claim: "the profiler recorded 41 allocations per request",
+  evidence: tool("profiler/heap.out"),
+  artifact: "docs/artifacts/profiler-heap.log",
+  out: "5b3f4c2d1e0a99887766554433221100ffeeddccbbaa99887766554433221100"
+}

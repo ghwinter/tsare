@@ -1,0 +1,4 @@
+command: tsare check doc.tsare --json            (plain)
+{"code": "E-UNDEFINED", "severity": "error", "name": "P1", "file": "doc.tsare", "line": 3, "col": 1, "message": "P1.from refers to F9"},
+command: tsare check doc.tsare --json --cache    (second, cached run)
+{"code": "E-UNDEFINED", "severity": "error", "name": "", "file": "doc.tsare", "line": 3, "col": 1, "message": "P1.from refers to F9"},

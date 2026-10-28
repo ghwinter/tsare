@@ -1,0 +1,48 @@
+# Research question: is byte equality the right test for a deterministic checker?
+#
+# The experiment below measured two different outputs across forty runs of the same input. One
+# reading says the engine is broken; the other says a checker is deterministic when the same
+# conclusions are reachable, and order is presentation. This is a real disagreement about what the
+# property means, so it is written as two hypotheses and a question that would settle it.
+
+fact F_REPEAT {
+  claim: "forty runs of engine --json produced two byte sequences",
+  evidence: tool("docs/artifacts/engine-order.txt"),
+  artifact: "docs/artifacts/engine-order.txt",
+  out: "c7a66ed3fd296a2e4c0e6f7af39822351405f4ba92ac25308170e65543236770"
+}
+
+fact F_SALTED {
+  claim: "the order tracks the hash seed of the process, not the document",
+  evidence: code("src/closure.rs")
+}
+
+proposition P_BYTES_MATTER {
+  statement: "a byte difference in the report is a test failure even when the conclusions are equal",
+  from: [F_REPEAT, F_SALTED]
+}
+
+warrant W_BYTES_MATTER {
+  claim: "a loop that diffs reports cannot tell a presentation change from a semantic one",
+  from: [F_REPEAT, F_SALTED],
+  to: P_BYTES_MATTER,
+  basis: [F_REPEAT]
+}
+
+question Q_DETERMINISM {
+  asks: "is determinism byte equality or equality of conclusions?",
+  answers: ["byte equality", "conclusions equal, order free"],
+  separates: [H_BYTES, H_CONCLUSIONS]
+}
+
+hypothesis H_BYTES {
+  assumes: [F_REPEAT],
+  predicts: "two byte sequences are two behaviours and the engine must sort",
+  test: "run the same document twice in one process and compare the bytes"
+}
+
+hypothesis H_CONCLUSIONS {
+  assumes: [F_SALTED],
+  predicts: "the report is a set and the order is not part of its meaning",
+  rival: H_BYTES
+}

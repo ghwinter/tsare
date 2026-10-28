@@ -1,0 +1,17 @@
+# Decision recorded as a missing bound: the startup metric has an instrument and a unit but no
+# threshold, so no reading of it can pass or fail. The alternative was to write 30 because it
+# sounded reasonable; that would invent the number the decision is supposed to rest on.
+#
+# The value is kept incomplete on purpose until the budget review sets the bound.
+
+value V_STARTUP {
+  metric: "startup_ms",
+  direction: min,
+  unit: "ms",
+  measured_by: tool("startup/bench.txt")
+}
+
+fact F_STARTUP_READING {
+  claim: "the binary reaches its first output in 19ms",
+  evidence: tool("startup/bench.txt")
+}

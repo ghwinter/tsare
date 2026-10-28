@@ -1,0 +1,72 @@
+# Decision: the parser is a core layer; the command line is a front layer that may only see
+# what core exposes. The alternative, one flat namespace, was rejected after a CLI change silently
+# altered the meaning of a parse diagnostic.
+#
+# The two laws are the interface: core says parsing is total, front says it preserves the core
+# diagnostic, and the second law is signed by `refines:` so neither is an unsigned promise.
+
+layer L_CORE {
+  name: "parser and checks",
+  exposes: [F_PARSE_TOTAL, P_CORE_TEXT]
+}
+
+layer L_FRONT {
+  name: "command line and MCP",
+  exposes: [P_FRONT_TEXT]
+}
+
+fact F_PARSE_TOTAL {
+  claim: "a document parses to a declaration list or one located E-SYNTAX diagnostic",
+  evidence: code("src/syntax.rs"),
+  layer: L_CORE,
+  attrs: { total: true, surface: parse }
+}
+
+fact F_FRONT_RENDERS {
+  claim: "the front end renders the diagnostic span without re-deriving it",
+  evidence: code("src/render.rs"),
+  layer: L_FRONT,
+  attrs: { total: true, surface: render }
+}
+
+proposition P_CORE_TEXT {
+  statement: "a diagnostic carries the span of the token it is about",
+  from: [F_PARSE_TOTAL],
+  layer: L_CORE
+}
+
+proposition P_FRONT_TEXT {
+  statement: "the front end prints the span it was given",
+  from: [F_FRONT_RENDERS, F_PARSE_TOTAL],
+  layer: L_FRONT
+}
+
+warrant W_CORE_TEXT {
+  claim: "a parser that produces a span cannot lose it before returning",
+  from: [F_PARSE_TOTAL],
+  to: P_CORE_TEXT,
+  basis: [F_PARSE_TOTAL],
+  layer: L_CORE
+}
+
+warrant W_FRONT_TEXT {
+  claim: "rendering is the identity on the span and a prefix on the message",
+  from: [F_FRONT_RENDERS, F_PARSE_TOTAL],
+  to: P_FRONT_TEXT,
+  basis: [F_FRONT_RENDERS],
+  layer: L_FRONT
+}
+
+law K_CORE {
+  statement: "parsing is total: a document yields declarations or a located diagnostic",
+  holds_in: L_CORE,
+  checked_by: [F_PARSE_TOTAL]
+}
+
+law K_FRONT {
+  statement: "the front end preserves the span core computed",
+  holds_in: L_FRONT,
+  checked_by: [F_FRONT_RENDERS],
+  refines: L_CORE
+}
+

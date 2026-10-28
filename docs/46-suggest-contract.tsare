@@ -1,0 +1,28 @@
+# Decision: the machine contract of `suggest` names the file a suggestion belongs to, because a
+# consumer that cannot locate the span cannot apply it.
+#
+# The observed output below reports an empty file for a single-document invocation, while the
+# protocol example shows a name. That is a contract disagreement, not a cosmetic one: `file` is the
+# only field that tells a caller which document the line numbers index.
+
+fact F_SUGGEST_FILE_EMPTY {
+  claim: "suggest --json reports an empty file field for a single document",
+  evidence: tool("tsare suggest docs/repro/project-dir/b.tsare --json")
+}
+
+fact F_SPAN_SHAPE {
+  claim: "the implementation nests line and col under span while the protocol example puts them at the top level",
+  evidence: code("src/cli/repairing.rs")
+}
+
+proposition P_SUGGEST_FILE {
+  statement: "a suggestion must name the file its span indexes",
+  from: [F_SUGGEST_FILE_EMPTY, F_SPAN_SHAPE]
+}
+
+warrant W_SUGGEST_FILE {
+  claim: "a line number without a file is not a location",
+  from: [F_SUGGEST_FILE_EMPTY],
+  to: P_SUGGEST_FILE,
+  basis: [F_SUGGEST_FILE_EMPTY]
+}

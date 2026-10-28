@@ -1,0 +1,13 @@
+command: tsare check docs/repro/project-dir
+c.tsare:1:21: error[E-SYNTAX]: unterminated string literal
+ 1 | fact F_BAD { claim: "unterminated
+   |                     ^
+
+c.tsare:1:35: error[E-SYNTAX]: expected , or } after a field; fields are separated by commas
+ 1 | fact F_BAD { claim: "unterminated
+   |                                  ^
+
+2 error(s), 0 warning(s)
+
+command: tsare project docs/repro/project-dir
+docs\repro\project-dir:1:21: error[E-SYNTAX]: unterminated string literal

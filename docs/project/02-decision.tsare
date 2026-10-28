@@ -1,0 +1,31 @@
+# The decision: append one line per case, never rewrite the store.
+#
+# The proposition and its warrant live here; the facts they cite live in 01-problem.tsare, and
+# resolving them is the directory's job.
+
+fact F_ANALYSIS {
+  claim: "the analysis enumerated the operations that survive a crash",
+  evidence: tool("crash/analysis.md"),
+  layer: L_STORE,
+  over: [C_SURVIVES_CRASH]
+}
+
+proposition P_ONE_CASE_LOST {
+  statement: "a crash during an append loses at most the line being written",
+  from: [F_APPEND, F_KILL_TEST]
+}
+
+warrant W_ONE_CASE_LOST {
+  claim: "an append is one atomic write, so only the new line is at risk",
+  from: [F_APPEND, F_KILL_TEST],
+  to: P_ONE_CASE_LOST,
+  basis: [F_KILL_TEST]
+}
+
+partition E_SURVIVING_OPERATIONS {
+  of: Q_STORE,
+  dimension: C_SURVIVES_CRASH,
+  elements: [F_APPEND, F_KILL_TEST],
+  closure: closed,
+  basis: [F_ANALYSIS]
+}

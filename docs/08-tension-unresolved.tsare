@@ -1,0 +1,58 @@
+# Decision deferred: we could not agree whether the cache budget is a ceiling on bytes or on
+# startup milliseconds, and both values constrain the same metric in opposite directions.
+#
+# Writing the unresolved pair down is deliberate. The checker refuses it with E-TENSION, which is
+# the honest state: a document that cannot say which bound wins cannot be checked against either.
+# The question below is the one that would settle it, and it has no answer yet.
+
+fact F_MEASUREMENT {
+  claim: "the release binary is 2435072 bytes and starts in 19ms",
+  evidence: tool("docs/artifacts/binary-size.txt"),
+  attrs: { bytes: 2435072, startup_ms: 19 }
+}
+
+value V_BYTES {
+  metric: "artifact_weight",
+  direction: max,
+  unit: "bytes",
+  threshold: 8000000,
+  measured_by: tool("Get-Item target/release/tsare.exe")
+}
+
+value V_STARTUP {
+  metric: "artifact_weight",
+  direction: min,
+  unit: "ms",
+  threshold: 30,
+  measured_by: tool("startup bench")
+}
+
+proposition P_WEIGHT_OK {
+  statement: "the artifact is inside the budget whichever reading wins",
+  from: [F_MEASUREMENT]
+}
+
+warrant W_WEIGHT_OK {
+  claim: "2.4 MB and 19ms are both inside their own bound",
+  from: [F_MEASUREMENT],
+  to: P_WEIGHT_OK,
+  basis: [V_BYTES, V_STARTUP]
+}
+
+question Q_WEIGHT {
+  asks: "is the budget about bytes on disk or milliseconds to first output?",
+  answers: ["bytes on disk", "milliseconds to first output", "both, with bytes winning"],
+  separates: [H_BYTES, H_STARTUP]
+}
+
+hypothesis H_BYTES {
+  assumes: [F_MEASUREMENT],
+  predicts: "the CI cache tier is the binding constraint",
+  test: "measure the artifact store quota and the number of retained builds"
+}
+
+hypothesis H_STARTUP {
+  assumes: [F_MEASUREMENT],
+  predicts: "the developer feedback loop is the binding constraint",
+  rival: H_BYTES
+}

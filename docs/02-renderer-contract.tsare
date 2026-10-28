@@ -1,0 +1,35 @@
+# Decision: a command has one renderer, and the MCP tool calls it rather than re-printing.
+#
+# The alternative was a second formatter tuned for tool output. It was rejected because every
+# edit to a message would then have to be made twice, and the protocol already promises the
+# tool and the shell answer with the same text.
+#
+# This decision is checkable structurally: these facts cite the two files that would have to
+# change together.
+
+fact F_CLI_RENDERER {
+  claim: "the command line prints through the argument dispatch in src/cli/mod.rs",
+  evidence: code("src/cli/mod.rs")
+}
+
+fact F_MCP_DISPATCH {
+  claim: "the MCP server dispatches tools in src/mcp.rs",
+  evidence: code("src/mcp.rs")
+}
+
+fact F_PROTOCOL_TEXT {
+  claim: "the protocol says each tool answers with the same text the command line prints",
+  evidence: doc("docs/PROTOCOL.md")
+}
+
+proposition P_ONE_RENDERER {
+  statement: "there is one renderer per command, not one per surface",
+  from: [F_CLI_RENDERER, F_MCP_DISPATCH, F_PROTOCOL_TEXT]
+}
+
+warrant W_ONE_RENDERER {
+  claim: "two surfaces reading one renderer cannot drift without the renderer changing",
+  from: [F_CLI_RENDERER, F_MCP_DISPATCH],
+  to: P_ONE_RENDERER,
+  basis: [F_PROTOCOL_TEXT]
+}

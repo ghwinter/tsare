@@ -1,0 +1,1 @@
+fact F_GOOD { claim: "the project file parses", evidence: user }

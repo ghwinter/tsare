@@ -1,0 +1,1 @@
+fact F { claim: "x", evidence: user, confidence: 150% }

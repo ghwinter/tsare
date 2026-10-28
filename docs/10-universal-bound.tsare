@@ -1,0 +1,41 @@
+# Decision: a universal claim is allowed only when it names a set the engine can list.
+#
+# "All of the sampled builds pass" is not rhetoric here: the sample is the extent of a concept,
+# and the concept records both the passing runs and one failing run. The claim is bound with
+# `over:`, so the sentence quantifies over exactly those declarations.
+
+fact F_BUILD_1 {
+  claim: "build 1 passed the smoke suite",
+  evidence: tool("ci/1.log"),
+  attrs: { build: 1, passed: true }
+}
+
+fact F_BUILD_2 {
+  claim: "build 2 passed the smoke suite",
+  evidence: tool("ci/2.log"),
+  attrs: { build: 2, passed: true }
+}
+
+fact F_BUILD_3 {
+  claim: "build 3 passed the smoke suite",
+  evidence: tool("ci/3.log"),
+  attrs: { build: 3, passed: true }
+}
+
+fact F_BUILD_4 {
+  claim: "build 4 failed the smoke suite on a flaky fixture",
+  evidence: tool("ci/4.log"),
+  attrs: { build: 4, passed: false }
+}
+
+concept C_SMOKE_SAMPLE {
+  name: "the four builds in this sample",
+  grounded_by: [F_BUILD_1, F_BUILD_2, F_BUILD_3],
+  against: [F_BUILD_4]
+}
+
+fact F_ALL_PASS {
+  claim: "all of the sampled builds pass the smoke suite",
+  evidence: tool("ci/summary.json"),
+  over: [C_SMOKE_SAMPLE]
+}

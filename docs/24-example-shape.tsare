@@ -1,0 +1,30 @@
+# Decision: the negative example for "readable text" was recorded from a different measurement,
+# so it cannot be compared with the positives.
+#
+# The concept compares contrast ratios. The third fact records a theme duration instead. The
+# example is not wrong about the world; it is unusable in this comparison, and the checker says so
+# with W-EXAMPLE-SHAPE rather than letting induction silently learn from mismatched rows.
+
+fact F_HIGH_CONTRAST {
+  claim: "the high-contrast theme measures 7.2",
+  evidence: tool("contrast/theme-a.json"),
+  attrs: { contrast: 7.2 }
+}
+
+fact F_LOW_CONTRAST {
+  claim: "the low-contrast theme measures 2.8",
+  evidence: tool("contrast/theme-b.json"),
+  attrs: { contrast: 2.8 }
+}
+
+fact F_THEME_TIMING {
+  claim: "the theme switch takes 40ms",
+  evidence: tool("timing/theme.json"),
+  attrs: { theme_ms: 40 }
+}
+
+concept C_READABLE {
+  name: "a theme whose text is readable",
+  grounded_by: [F_HIGH_CONTRAST],
+  against: [F_LOW_CONTRAST, F_THEME_TIMING]
+}

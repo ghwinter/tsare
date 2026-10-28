@@ -1,0 +1,51 @@
+# Decision: the language cannot yet say "a partition is a premise", so that limitation is written
+# as a blind spot with two witnesses and the question that would close it.
+#
+# The alternative was to fake it: make the partition a proposition and cite it. That was rejected
+# because the fake compiles and hides exactly the thing a reader needs to know.
+
+fact F_CLOSED_LIST {
+  claim: "the closed list of refusal reasons covers three facts",
+  evidence: tool("audit/partition.json")
+}
+
+fact F_OPEN_LIST {
+  claim: "the same list written as open covers the same three facts",
+  evidence: tool("audit/partition-open.json")
+}
+
+fact F_CONTROL {
+  claim: "a control fact that the signature concept does separate",
+  evidence: tool("audit/control.json")
+}
+
+concept C_CLOSURE {
+  name: "a list whose closure is stated",
+  grounded_by: [F_CLOSED_LIST],
+  against: [F_CONTROL]
+}
+
+blindspot B_PARTITION_PREMISE {
+  cannot_express: "a closed partition used as a premise: the fixpoint knows facts and rules, not closed lists",
+  witness: [F_CLOSED_LIST, F_OPEN_LIST],
+  signature: [C_CLOSURE],
+  closes_with: [Q_FIXPOINT]
+}
+
+question Q_FIXPOINT {
+  asks: "should a closed partition count as a premise in the fixpoint?",
+  answers: ["yes: closed, and every element held", "no: a partition classifies, it does not assert"],
+  separates: [H_CLOSE, H_CLASSIFY]
+}
+
+hypothesis H_CLOSE {
+  assumes: [F_CLOSED_LIST],
+  predicts: "a closed partition whose elements are all held can discharge a premise",
+  test: "add it to the fixpoint, then recompile this file"
+}
+
+hypothesis H_CLASSIFY {
+  assumes: [F_OPEN_LIST],
+  predicts: "a partition is structure, not an assertion, and must discharge nothing",
+  rival: H_CLOSE
+}

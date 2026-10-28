@@ -1,0 +1,2 @@
+fact F { claim: "x", evidence: tool("t") }
+proposition P { statement: "y", from: [F] }

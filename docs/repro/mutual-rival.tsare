@@ -1,0 +1,3 @@
+fact F { claim: "x", evidence: user }
+hypothesis H_ONE { assumes: [F], predicts: "one", rival: H_TWO }
+hypothesis H_TWO { assumes: [F], predicts: "two", rival: H_ONE }

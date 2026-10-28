@@ -1,0 +1,69 @@
+# Decision: three candidate storage layouts were considered and refused; one was kept.
+#
+# The list is a partition, not a mood: every rejected option is a fact, the dimension is the
+# concept "a layout this project refuses", and the closure is closed because the analysis covered
+# every option the protocol allows. The reason is a measured fact, so the closure is not rhetoric.
+
+fact F_OPT_SQLITE {
+  claim: "SQLite was considered and refused: a dependency for one append-only file",
+  evidence: tool("design/review.md"),
+  attrs: { cost: 1, risk: 3 }
+}
+
+fact F_OPT_JSONL {
+  claim: "JSON lines was considered and kept",
+  evidence: tool("design/review.md"),
+  attrs: { cost: 2, risk: 3 }
+}
+
+fact F_OPT_BINARY {
+  claim: "a binary format was refused: unreadable when a write is truncated",
+  evidence: tool("design/review.md"),
+  attrs: { cost: 3, risk: 2 }
+}
+
+fact F_OPT_KEPT {
+  claim: "JSON lines won on inspectability and crash behaviour",
+  evidence: tool("design/decision.md"),
+  attrs: { cost: 4, risk: 1 }
+}
+
+fact F_ANALYSIS {
+  claim: "the review covered every storage option the protocol permits",
+  evidence: tool("design/review.md"),
+  attrs: { covered: 4, options: 4 },
+  over: [C_REJECTED_LAYOUT]
+}
+
+concept C_REJECTED_LAYOUT {
+  name: "a storage layout this project refuses",
+  grounded_by: [F_OPT_SQLITE, F_OPT_JSONL, F_OPT_BINARY],
+  against: [F_OPT_KEPT]
+}
+
+question Q_LAYOUT {
+  asks: "which storage layout should the case store use?",
+  answers: ["an append-only text file", "an embedded database", "a binary log"],
+  separates: [H_JSONL, H_SQLITE]
+}
+
+hypothesis H_JSONL {
+  assumes: [F_OPT_JSONL],
+  predicts: "an append-only JSON-lines file survives a truncated write",
+  test: "kill the writer mid-line and read the store back"
+}
+
+hypothesis H_SQLITE {
+  assumes: [F_OPT_SQLITE],
+  predicts: "an embedded database is worth the dependency",
+  rival: H_JSONL
+}
+
+partition E_LAYOUT {
+  of: Q_LAYOUT,
+  dimension: C_REJECTED_LAYOUT,
+  elements: [F_OPT_SQLITE, F_OPT_JSONL, F_OPT_BINARY],
+  closure: closed,
+  basis: [F_ANALYSIS]
+}
+

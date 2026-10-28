@@ -1,0 +1,27 @@
+# Decision recorded as a layer leak: the front-end proposition reaches a fact the core layer does
+# not expose. The alternative -- exposing everything -- was rejected because a layer that exposes
+# its internals is not a layer.
+#
+# The pointer is at the declaration that reaches across, because that is the line to edit.
+
+layer L_CORE {
+  name: "parser core",
+  exposes: []
+}
+
+layer L_FRONT {
+  name: "command line",
+  exposes: [P_FRONT]
+}
+
+fact F_PARSE_INTERNAL {
+  claim: "the parser records the token offset before consuming it",
+  evidence: code("src/syntax.rs"),
+  layer: L_CORE
+}
+
+proposition P_FRONT {
+  statement: "the command line shows the token offset",
+  from: [F_PARSE_INTERNAL],
+  layer: L_FRONT
+}

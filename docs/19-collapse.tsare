@@ -1,0 +1,33 @@
+# Decision: two names were proposed for the same class of additions, and only one survived.
+#
+# The two concepts below were meant to distinguish "an addition that spends decidability" from
+# "an addition that must wait". Their extents came out identical, which makes them one concept with
+# two names; the checker refuses that as E-COLLAPSE. The resolution is to keep C_REFUSE_NOW and
+# make the waiting concept name a different extent or cease to exist.
+
+fact F_NO_PROOF {
+  claim: "a proof language would spend decidability",
+  evidence: model
+}
+
+fact F_NO_NETWORK {
+  claim: "a network check would make the binary non-hermetic",
+  evidence: model
+}
+
+fact F_ADVICE {
+  claim: "generated advice prose cannot be verified by the checker",
+  evidence: model
+}
+
+concept C_REFUSE_NOW {
+  name: "an addition refused at this stage",
+  grounded_by: [F_NO_PROOF, F_NO_NETWORK],
+  against: [F_ADVICE]
+}
+
+concept C_WAIT_NOW {
+  name: "an addition that must wait for review",
+  grounded_by: [F_NO_PROOF, F_NO_NETWORK],
+  against: [F_ADVICE]
+}
