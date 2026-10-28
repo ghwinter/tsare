@@ -1492,3 +1492,36 @@ fn declarations_of_the_same_form_fall_into_one_class() {
     let single = decls("fact F_ONLY { claim: \"x\", evidence: user }\n");
     assert!(tsare::shape::shapes(&Program::new(&single)).is_empty());
 }
+
+/// The quotient refines with depth: at depth 0 two rules are alike when their own fields have the
+/// same shape; at depth 1 the shape of what they point at counts too.  The classes only get finer,
+/// so the sequence is a filtration of the same set, not a different reading of it.
+#[test]
+fn a_deeper_reading_splits_classes_that_looked_alike() {
+    let source = concat!(
+        "fact F_A { claim: \"a\", evidence: tool(\"t\") }\n",
+        "fact F_B { claim: \"b\", evidence: model }\n",
+        "proposition P_ONE { statement: \"one\", from: [F_A] }\n",
+        "proposition P_TWO { statement: \"two\", from: [F_B] }\n",
+        "warrant W_ONE { claim: \"r\", from: [F_A], to: P_ONE }\n",
+        "warrant W_TWO { claim: \"s\", from: [F_B], to: P_TWO }\n",
+    );
+    let declared = decls(source);
+    let program = Program::new(&declared);
+
+    let shallow = tsare::shape::shapes_at(&program, 0);
+    assert!(
+        shallow
+            .iter()
+            .any(|group| group.kind == "warrant" && group.members.len() == 2),
+        "at depth 0 the two rules share a form"
+    );
+
+    let deep = tsare::shape::shapes_at(&program, 1);
+    assert!(
+        !deep
+            .iter()
+            .any(|group| group.kind == "warrant" && group.members.len() == 2),
+        "at depth 1 they do not: what they point at differs"
+    );
+}

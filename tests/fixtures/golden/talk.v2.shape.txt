@@ -1,4 +1,4 @@
-7 shared form(s) over 27 declaration(s)
+7 shared form(s) over 27 declaration(s) at depth 0
 
 1. concept x3  C_POPULAR, C_ELEGANT, C_SWIFT
    name: "竞品都有的功能…" | "可读的界面…" | "主题切换不打断操作…"

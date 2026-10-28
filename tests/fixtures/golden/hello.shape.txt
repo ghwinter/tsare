@@ -1,1 +1,2 @@
-no form is shared: 4 declaration(s), 4 distinct shape(s)
+no form is shared at depth 0: every one of the 4 declaration(s) has its own
+form.  Lower the depth to compare only what the declarations say about themselves.

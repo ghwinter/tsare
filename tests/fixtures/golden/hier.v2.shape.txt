@@ -1,4 +1,4 @@
-2 shared form(s) over 8 declaration(s)
+2 shared form(s) over 8 declaration(s) at depth 0
 
 1. fact x4  F_SCROLL, F_RESIZE, F_LAUNCH, F_IDLE
    claim: "滚动时一帧 8ms…" | "拉伸窗口时一帧 10ms…" | "冷启动首帧 900ms…" | "空闲时不渲染任何一帧…"

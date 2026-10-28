@@ -1,4 +1,4 @@
-2 shared form(s) over 6 declaration(s)
+2 shared form(s) over 6 declaration(s) at depth 0
 
 1. fact x2  F_TRACE, F_HEADLESS
    claim: "the list renders at 60 f…" | "nothing renders with --h…"
