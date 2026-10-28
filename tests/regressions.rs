@@ -359,3 +359,22 @@ fn an_unresolved_dimension_does_not_condemn_its_elements() {
         "{found:#?}"
     );
 }
+
+#[test]
+fn weigh_propagates_confidence_through_a_proposition() {
+    // Defect: weigh folded only facts among a rule's premises and ignored a proposition premise's
+    // own weight, so a two-link chain reported 1.00 for the second link where the weakest link
+    // was 0.90. check_confidence_flow reads weigh, so W-CONFIDENCE-INFLATED missed the same case.
+    let decls = parse(include_str!("../docs/repro/confidence-chain.tsare"));
+    let weights = tsare::weigh::weights(&tsare::program::Program::new(&decls));
+    let second = weights.iter().find(|row| row.name == "P2").expect("P2");
+    let value = second.value.expect("P2 has a weight");
+    assert!((value - 0.9).abs() < 1e-9, "{value}");
+    let found = tsare::check::check(&decls);
+    assert!(
+        found
+            .iter()
+            .any(|item| item.code == "W-CONFIDENCE-INFLATED" && item.message.contains("P2")),
+        "{found:#?}"
+    );
+}
