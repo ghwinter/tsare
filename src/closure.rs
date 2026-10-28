@@ -191,6 +191,28 @@ pub fn statuses(decls: &[Decl], inside: &HashSet<String>) -> HashMap<String, Str
     out
 }
 
+/// The word a reason uses for a premise: a proposition's status, "retired" for a withdrawn
+/// declaration, or the declaration's kind for anything else.  The state map only holds
+/// propositions, so falling back to "fact" for everything else called a hypothesis a fact.
+fn premise_label(
+    decls: &[Decl],
+    state: &HashMap<String, String>,
+    gone: &HashSet<String>,
+    premise: &str,
+) -> String {
+    if gone.contains(premise) {
+        return "retired".to_string();
+    }
+    if let Some(status) = state.get(premise) {
+        return status.clone();
+    }
+    decls
+        .iter()
+        .find(|decl| decl.name == premise)
+        .map(|decl| decl.kind.clone())
+        .unwrap_or_else(|| "unknown".to_string())
+}
+
 pub struct Closure {
     pub facts: HashSet<String>,
     pub held: HashSet<String>,
@@ -236,19 +258,7 @@ pub fn closure(decls: &[Decl]) -> Closure {
         for rule in rules.iter().filter(|rule| &rule.target == name) {
             for premise in &rule.premises {
                 if !held.contains(premise) {
-                    let premise_state = if gone.contains(premise) {
-                        "retired".to_string()
-                    } else {
-                        state
-                            .get(premise)
-                            .cloned()
-                            .unwrap_or_else(|| "fact".to_string())
-                    };
-                    let label = if premise_state == "defeated" {
-                        "defeated".to_string()
-                    } else {
-                        premise_state
-                    };
+                    let label = premise_label(decls, &state, &gone, premise);
                     reasons.push(format!("{} needs {premise} ({label})", rule.warrant));
                 }
             }
@@ -352,19 +362,7 @@ pub fn engine(decls: &[Decl]) -> EngineResult {
         for rule in rules.iter().filter(|rule| &rule.target == name) {
             for premise in &rule.premises {
                 if !held.contains(premise) {
-                    let premise_state = if gone.contains(premise) {
-                        "retired".to_string()
-                    } else {
-                        state
-                            .get(premise)
-                            .cloned()
-                            .unwrap_or_else(|| "fact".to_string())
-                    };
-                    let label = if premise_state == "defeated" {
-                        "defeated".to_string()
-                    } else {
-                        premise_state
-                    };
+                    let label = premise_label(decls, &state, &gone, premise);
                     reasons.push(format!("{} needs {premise} ({label})", rule.warrant));
                 }
             }

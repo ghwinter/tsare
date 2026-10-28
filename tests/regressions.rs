@@ -630,3 +630,25 @@ fn a_retired_warrant_does_not_connect_premises_to_a_conclusion() {
         "{found:#?}"
     );
 }
+
+#[test]
+fn a_conditional_premise_is_labelled_with_its_kind() {
+    // Defect: closure built its reason with `state.get(premise)`; the state map only contains
+    // propositions, so every other premise fell back to the word "fact". A hypothesis that a
+    // conclusion rests on was reported as "(fact)", which is the one thing it is not.
+    let found = tsare::check::check(&parse(include_str!("../docs/49-engine-order-repro.tsare")));
+    let conditional = found
+        .iter()
+        .find(|item| item.code == "W-CONDITIONAL")
+        .expect("a conditional warning");
+    assert!(
+        conditional.message.contains("(hypothesis)"),
+        "{}",
+        conditional.message
+    );
+    assert!(
+        !conditional.message.contains("(fact)"),
+        "{}",
+        conditional.message
+    );
+}
