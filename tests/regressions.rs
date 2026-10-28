@@ -467,3 +467,13 @@ fn a_case_that_got_worse_is_not_called_a_no_op() {
     assert!(!text.contains("no-op:"), "{text}");
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn the_overclaim_explanation_says_what_the_diagnostic_reads() {
+    // Defect: --explain W-OVERCLAIM advised "say who or what was sampled, with `scope:`", while
+    // the diagnostic itself says scope is prose and cannot be enumerated, and the check only
+    // looks at `over:`. Following the explanation could not silence the warning.
+    let text = tsare::explain::explain("W-OVERCLAIM").expect("explained");
+    assert!(text.contains("`over:`"), "{text}");
+    assert!(!text.contains("with `scope:`"), "{text}");
+}

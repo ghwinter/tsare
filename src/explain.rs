@@ -236,8 +236,11 @@ pub fn explain(code: &str) -> Option<&'static str> {
         "W-OUT-UNVERIFIED" => "A fact records a hash with nothing to compare it against: no artifact named, or the artifact cannot be read.\n\
             An unverifiable claim is not a false one, but it is not evidence either.\n\
             Fix: name `artifact`, or drop `out` and accept that the evidence is a name.",
-        "W-OVERCLAIM" => "A claim is universal and names no scope.\n\
-            Fix: say who or what was sampled, with `scope:`.",
+        "W-OVERCLAIM" => "A claim is universal and binds no enumerable domain.\n\
+            `scope:` is prose and cannot be enumerated; the check reads `over:`. A concept's extent,\n\
+            a closed partition's elements and a layer's declarations are the domains the engine can\n\
+            list.\n\
+            Fix: add `over:` naming one of those, or weaken the sentence so it is not universal.",
         "W-PARTITION-CLOSED-UNJUSTIFIED" => "A list claims to be closed without a reason.\n\
             Fix: add basis naming why nothing else qualifies.",
         "W-PARTITION-OPEN-USED" => "An open list is used as a premise, so the conclusion rests on a list known to be incomplete.\n\
