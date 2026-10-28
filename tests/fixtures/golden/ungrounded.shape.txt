@@ -1,4 +1,4 @@
-1 shared form(s) over 6 declaration(s)
+1 shared form(s) over 6 declaration(s) at depth 0
 
 1. fact x2  F_SCROLL, F_HEADLESS
    claim: "the list scrolls at 60 f…" | "no rendering happens wit…"

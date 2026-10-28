@@ -22,18 +22,24 @@ pub struct ShapeGroup {
     pub variables: Vec<(String, Vec<String>)>,
 }
 
-/// The shape of a value: its literal kind, and for a reference the kind at the other end.
-fn shape_of(program: &Program, value: &Val) -> String {
+/// The shape of a value at a given depth.  At depth 0 a reference is its target's kind; at depth
+/// `k+1` it is the target's own signature at depth `k`, so the quotient refines: two declarations
+/// that look alike at depth 0 stop being alike when what they point at turns out to differ.
+fn shape_of(program: &Program, value: &Val, depth: usize) -> String {
     match value {
         Val::Str(_) => "text".to_string(),
         Val::Num(_) => "number".to_string(),
         Val::Id(name) => match program.get(name) {
+            Some(decl) if depth > 0 => format!("ref[{}]", signature_at(program, decl, depth - 1)),
             Some(decl) => format!("ref:{}", decl.kind),
             None => "ref:?".to_string(),
         },
         Val::Call(name, _) => format!("call:{name}"),
         Val::List(items) => {
-            let parts: Vec<String> = items.iter().map(|item| shape_of(program, item)).collect();
+            let parts: Vec<String> = items
+                .iter()
+                .map(|item| shape_of(program, item, depth))
+                .collect();
             format!("list[{}]", parts.join("+"))
         }
         Val::Rec(fields) => {
@@ -66,11 +72,11 @@ fn render(value: &Val) -> String {
     }
 }
 
-fn signature(program: &Program, decl: &Decl) -> String {
+fn signature_at(program: &Program, decl: &Decl, depth: usize) -> String {
     let mut fields: Vec<String> = decl
         .fields
         .iter()
-        .map(|(key, value)| format!("{key}:{}", shape_of(program, value)))
+        .map(|(key, value)| format!("{key}:{}", shape_of(program, value, depth)))
         .collect();
     fields.sort();
     format!("{}|{}", decl.kind, fields.join(";"))
@@ -79,10 +85,17 @@ fn signature(program: &Program, decl: &Decl) -> String {
 /// Group the declarations by form.  Only classes with at least two members are returned: a form
 /// with one instance is that declaration, not a structure.
 pub fn shapes(program: &Program) -> Vec<ShapeGroup> {
+    shapes_at(program, 0)
+}
+
+/// The quotient at a given depth: depth 0 groups by the declaration's own form, depth 1 also by the
+/// form of what it points at, and so on.  The classes only get finer with depth, so the sequence is
+/// a filtration of the same set -- `shape --depth 0` is the coarsest reading, not a different one.
+pub fn shapes_at(program: &Program, depth: usize) -> Vec<ShapeGroup> {
     let mut groups: Vec<ShapeGroup> = Vec::new();
     let mut index: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
     for decl in program.decls {
-        let signature = signature(program, decl);
+        let signature = signature_at(program, decl, depth);
         match index.get(&signature) {
             Some(position) => groups[*position].members.push(decl.name.clone()),
             None => {
@@ -141,15 +154,15 @@ fn variables(program: &Program, group: &ShapeGroup) -> Vec<(String, Vec<String>)
     out
 }
 
-pub fn text(groups: &[ShapeGroup], total: usize, top: usize) -> String {
+pub fn text(groups: &[ShapeGroup], total: usize, top: usize, depth: usize) -> String {
     if groups.is_empty() {
         return format!(
-            "no form is shared: {total} declaration(s), {} distinct shape(s)\n",
-            total
+            "no form is shared at depth {depth}: every one of the {total} declaration(s) has its own\n\
+             form.  Lower the depth to compare only what the declarations say about themselves.\n"
         );
     }
     let mut out = format!(
-        "{} shared form(s) over {total} declaration(s)\n\n",
+        "{} shared form(s) over {total} declaration(s) at depth {depth}\n\n",
         groups.len()
     );
     for (index, group) in groups.iter().take(top).enumerate() {

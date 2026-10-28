@@ -78,6 +78,14 @@ All notable changes are recorded here. The format follows
   On `SELF.tsare` (44 declarations) it finds 8 shared forms, among them five warrants that all name
   one fact as both premise and licence; on `relational.v2.tsare` the warrant class puts `W_Y`'s
   `basis` next to its `from` in the same table, which is the difference that fixture exists to show.
+- `shape --depth N` — the quotient refines. At depth 0 a declaration is grouped by its own fields;
+  at depth `k+1` what it points at counts too, recursively. The classes only get finer, so the
+  sequence is a filtration of the same set rather than a different reading. On `SELF.tsare` depth 1
+  splits the five-warrant class into a pair (`W_OBLIGATION_ON_USE`, `W_TWO_OF_THREE`, whose
+  conclusions are built the same way) plus three singletons. Finding it also found a wiring bug:
+  `--depth` was not in the value-flag list, so `--depth 1` was parsed as a flag plus a positional
+  and every run silently read depth 0 -- the first output looked like "the filtration never
+  splits", which is exactly how a flag that does nothing reads.
 ### Added
 
 - `E-SUPERSEDE-UNDEFINED` — a `supersedes` field that names nothing, or names itself. A withdrawal

@@ -1,4 +1,4 @@
-3 shared form(s) over 12 declaration(s)
+3 shared form(s) over 12 declaration(s) at depth 0
 
 1. fact x3  F_A1, F_A2, F_B1
    claim: "A1 支持一条规则，也给它提供依据…" | "A2 支持一条规则，也给它提供依据…" | "B1 支持一条规则，但依据给了另一条规则…"

@@ -249,7 +249,7 @@ const COMMANDS: &[Command] = &[
         Command("reasoning", "next", "next PATH                    open decisions, ranked by what they touch"),
         Command("reasoning", "ask", "ask PATH [--json] [--one]   the next question, ranked by what one answer settles"),
         Command("reasoning", "novel", "novel PATH --attribute N [--holds IDS]\n                               is a proposed attribute new, redundant, or a recombination"),
-        Command("reasoning", "shape", "shape PATH [--top N]          the forms declarations share, and the positions that vary"),
+        Command("reasoning", "shape", "shape PATH [--top N] [--depth D]  the forms declarations share, and the positions that vary"),
         Command("reasoning", "imply", "imply PATH [--json] [--max-antecedent N] [--min-support N]"),
         Command("reasoning", "abstract", "abstract PATH [--min-support N] [--max-intent N]\n                               concepts the attributes already hold but nobody named"),
         Command("reasoning", "cost", "cost PATH [--top N]          external confirmations the document demands"),
@@ -313,6 +313,7 @@ struct Args {
 
 const VALUE_FLAGS: &[&str] = &[
     "--top",
+    "--depth",
     "--threshold",
     "--out",
     "--goals",
@@ -469,7 +470,7 @@ pub fn run() -> i32 {
         "next" => cmd_next(&path),
         "ask" => cmd_ask(&path, &args),
         "novel" => cmd_novel(&path, &args),
-        "shape" => cmd_shape(&path, args.count("--top", 8)),
+        "shape" => cmd_shape(&path, args.count("--top", 8), args.count("--depth", 0)),
         "imply" => cmd_imply(&path, &args),
         "cost" => cmd_cost(&path, args.count("--top", 8)),
         "weigh" => cmd_weigh(&path, args.number("--threshold", 0.7)),
