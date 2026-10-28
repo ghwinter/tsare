@@ -533,3 +533,57 @@ fn an_unwritable_output_is_reported_not_a_panic() {
     assert!(!text.contains("panicked"), "{text}");
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn build_on_a_directory_emits_the_same_five_artifacts_as_a_file() {
+    // Defect: the directory branch of cmd_build wrote OBLIGATIONS.md and LEARNED.md and printed
+    // "emitted", while the file branch wrote all five artifacts. The help text says build PATH,
+    // and PATH may be a directory; the missing three were not mentioned.
+    let dir = temp("build-directory");
+    let out = dir.join("out");
+    let output = run_in(
+        root(),
+        &["build", "docs/project", "--out", out.to_str().unwrap()],
+    );
+    let text = stdout(&output);
+    assert_eq!(output.status.code(), Some(0), "{text}");
+    for name in [
+        "OBLIGATIONS.md",
+        "LEARNED.md",
+        "OPEN.md",
+        "NOTES.md",
+        "predicates.py",
+    ] {
+        assert!(out.join(name).is_file(), "{name} was not emitted\n{text}");
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn build_refuses_a_directory_that_does_not_compile() {
+    // Defect: the directory branch returned 0 without checking the program, so build emitted
+    // obligations for a directory with a duplicate declaration; the file branch refuses.
+    let dir = temp("build-broken-directory");
+    let source = dir.join("src");
+    std::fs::create_dir_all(&source).expect("source dir");
+    std::fs::copy(
+        root().join("docs/repro/project-dir/b.tsare"),
+        source.join("broken.tsare"),
+    )
+    .expect("copy reproducer");
+    let out = dir.join("out");
+    let output = run_in(
+        root(),
+        &[
+            "build",
+            source.to_str().unwrap(),
+            "--out",
+            out.to_str().unwrap(),
+        ],
+    );
+    let text = stdout(&output);
+    assert_eq!(output.status.code(), Some(1), "{text}");
+    assert!(text.contains("not emitted"), "{text}");
+    assert!(!out.join("OBLIGATIONS.md").exists(), "{text}");
+    let _ = std::fs::remove_dir_all(&dir);
+}

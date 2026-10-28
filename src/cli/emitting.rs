@@ -298,31 +298,12 @@ pub(crate) fn cmd_build(path: &Path, out: &str, goals_path: Option<&str>) -> i32
     if let Err(error) = fs::create_dir_all(&out_dir) {
         return fail(format!("{}: {error}", out_dir.display()));
     }
-    if path.is_dir() {
-        let learnings = crate::build::learnings_of(&program);
-        fs::write(
-            out_dir.join("OBLIGATIONS.md"),
-            crate::build::render_obligations(&program, &learning_map(&learnings)),
-        )
-        .expect("write");
-        fs::write(
-            out_dir.join("LEARNED.md"),
-            crate::build::render_learned(&learnings, &[]),
-        )
-        .expect("write");
-        println!(
-            "project {}: {} declarations, emitted {}",
-            path.display(),
-            program.decls.len(),
-            out_dir.display()
-        );
-        return 0;
-    }
 
     let diagnostics = crate::check::check(&loaded.decls);
     {
-        let mut session =
-            crate::session::Session::new(path.display().to_string()).with_source(&loaded.text);
+        let mut session = crate::session::Session::new(path.display().to_string())
+            .with_source(&loaded.text)
+            .with_sources(&loaded.sources);
         session.extend(diagnostics.clone());
         print!("{}", session.text());
         println!("{}", session.summary());
@@ -363,26 +344,6 @@ pub(crate) fn cmd_build(path: &Path, out: &str, goals_path: Option<&str>) -> i32
         structurals.push((concept.name.clone(), rule));
     }
     let mapping = learning_map(&learnings);
-    fs::write(
-        out_dir.join("OBLIGATIONS.md"),
-        crate::build::render_obligations(&program, &mapping),
-    )
-    .expect("write");
-    fs::write(
-        out_dir.join("LEARNED.md"),
-        crate::build::render_learned(&learnings, &structurals),
-    )
-    .expect("write");
-    fs::write(
-        out_dir.join("OPEN.md"),
-        crate::build::render_open(&program, &learnings, &holes),
-    )
-    .expect("write");
-    fs::write(
-        out_dir.join("NOTES.md"),
-        crate::build::render_notes(&program),
-    )
-    .expect("write");
     let source = crate::build::predicates_source(
         &program,
         &mapping,
@@ -392,14 +353,38 @@ pub(crate) fn cmd_build(path: &Path, out: &str, goals_path: Option<&str>) -> i32
             .map(|name| name.to_string_lossy().to_string())
             .unwrap_or_default(),
     );
-    fs::write(out_dir.join("predicates.py"), &source).expect("write");
-    for name in [
-        "OBLIGATIONS.md",
-        "LEARNED.md",
-        "OPEN.md",
-        "NOTES.md",
-        "predicates.py",
-    ] {
+    let files: Vec<(&str, String)> = vec![
+        (
+            "OBLIGATIONS.md",
+            crate::build::render_obligations(&program, &mapping),
+        ),
+        (
+            "LEARNED.md",
+            crate::build::render_learned(&learnings, &structurals),
+        ),
+        (
+            "OPEN.md",
+            crate::build::render_open(&program, &learnings, &holes),
+        ),
+        ("NOTES.md", crate::build::render_notes(&program)),
+        ("predicates.py", source),
+    ];
+    for (name, text) in &files {
+        if let Err(error) = write_file(&out_dir.join(name), text) {
+            return fail(error);
+        }
+    }
+    // A directory is one program, so it emits the same five artifacts as a file; the old branch
+    // stopped after two and called that "emitted", with no obligation to say which two.
+    if path.is_dir() {
+        println!(
+            "project {}: {} declarations, emitted {}",
+            path.display(),
+            program.decls.len(),
+            out_dir.display()
+        );
+    }
+    for (name, _) in &files {
         println!("emitted {}", out_dir.join(name).display());
     }
     let defined = learnings
@@ -422,11 +407,10 @@ pub(crate) fn cmd_build(path: &Path, out: &str, goals_path: Option<&str>) -> i32
         "predicates: {defined} attribute + {structured} structural, verified on every example"
     );
     if let Some(report) = &goals {
-        fs::write(
-            out_dir.join("COVERAGE.md"),
-            crate::build::render_coverage(report),
-        )
-        .expect("write");
+        let text = crate::build::render_coverage(report);
+        if let Err(error) = write_file(&out_dir.join("COVERAGE.md"), &text) {
+            return fail(error);
+        }
         println!("emitted {}", out_dir.join("COVERAGE.md").display());
     }
     0
