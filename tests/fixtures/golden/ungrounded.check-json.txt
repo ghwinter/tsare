@@ -1,7 +1,7 @@
 {
   "diagnostics": [
-    {"code": "W-BARE-NUMBER", "severity": "warning", "file": "<fixtures>/ungrounded.tsare", "line": 17, "col": 14, "message": "P_THRESHOLD states a number and cites no measured value: nothing here says what produced it"},
-    {"code": "W-CONDITIONAL", "severity": "warning", "file": "<fixtures>/ungrounded.tsare", "line": 21, "col": 1, "message": "P_SMOOTH is supported only through an ungrounded premise: W_RENDER needs P_THRESHOLD (asserted)"}
+    {"code": "W-BARE-NUMBER", "severity": "warning", "name": "P_THRESHOLD", "file": "<fixtures>/ungrounded.tsare", "line": 17, "col": 14, "message": "P_THRESHOLD states a number and cites no measured value: nothing here says what produced it"},
+    {"code": "W-CONDITIONAL", "severity": "warning", "name": "P_SMOOTH", "file": "<fixtures>/ungrounded.tsare", "line": 21, "col": 1, "message": "P_SMOOTH is supported only through an ungrounded premise: W_RENDER needs P_THRESHOLD (asserted)"}
 ],
   "errors": 0,
   "warnings": 2

@@ -430,11 +430,11 @@ pub(crate) fn cmd_outline(path: &Path) -> i32 {
     0
 }
 
-pub(crate) fn cmd_mem(recall: Option<&[String]>, k: usize) -> i32 {
+pub(crate) fn cmd_mem(store: &Path, recall: Option<&[String]>, k: usize) -> i32 {
     if let Some(codes) = recall {
-        let entries = crate::cases::recall(codes, k);
+        let entries = crate::cases::recall(store, codes, k);
         if entries.is_empty() {
-            println!("no similar case");
+            println!("no similar case in {}", store.display());
             return 0;
         }
         for entry in entries {
@@ -462,16 +462,17 @@ pub(crate) fn cmd_mem(recall: Option<&[String]>, k: usize) -> i32 {
                     .unwrap_or(0.0)
             };
             println!(
-                "{} {} {}->{} errors  ({outcome})",
+                "{} action={} {}->{} errors  ({outcome})",
                 crate::cases::list_repr(&codes),
-                pad(action, 10),
+                action,
                 crate::program::fmt_g(errors("before")),
                 crate::program::fmt_g(errors("after"))
             );
         }
         return 0;
     }
-    let report = crate::cases::audit();
+    let report = crate::cases::audit(store);
+    println!("store: {}", store.display());
     println!("cases: {}", report.entries);
     println!(
         "expired:     {}  (recorded under a different checker)",

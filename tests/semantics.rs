@@ -892,7 +892,7 @@ fn the_content_hash_is_a_function_of_the_bytes() {
 
 #[test]
 fn the_store_reader_reads_the_records_it_wrote() {
-    let line = r#"{"doc": "a.tsare", "codes": ["E-UNDEFINED", "W-HOLE"], "action": "mechanical", "before": {"errors": 2, "cost": 1}, "after": {"errors": 1, "cost": 1}, "checker": "tsare-0.1"}"#;
+    let line = r#"{"doc": "a.tsare", "codes": ["E-UNDEFINED", "W-HOLE"], "action": "mechanical", "before": {"errors": 2, "warnings": 4}, "after": {"errors": 1, "warnings": 4}, "checker": "tsare-0.1"}"#;
     let entry = tsare::json::parse(line).expect("parse");
     assert_eq!(
         entry
@@ -904,7 +904,7 @@ fn the_store_reader_reads_the_records_it_wrote() {
     assert!(tsare::cases::improved(&entry));
     assert_eq!(
         tsare::json::serialize(&entry),
-        r#"{"doc": "a.tsare", "codes": ["E-UNDEFINED", "W-HOLE"], "action": "mechanical", "before": {"errors": 2, "cost": 1}, "after": {"errors": 1, "cost": 1}, "checker": "tsare-0.1"}"#
+        r#"{"doc": "a.tsare", "codes": ["E-UNDEFINED", "W-HOLE"], "action": "mechanical", "before": {"errors": 2, "warnings": 4}, "after": {"errors": 1, "warnings": 4}, "checker": "tsare-0.1"}"#
     );
     assert_eq!(
         tsare::cases::list_repr(&["A".to_string(), "B".to_string()]),
@@ -1844,4 +1844,55 @@ fn an_extra_weak_premise_never_raises_a_weight() {
         "the weak premise should lower the bound: {heavy} vs {light}"
     );
     assert!(heavy <= 0.2, "the bound is the weakest link, got {heavy}");
+}
+
+/// Two reports of the same document, and an edit that moved a complaint without changing it.  A
+/// change keyed by line would call that a change; keyed by name it is not one.  This is the
+/// quantity a loop needs to know whether its last edit helped, and no single run can produce it.
+#[test]
+fn a_delta_keys_on_the_declaration_not_the_line() {
+    let before = r#"{"diagnostics": [
+        {"code": "W-UNCONFIRMED", "name": "F_A", "line": 3},
+        {"code": "E-UNDEFINED", "name": "P_B", "line": 9}]}"#;
+    let after = r#"{"diagnostics": [{"code": "W-UNCONFIRMED", "name": "F_A", "line": 7}]}"#;
+    let difference = tsare::delta::compare(before, after).expect("two reports");
+    assert_eq!((difference.before, difference.after), (2, 1));
+    assert!(difference.appeared.is_empty());
+    assert_eq!(difference.gone.len(), 1, "one complaint was removed");
+    assert_eq!(difference.gone[0].code, "E-UNDEFINED");
+    assert_eq!(difference.gone[0].name, "P_B");
+    assert!(
+        difference
+            .gone
+            .iter()
+            .all(|item| item.code != "W-UNCONFIRMED"),
+        "the warning kept its name while its line moved: that is not a change"
+    );
+    let text = tsare::delta::text(&difference);
+    assert!(text.contains("2 -> 1"), "{text}");
+    assert!(text.contains("E-UNDEFINED P_B"), "{text}");
+}
+
+/// Two documents whose facts differ in one field: the exact difference calls the two forms
+/// unrelated, which is true of the set and useless to a reader.  The near miss names the pair and
+/// the share of positions they have in common, and says it is an approximation, not an
+/// equivalence.
+#[test]
+fn two_forms_that_differ_in_one_field_are_near_misses() {
+    let here = decls("fact F_A { claim: \"a\", evidence: user, scope: \"one\" }\n");
+    let there =
+        decls("fact F_B { claim: \"b\", evidence: user, scope: \"two\", artifact: \"run.log\" }\n");
+    let (left, right) = (Program::new(&here), Program::new(&there));
+    let difference = tsare::shape::compare(&left, &right, 0);
+    assert!(difference.shared.is_empty());
+    let misses = tsare::shape::near_misses(&left, &right, 0, 4);
+    assert_eq!(misses.len(), 1, "one unshared form on each side");
+    assert!((misses[0].score - 0.8).abs() < 1e-9, "{}", misses[0].score);
+    assert!(misses[0].here.contains("F_A"));
+    assert!(misses[0].there.contains("F_B"));
+    // a shared form is not a near miss, and a limit of zero asks for nothing
+    let same = tsare::shape::near_misses(&left, &left, 0, 4);
+    assert!(same.is_empty(), "every form is shared with itself");
+    assert!(tsare::shape::near_misses(&left, &right, 0, 0).is_empty());
+    assert!(tsare::shape::near_text(&misses).contains("approximation"));
 }

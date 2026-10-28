@@ -2,6 +2,86 @@
 
 use super::*;
 
+/// The `--json` envelope these commands share, so that three of them do not each invent one.
+use crate::json::Json as J;
+
+fn obj(fields: Vec<(&str, J)>) -> J {
+    J::Obj(
+        fields
+            .into_iter()
+            .map(|(name, value)| (name.to_string(), value))
+            .collect(),
+    )
+}
+
+fn strings(items: &[String]) -> J {
+    J::Arr(items.iter().map(|item| J::Str(item.clone())).collect())
+}
+
+fn emit(value: J) {
+    println!("{}", crate::json::serialize(&value));
+}
+
+pub(crate) fn cmd_delta(
+    before: &Path,
+    after: &Path,
+    json: bool,
+    record: Option<&str>,
+    doc: Option<&str>,
+    action: Option<&str>,
+) -> i32 {
+    let read = |path: &Path| -> Result<String, String> {
+        fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))
+    };
+    let (left, right) = match (read(before), read(after)) {
+        (Ok(left), Ok(right)) => (left, right),
+        (Err(error), _) | (_, Err(error)) => return fail(error),
+    };
+    // What was done is a small closed set, not prose: the store is queried by it, and a sentence
+    // written by the agent that made the edit is the one thing the audit cannot check.
+    let action = match action {
+        None => "unspecified",
+        Some("mechanical") => "mechanical",
+        Some("model") => "model",
+        Some("manual") => "manual",
+        Some(other) => {
+            println!("--action is mechanical, model or manual; got {other}");
+            return 2;
+        }
+    };
+    let difference = match crate::delta::compare(&left, &right) {
+        Ok(difference) => difference,
+        Err(error) => return fail(error),
+    };
+    let mut recorded: Option<String> = None;
+    if let Some(store) = record {
+        let Some(doc) = doc else {
+            println!("usage: tsare delta BEFORE AFTER --record STORE --doc DOC [--action A]");
+            return 2;
+        };
+        let entry = match crate::cases::entry(&left, &right, doc, action, crate::cache::SALT) {
+            Ok(entry) => entry,
+            Err(error) => return fail(error),
+        };
+        if let Err(error) = crate::cases::append(Path::new(store), &entry) {
+            return fail(format!("{store}: {error}"));
+        }
+        recorded = Some(store.to_string());
+    }
+    if json {
+        println!(
+            "{}",
+            crate::delta::to_json(&difference, recorded.as_deref())
+        );
+        return 0;
+    }
+    print!("{}", crate::delta::text(&difference));
+    if let Some(store) = recorded {
+        println!("recorded: {store} (action {action})");
+    }
+    0
+}
+
 pub(crate) fn cmd_engine(path: &Path, json: bool) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
@@ -308,13 +388,27 @@ pub(crate) fn cmd_impact(path: &Path) -> i32 {
     0
 }
 
-pub(crate) fn cmd_next(path: &Path) -> i32 {
+pub(crate) fn cmd_next(path: &Path, json: bool) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
     };
     let program = Program::new(&loaded.decls);
     let rows = crate::impact::decisions(&program);
+    if json {
+        let decisions: Vec<J> = rows
+            .iter()
+            .map(|row| {
+                obj(vec![
+                    ("label", J::Str(row.label.clone())),
+                    ("node", J::Str(row.node.clone())),
+                    ("touches", J::Num(row.count as f64)),
+                ])
+            })
+            .collect();
+        emit(obj(vec![("decisions", J::Arr(decisions))]));
+        return 0;
+    }
     if rows.is_empty() {
         println!("no open decisions");
         return 0;
@@ -469,12 +563,24 @@ pub(crate) fn cmd_shape(
     depth: usize,
     layers: bool,
     against: Option<&str>,
+    near: usize,
+    json: bool,
 ) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
     };
     let program = Program::new(&loaded.decls);
+    if near > 0 && against.is_none() {
+        println!("--near needs --against: there is nothing to be near without a second document");
+        return 2;
+    }
+    // `--layers` reads one document's forms and `--near` reads two documents' forms: an answer to
+    // both questions is two answers, and answering only one of them silently is not one of them.
+    if near > 0 && layers {
+        println!("--near and --layers read different things; ask for one at a time");
+        return 2;
+    }
     if let Some(other) = against {
         let other = match load(Path::new(other)) {
             Ok(loaded) => loaded,
@@ -482,15 +588,98 @@ pub(crate) fn cmd_shape(
         };
         let there = Program::new(&other.decls);
         let difference = crate::shape::compare(&program, &there, depth);
+        let misses = crate::shape::near_misses(&program, &there, depth, near);
+        if json {
+            let mut fields = vec![
+                ("depth", J::Num(depth as f64)),
+                ("shared", strings(&difference.shared)),
+                ("only_here", strings(&difference.only_here)),
+                ("only_there", strings(&difference.only_there)),
+            ];
+            if near > 0 {
+                let rows: Vec<J> = misses
+                    .iter()
+                    .map(|miss| {
+                        obj(vec![
+                            ("here", J::Str(miss.here.clone())),
+                            ("there", J::Str(miss.there.clone())),
+                            ("score", J::Num((miss.score * 100.0).round() / 100.0)),
+                        ])
+                    })
+                    .collect();
+                fields.push(("near", J::Arr(rows)));
+            }
+            emit(obj(fields));
+            return 0;
+        }
         print!("{}", crate::shape::difference_text(&difference, depth));
+        if near > 0 {
+            print!("{}", crate::shape::near_text(&misses));
+        }
         return 0;
     }
     if layers {
         let fibres = crate::shape::fibres(&program, depth);
+        if json {
+            let items: Vec<J> = fibres
+                .iter()
+                .map(|fibre| {
+                    let members: Vec<J> = fibre
+                        .members
+                        .iter()
+                        .map(|(name, layer)| {
+                            obj(vec![
+                                ("name", J::Str(name.clone())),
+                                ("layer", J::Str(layer.clone())),
+                            ])
+                        })
+                        .collect();
+                    obj(vec![
+                        ("kind", J::Str(fibre.kind.clone())),
+                        ("layers", strings(&fibre.layers)),
+                        ("members", J::Arr(members)),
+                    ])
+                })
+                .collect();
+            emit(obj(vec![
+                ("depth", J::Num(depth as f64)),
+                ("fibres", J::Arr(items)),
+            ]));
+            return 0;
+        }
         print!("{}", crate::shape::fibre_text(&fibres, depth));
         return 0;
     }
     let groups = crate::shape::shapes_at(&program, depth);
+    if json {
+        let forms: Vec<J> = groups
+            .iter()
+            .map(|group| {
+                let variables: Vec<J> = group
+                    .variables
+                    .iter()
+                    .map(|(field, values)| {
+                        obj(vec![
+                            ("field", J::Str(field.clone())),
+                            ("values", strings(values)),
+                        ])
+                    })
+                    .collect();
+                obj(vec![
+                    ("kind", J::Str(group.kind.clone())),
+                    ("signature", J::Str(group.signature.clone())),
+                    ("members", strings(&group.members)),
+                    ("variables", J::Arr(variables)),
+                ])
+            })
+            .collect();
+        emit(obj(vec![
+            ("depth", J::Num(depth as f64)),
+            ("total", J::Num(loaded.decls.len() as f64)),
+            ("forms", J::Arr(forms)),
+        ]));
+        return 0;
+    }
     print!(
         "{}",
         crate::shape::text(&groups, loaded.decls.len(), top, depth)
@@ -555,13 +744,43 @@ pub(crate) fn cmd_imply(path: &Path, args: &Args) -> i32 {
     0
 }
 
-pub(crate) fn cmd_cost(path: &Path, top: usize) -> i32 {
+pub(crate) fn cmd_cost(path: &Path, top: usize, json: bool) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
     };
     let program = Program::new(&loaded.decls);
     let cost = crate::cost::report(&program);
+    if json {
+        let by_kind: Vec<J> = cost
+            .by_kind
+            .iter()
+            .map(|(kind, count)| {
+                obj(vec![
+                    ("kind", J::Str(kind.clone())),
+                    ("count", J::Num(*count as f64)),
+                ])
+            })
+            .collect();
+        let rows: Vec<J> = cost
+            .rows
+            .iter()
+            .map(|(name, found)| {
+                obj(vec![
+                    ("name", J::Str(name.clone())),
+                    ("needs", strings(found)),
+                ])
+            })
+            .collect();
+        emit(obj(vec![
+            ("total", J::Num(cost.total as f64)),
+            ("depth", J::Num(cost.depth as f64)),
+            ("chain", strings(&cost.chain)),
+            ("by_kind", J::Arr(by_kind)),
+            ("rows", J::Arr(rows)),
+        ]));
+        return 0;
+    }
     println!(
         "decompression cost: {} external confirmation(s), depth {}",
         cost.total, cost.depth

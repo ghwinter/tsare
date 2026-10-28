@@ -292,6 +292,94 @@ fn forms(program: &Program, depth: usize) -> std::collections::BTreeMap<String, 
     out
 }
 
+/// A form that the two documents do not share, and the nearest form on the other side.  This is an
+/// approximation and not an equivalence: it says the two forms name mostly the same positions,
+/// which is what a reader needs in order to see the one field they differ in.
+pub struct NearMiss {
+    pub here: String,
+    pub there: String,
+    pub score: f64,
+}
+
+/// What a form names: its kind and each `field:shape` position, as a set.
+fn positions(signature: &str) -> std::collections::BTreeSet<&str> {
+    signature
+        .split(['|', ';'])
+        .filter(|item| !item.is_empty())
+        .collect()
+}
+
+fn closeness(left: &str, right: &str) -> f64 {
+    let a = positions(left);
+    let b = positions(right);
+    if a.is_empty() && b.is_empty() {
+        return 1.0;
+    }
+    a.intersection(&b).count() as f64 / a.union(&b).count() as f64
+}
+
+/// For each form only one document has, the closest form only the other document has.  Pairs that
+/// share less than half of what they name are dropped: a score below that says nothing a reader
+/// would not already know from the list of unshared forms.
+pub fn near_misses(here: &Program, there: &Program, depth: usize, limit: usize) -> Vec<NearMiss> {
+    if limit == 0 {
+        return Vec::new();
+    }
+    let left = forms(here, depth);
+    let right = forms(there, depth);
+    let mut rows: Vec<NearMiss> = Vec::new();
+    for (signature, name) in &left {
+        if right.contains_key(signature) {
+            continue;
+        }
+        let mut best: Option<(f64, &String, &String)> = None;
+        for (other, other_name) in &right {
+            if left.contains_key(other) {
+                continue;
+            }
+            let score = closeness(signature, other);
+            if best.map(|(top, _, _)| score > top).unwrap_or(true) {
+                best = Some((score, name, other_name));
+            }
+        }
+        if let Some((score, name, other_name)) = best {
+            if score >= 0.5 {
+                rows.push(NearMiss {
+                    here: name.clone(),
+                    there: other_name.clone(),
+                    score,
+                });
+            }
+        }
+    }
+    rows.sort_by(|left, right| {
+        right
+            .score
+            .partial_cmp(&left.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then_with(|| left.here.cmp(&right.here))
+    });
+    rows.truncate(limit);
+    rows
+}
+
+pub fn near_text(misses: &[NearMiss]) -> String {
+    if misses.is_empty() {
+        return "no unshared form is close to one on the other side\n".to_string();
+    }
+    let mut out = String::from(
+        "nearest unshared forms (positions shared over positions named; an approximation, not an\n\
+         equivalence: two forms can score 1.00 and still mean different things)\n",
+    );
+    for miss in misses {
+        out.push_str(&format!(
+            "  {:.2}  {}  ~  {}\n",
+            miss.score, miss.here, miss.there
+        ));
+    }
+    out
+}
+
 pub fn compare(here: &Program, there: &Program, depth: usize) -> Difference {
     let left = forms(here, depth);
     let right = forms(there, depth);

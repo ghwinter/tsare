@@ -362,7 +362,11 @@ impl Parser {
             if self.peek() == Some(",") {
                 self.bump();
             } else if self.peek() != Some("}") {
-                return Err(self.fail("expected , or } after a field".to_string()));
+                // The mistake a model makes most often is separating fields with a space, so the
+                // message names the missing comma instead of the two tokens it could be.
+                return Err(self.fail(
+                    "expected , or } after a field; fields are separated by commas".to_string(),
+                ));
             }
         }
         let (end_line, end_col) = self.position();

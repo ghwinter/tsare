@@ -1,17 +1,17 @@
 {
   "diagnostics": [
-    {"code": "W-OVERCLAIM", "severity": "warning", "file": "<fixtures>/talk.v2.tsare", "line": 12, "col": 10, "message": "fact F_MULTI is universal and binds no domain: `scope:` is prose, so it cannot be enumerated; bind it with `over:`"},
-    {"code": "W-OVERCLAIM", "severity": "warning", "file": "<fixtures>/talk.v2.tsare", "line": 24, "col": 10, "message": "fact F_COMP is universal and binds no domain: `scope:` is prose, so it cannot be enumerated; bind it with `over:`"},
-    {"code": "W-UNWARRANTED", "severity": "warning", "file": "<fixtures>/talk.v2.tsare", "line": 80, "col": 9, "message": "proposition P_IMPORTANT cites premises, but no rule connects them to it"},
-    {"code": "W-BY-MISMATCH", "severity": "warning", "file": "<fixtures>/talk.v2.tsare", "line": 81, "col": 7, "message": "proposition P_IMPORTANT is declared deductive, but its structure is inductive: it generalises concepts and no rule concludes it"},
-    {"code": "W-UNWARRANTED", "severity": "warning", "file": "<fixtures>/talk.v2.tsare", "line": 92, "col": 9, "message": "proposition P_ELEGANT cites premises, but no rule connects them to it"},
-    {"code": "W-NO-EXIT", "severity": "warning", "file": "<fixtures>/talk.v2.tsare", "line": 129, "col": 19, "message": "blindspot B_PLAN closes no question, so nothing will ever resolve it"},
-    {"code": "W-NO-EXIT", "severity": "warning", "file": "<fixtures>/talk.v2.tsare", "line": 135, "col": 19, "message": "blindspot B_IS_OUGHT closes no question, so nothing will ever resolve it"},
-    {"code": "W-UNREAD", "severity": "warning", "file": "<fixtures>/talk.v2.tsare", "line": 144, "col": 14, "message": "value V_CONTRAST declares a bound that no rule reads, so it cannot change a decision"},
-    {"code": "W-UNREAD", "severity": "warning", "file": "<fixtures>/talk.v2.tsare", "line": 152, "col": 14, "message": "value V_THEME_SWITCH declares a bound that no rule reads, so it cannot change a decision"},
-    {"code": "W-UNREAD", "severity": "warning", "file": "<fixtures>/talk.v2.tsare", "line": 160, "col": 14, "message": "value V_SPEED declares a bound that no rule reads, so it cannot change a decision"},
-    {"code": "W-UNREAD", "severity": "warning", "file": "<fixtures>/talk.v2.tsare", "line": 168, "col": 14, "message": "value V_QUALITY declares a bound that no rule reads, so it cannot change a decision"},
-    {"code": "W-UNREAD", "severity": "warning", "file": "<fixtures>/talk.v2.tsare", "line": 176, "col": 14, "message": "value V_RETENTION declares a bound that no rule reads, so it cannot change a decision"}
+    {"code": "W-OVERCLAIM", "severity": "warning", "name": "F_MULTI", "file": "<fixtures>/talk.v2.tsare", "line": 12, "col": 10, "message": "fact F_MULTI is universal and binds no domain: `scope:` is prose, so it cannot be enumerated; bind it with `over:`"},
+    {"code": "W-OVERCLAIM", "severity": "warning", "name": "F_COMP", "file": "<fixtures>/talk.v2.tsare", "line": 24, "col": 10, "message": "fact F_COMP is universal and binds no domain: `scope:` is prose, so it cannot be enumerated; bind it with `over:`"},
+    {"code": "W-UNWARRANTED", "severity": "warning", "name": "P_IMPORTANT", "file": "<fixtures>/talk.v2.tsare", "line": 80, "col": 9, "message": "proposition P_IMPORTANT cites premises, but no rule connects them to it"},
+    {"code": "W-BY-MISMATCH", "severity": "warning", "name": "P_IMPORTANT", "file": "<fixtures>/talk.v2.tsare", "line": 81, "col": 7, "message": "proposition P_IMPORTANT is declared deductive, but its structure is inductive: it generalises concepts and no rule concludes it"},
+    {"code": "W-UNWARRANTED", "severity": "warning", "name": "P_ELEGANT", "file": "<fixtures>/talk.v2.tsare", "line": 92, "col": 9, "message": "proposition P_ELEGANT cites premises, but no rule connects them to it"},
+    {"code": "W-NO-EXIT", "severity": "warning", "name": "B_PLAN", "file": "<fixtures>/talk.v2.tsare", "line": 129, "col": 19, "message": "blindspot B_PLAN closes no question, so nothing will ever resolve it"},
+    {"code": "W-NO-EXIT", "severity": "warning", "name": "B_IS_OUGHT", "file": "<fixtures>/talk.v2.tsare", "line": 135, "col": 19, "message": "blindspot B_IS_OUGHT closes no question, so nothing will ever resolve it"},
+    {"code": "W-UNREAD", "severity": "warning", "name": "V_CONTRAST", "file": "<fixtures>/talk.v2.tsare", "line": 144, "col": 14, "message": "value V_CONTRAST declares a bound that no rule reads, so it cannot change a decision"},
+    {"code": "W-UNREAD", "severity": "warning", "name": "V_THEME_SWITCH", "file": "<fixtures>/talk.v2.tsare", "line": 152, "col": 14, "message": "value V_THEME_SWITCH declares a bound that no rule reads, so it cannot change a decision"},
+    {"code": "W-UNREAD", "severity": "warning", "name": "V_SPEED", "file": "<fixtures>/talk.v2.tsare", "line": 160, "col": 14, "message": "value V_SPEED declares a bound that no rule reads, so it cannot change a decision"},
+    {"code": "W-UNREAD", "severity": "warning", "name": "V_QUALITY", "file": "<fixtures>/talk.v2.tsare", "line": 168, "col": 14, "message": "value V_QUALITY declares a bound that no rule reads, so it cannot change a decision"},
+    {"code": "W-UNREAD", "severity": "warning", "name": "V_RETENTION", "file": "<fixtures>/talk.v2.tsare", "line": 176, "col": 14, "message": "value V_RETENTION declares a bound that no rule reads, so it cannot change a decision"}
 ],
   "errors": 0,
   "warnings": 12

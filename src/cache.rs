@@ -11,8 +11,10 @@ use crate::check::Diagnostic;
 use crate::hash::hex;
 use crate::json::{self, Json};
 
-/// Part of every key: a cache built by another checker must never be replayed.
-pub const SALT: &str = "tsare-0.1";
+/// Part of every key: a cache built by another checker must never be replayed.  The shape of a
+/// record is part of the checker's identity, so a report that gained a field gets a new salt rather
+/// than replaying entries that would silently carry an empty name.
+pub const SALT: &str = "tsare-0.2";
 
 pub fn store_path() -> PathBuf {
     PathBuf::from(".tsare").join("check-cache.json")
@@ -34,9 +36,10 @@ pub fn dump(diagnostics: &[Diagnostic]) -> String {
         .iter()
         .map(|item| {
             format!(
-                "{{\"code\": \"{}\", \"message\": \"{}\", \"line\": {}, \"col\": {}}}",
+                "{{\"code\": \"{}\", \"message\": \"{}\", \"name\": \"{}\", \"line\": {}, \"col\": {}}}",
                 escape(item.code),
                 escape(&item.message),
+                escape(item.witness.as_deref().unwrap_or("")),
                 item.line,
                 item.col
             )
