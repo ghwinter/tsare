@@ -1777,3 +1777,40 @@ fn the_meet_of_two_forms_is_a_greatest_lower_bound() {
     let rule = one.clone();
     assert!(tsare::generalize::meet(&rule, &same).is_none());
 }
+
+/// Comparing two documents as structures, not as texts: which forms both use, and which only one of
+/// them has.  This is the primitive the "which structure should this be expressed in" question needs,
+/// and it is a set difference over signatures, so it cannot be talked into agreeing.
+#[test]
+fn two_documents_sharing_a_form_and_differing_in_another() {
+    let here = decls(concat!(
+        "fact F_A { claim: \"a\", evidence: tool(\"t\") }\n",
+        "proposition P_X { statement: \"x\", from: [F_A] }\n",
+    ));
+    let there = decls(concat!(
+        "fact F_B { claim: \"b\", evidence: tool(\"t\") }\n",
+        "hypothesis H_Y { predicts: \"y\", verdict: open }\n",
+    ));
+    let difference = tsare::shape::compare(&Program::new(&here), &Program::new(&there), 0);
+    // the fact form is shared; the proposition exists only here, the hypothesis only there
+    assert!(
+        !difference.shared.is_empty(),
+        "the two facts have the same form"
+    );
+    assert!(
+        difference.only_here.iter().any(|item| item.contains("P_X")),
+        "{:?}",
+        difference.only_here
+    );
+    assert!(
+        difference
+            .only_there
+            .iter()
+            .any(|item| item.contains("H_Y")),
+        "{:?}",
+        difference.only_there
+    );
+    // the same document compared with itself differs in nothing
+    let same = tsare::shape::compare(&Program::new(&here), &Program::new(&here), 0);
+    assert!(same.only_here.is_empty() && same.only_there.is_empty());
+}
