@@ -1302,7 +1302,8 @@ fn a_verified_repair_does_not_borrow_trouble() {
 /// names rather than quantities -- variant A fired on four of those and variant B on none.
 #[test]
 fn a_stated_quantity_needs_the_value_that_measured_it() {
-    let bare = "proposition P_TIME { statement: \"frame times stay under 16 ms while scrolling\" }\n";
+    let bare =
+        "proposition P_TIME { statement: \"frame times stay under 16 ms while scrolling\" }\n";
     assert!(
         check(&decls(bare))
             .iter()
