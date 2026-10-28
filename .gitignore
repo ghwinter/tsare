@@ -36,19 +36,8 @@
 !/docs/PROTOCOL.md
 !/docs/REPO.tsare
 
-# The hardening corpus: the documents the regression tests compile, the minimal reproducers
-# they read, and the measurements the documents cite.  tests/regressions.rs reads these, so the
-# build needs them; the rule above would otherwise leave a clone unable to compile its tests.
-!/docs/*.tsare
-!/docs/repro
-!/docs/repro/*
-!/docs/project
-!/docs/project/*
-!/docs/artifacts
-!/docs/artifacts/*
-/docs/artifacts/matrix.jsonl
 
-# The corpus harness: two scripts that say how the measurements in docs/artifacts were taken.
+# The corpus harness: two scripts that say how the measurements under tests/fixtures/harden were taken.
 !/scripts
 !/scripts/*
 
@@ -74,10 +63,6 @@ target/
 .tsare/
 .DS_Store
 Thumbs.db
-# The hardening report and its machine-readable counts: deliverables, read by a person and a
-# harness, not by the build.
-!/REPORT.md
-!/STATUS.json
 
 # The loop integration: without it a clone can install the skill but not the gate that makes the
 # skill non-optional.
@@ -89,3 +74,5 @@ Thumbs.db
 !/dsh/tsare-gate/verify-real.mjs
 !/dsh/tsare-gate/fake-tsare.mjs
 !/dsh/tsare-gate/README.md
+# Regenerable: one line per command invocation, rebuilt by scripts/matrix.py.
+/tests/fixtures/harden/artifacts/matrix.jsonl

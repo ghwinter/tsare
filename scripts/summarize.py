@@ -1,4 +1,4 @@
-"""Summarise docs/artifacts/matrix.jsonl.
+"""Summarise tests/fixtures/harden/artifacts/matrix.jsonl.
 
 Prints the tables REPORT.md needs: per document, per diagnostic code, exit-status disagreement,
 and nondeterministic commands.  Nothing here judges whether a diagnostic is right; that is the

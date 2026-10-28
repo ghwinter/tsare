@@ -1,11 +1,11 @@
 """Run every command over every document, twice, and record what it said.
 
-The output is docs/artifacts/matrix.jsonl: one record per (document, command) with the exit
+The output is tests/fixtures/harden/artifacts/matrix.jsonl: one record per (document, command) with the exit
 status, a hash of stdout, and whether two runs produced identical bytes.  It is evidence, not
 a test: the tests live in tests/, and this only says what the binary did on the corpus.
 
 Usage:
-    python scripts/matrix.py [--binary target/release/tsare.exe] [--out docs/artifacts/matrix.jsonl]
+    python scripts/matrix.py [--binary target/release/tsare.exe] [--out tests/fixtures/harden/artifacts/matrix.jsonl]
 """
 
 import argparse
@@ -90,7 +90,7 @@ def commands(doc: Path, text: str, work: Path, report: Path, fixed_report: Path)
         ("mem-empty", ["mem", "--store", str(work / "empty.jsonl")]),
     ]
     if "?" in text:
-        cases.append(("propose", ["propose", shown, "--proposals", "docs/repro/proposals.json"]))
+        cases.append(("propose", ["propose", shown, "--proposals", "tests/fixtures/harden/repro/proposals.json"]))
     if len(facts) >= 2:
         cases.append(("whatif", ["whatif", shown, facts[0]]))
     if concepts:
