@@ -47,7 +47,11 @@ fn a_cache_hit_is_the_same_report_as_a_fresh_check() {
     // reported the declaration.  `name` is the only stable key a delta has.
     let dir = temp("cache-hit");
     let doc = dir.join("doc.tsare");
-    std::fs::copy(root().join("tests/fixtures/harden/repro/engine-order.tsare"), &doc).expect("copy reproducer");
+    std::fs::copy(
+        root().join("tests/fixtures/harden/repro/engine-order.tsare"),
+        &doc,
+    )
+    .expect("copy reproducer");
     let run = |extra: &[&str]| {
         let mut args = vec!["check", "doc.tsare", "--json"];
         args.extend_from_slice(extra);
@@ -74,7 +78,9 @@ fn a_blindspot_signature_is_a_resolved_concept_reference() {
             .any(|item| item.code == "E-UNDEFINED" && item.message.contains("C_MISSING")),
         "{found:#?}"
     );
-    let found = tsare::check::check(&parse(include_str!("../tests/fixtures/harden/repro/signature-kind.tsare")));
+    let found = tsare::check::check(&parse(include_str!(
+        "../tests/fixtures/harden/repro/signature-kind.tsare"
+    )));
     assert!(
         found
             .iter()
@@ -141,7 +147,11 @@ fn a_misspelled_option_is_refused_not_ignored() {
     // Defect: every --word that was not a known value flag became a flag the dispatcher
     // ignored, so --strcit checked without the gate while the caller believed it was gated.
     let output = Command::new(binary())
-        .args(["check", "tests/fixtures/harden/repro/engine-order.tsare", "--strcit"])
+        .args([
+            "check",
+            "tests/fixtures/harden/repro/engine-order.tsare",
+            "--strcit",
+        ])
         .current_dir(root())
         .output()
         .expect("run the binary");
@@ -157,7 +167,11 @@ fn propose_apply_with_a_later_option_still_writes_the_document() {
     // reported admitted and the file was left unchanged.
     let dir = temp("propose-apply");
     let doc = dir.join("target.tsare");
-    std::fs::copy(root().join("tests/fixtures/harden/repro/propose-target.tsare"), &doc).expect("copy reproducer");
+    std::fs::copy(
+        root().join("tests/fixtures/harden/repro/propose-target.tsare"),
+        &doc,
+    )
+    .expect("copy reproducer");
     let proposals = root().join("tests/fixtures/harden/repro/proposals.json");
     let output = run_in(
         &dir,
@@ -183,7 +197,9 @@ fn propose_apply_with_a_later_option_still_writes_the_document() {
 fn a_settled_hypothesis_owes_no_test() {
     // Defect: program::obligations charged a hypothesis for a missing test even when a measured
     // fact had already settled it, so cost claimed external work that uild called done.
-    let decls = parse(include_str!("../tests/fixtures/harden/repro/decided-hypothesis.tsare"));
+    let decls = parse(include_str!(
+        "../tests/fixtures/harden/repro/decided-hypothesis.tsare"
+    ));
     let cost = tsare::cost::report(&tsare::program::Program::new(&decls));
     assert_eq!(cost.total, 0, "{:#?}", cost.rows);
 }
@@ -192,7 +208,9 @@ fn a_settled_hypothesis_owes_no_test() {
 fn build_does_not_invent_a_tool_for_a_hole() {
     // Defect: build::obligation defaulted a missing or hole vidence to "tool", so OBLIGATIONS.md
     // reported a ready fact whose evidence was unknown while check reported W-HOLE.
-    let decls = parse(include_str!("../tests/fixtures/harden/repro/build-hole-evidence.tsare"));
+    let decls = parse(include_str!(
+        "../tests/fixtures/harden/repro/build-hole-evidence.tsare"
+    ));
     let program = tsare::program::Program::new(&decls);
     let row = tsare::build::obligation(
         program.get("F_HOLE").expect("F_HOLE"),
@@ -208,7 +226,9 @@ fn build_does_not_call_an_unwarranted_proposition_ready() {
     // Defect: build::obligation marked a proposition "ready | premises given" as soon as it had
     // a from list, without asking whether any rule concluded it. On the same bytes, check warned
     // W-UNWARRANTED and cost charged "no rule supports it".
-    let decls = parse(include_str!("../tests/fixtures/harden/repro/build-unwarranted.tsare"));
+    let decls = parse(include_str!(
+        "../tests/fixtures/harden/repro/build-unwarranted.tsare"
+    ));
     let program = tsare::program::Program::new(&decls);
     let row = tsare::build::obligation(program.get("P").expect("P"), &program, &Default::default());
     assert_eq!(row.state, "blocked", "{}", row.note);
@@ -220,7 +240,9 @@ fn derive_does_not_ground_a_conclusion_in_a_retired_fact() {
     // Defect: derive::analyze seeded its least fixpoint with every fact, including the ones a
     // supersedes field had withdrawn. It reported P_FAST grounded while engine reported it
     // conditional through the retired premise.
-    let decls = parse(include_str!("../tests/fixtures/harden/repro/retired-derive.tsare"));
+    let decls = parse(include_str!(
+        "../tests/fixtures/harden/repro/retired-derive.tsare"
+    ));
     let analysis = tsare::derive::analyze(&tsare::program::Program::new(&decls));
     assert!(
         !analysis.grounded.contains(&"P_FAST".to_string()),
@@ -273,7 +295,9 @@ fn opposition_is_not_a_justification_cycle() {
     // Defect: check_cycles followed every REF_KEYS edge, including `rival` and `attacks`. Two
     // hypotheses that are each other's rival -- the normal shape of a live disagreement -- were
     // refused with "nothing in the circle is grounded", which is a claim about support.
-    let rivals = tsare::check::check(&parse(include_str!("../tests/fixtures/harden/repro/mutual-rival.tsare")));
+    let rivals = tsare::check::check(&parse(include_str!(
+        "../tests/fixtures/harden/repro/mutual-rival.tsare"
+    )));
     assert!(
         !rivals.iter().any(|item| item.code == "E-CYCLE"),
         "{rivals:#?}"
@@ -306,7 +330,9 @@ fn a_field_written_twice_is_refused() {
     // Defect: check_record found the first occurrence of a field and ignored later ones, so
     // `evidence: user, evidence: model` compiled cleanly and every reader (id_field, f_str)
     // silently used the first value. The document said two things; the checker saw one.
-    let found = tsare::check::check(&parse(include_str!("../tests/fixtures/harden/repro/duplicate-field.tsare")));
+    let found = tsare::check::check(&parse(include_str!(
+        "../tests/fixtures/harden/repro/duplicate-field.tsare"
+    )));
     assert!(
         found
             .iter()
@@ -334,7 +360,9 @@ fn a_mistyped_unit_is_one_type_error_not_also_a_missing_field() {
     // Defect: the "blank unit" test counted every present value that was not a non-empty string,
     // so `unit: 5` produced E-TYPE and E-INCOMMENSURABLE, the second saying the value "lacks
     // unit" when it has one of the wrong type.
-    let found = tsare::check::check(&parse(include_str!("../tests/fixtures/harden/repro/unit-num.tsare")));
+    let found = tsare::check::check(&parse(include_str!(
+        "../tests/fixtures/harden/repro/unit-num.tsare"
+    )));
     let types = found.iter().filter(|item| item.code == "E-TYPE").count();
     let missing = found
         .iter()
@@ -349,7 +377,9 @@ fn an_unresolved_dimension_does_not_condemn_its_elements() {
     // Defect: check_partition reported E-PARTITION-ELEMENT for every element when the dimension
     // was undefined, claiming "F_A is not an instance of C_NOPE" about a concept that does not
     // exist. E-UNDEFINED had already said the only thing that is known.
-    let found = tsare::check::check(&parse(include_str!("../tests/fixtures/harden/repro/partition-undef.tsare")));
+    let found = tsare::check::check(&parse(include_str!(
+        "../tests/fixtures/harden/repro/partition-undef.tsare"
+    )));
     assert!(
         found.iter().any(|item| item.code == "E-UNDEFINED"),
         "{found:#?}"
@@ -365,7 +395,9 @@ fn weigh_propagates_confidence_through_a_proposition() {
     // Defect: weigh folded only facts among a rule's premises and ignored a proposition premise's
     // own weight, so a two-link chain reported 1.00 for the second link where the weakest link
     // was 0.90. check_confidence_flow reads weigh, so W-CONFIDENCE-INFLATED missed the same case.
-    let decls = parse(include_str!("../tests/fixtures/harden/repro/confidence-chain.tsare"));
+    let decls = parse(include_str!(
+        "../tests/fixtures/harden/repro/confidence-chain.tsare"
+    ));
     let weights = tsare::weigh::weights(&tsare::program::Program::new(&decls));
     let second = weights.iter().find(|row| row.name == "P2").expect("P2");
     let value = second.value.expect("P2 has a weight");
@@ -422,7 +454,11 @@ fn a_command_that_reports_an_error_exits_nonzero() {
     // check, project and build already returned 1 for the same bytes.
     let dir = temp("analysis-exits");
     let doc = dir.join("broken.tsare");
-    std::fs::copy(root().join("tests/fixtures/harden/repro/project-dir/b.tsare"), &doc).expect("copy reproducer");
+    std::fs::copy(
+        root().join("tests/fixtures/harden/repro/project-dir/b.tsare"),
+        &doc,
+    )
+    .expect("copy reproducer");
     let graph_out = dir.join("graph.mmd");
     let shown = doc.to_str().unwrap().to_string();
     let cases: Vec<Vec<&str>> = vec![
@@ -495,7 +531,11 @@ fn suggest_json_names_the_file_its_span_indexes() {
     // the directory loader), and cmd_suggest printed it as-is. A consumer got line numbers and
     // no document to apply them to, although PROTOCOL's example shows `file`.
     let output = Command::new(binary())
-        .args(["suggest", "tests/fixtures/harden/repro/project-dir/b.tsare", "--json"])
+        .args([
+            "suggest",
+            "tests/fixtures/harden/repro/project-dir/b.tsare",
+            "--json",
+        ])
         .current_dir(root())
         .output()
         .expect("run");
@@ -543,7 +583,12 @@ fn build_on_a_directory_emits_the_same_five_artifacts_as_a_file() {
     let out = dir.join("out");
     let output = run_in(
         root(),
-        &["build", "tests/fixtures/harden/project", "--out", out.to_str().unwrap()],
+        &[
+            "build",
+            "tests/fixtures/harden/project",
+            "--out",
+            out.to_str().unwrap(),
+        ],
     );
     let text = stdout(&output);
     assert_eq!(output.status.code(), Some(0), "{text}");
@@ -636,7 +681,9 @@ fn a_conditional_premise_is_labelled_with_its_kind() {
     // Defect: closure built its reason with `state.get(premise)`; the state map only contains
     // propositions, so every other premise fell back to the word "fact". A hypothesis that a
     // conclusion rests on was reported as "(fact)", which is the one thing it is not.
-    let found = tsare::check::check(&parse(include_str!("fixtures/harden/49-engine-order-repro.tsare")));
+    let found = tsare::check::check(&parse(include_str!(
+        "fixtures/harden/49-engine-order-repro.tsare"
+    )));
     let conditional = found
         .iter()
         .find(|item| item.code == "W-CONDITIONAL")
