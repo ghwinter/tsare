@@ -36,7 +36,7 @@ document nobody reads. One header, an optional body of at most ten lines, nothin
 type(scope): subject
 ```
 
-`type` is one of `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `build`, `ci`, `chore`,
+`type` is one of `feat`, `fix`, `docs`, `style`, `test`, `refactor`, `perf`, `build`, `ci`, `chore`,
 `revert`. `scope` is optional and names the module or command (`cache`, `dsh`, `shape`). The
 header is at most 72 characters, starts lowercase, and carries no trailing period. The body says
 why, in plain sentences, one point per line; it does not narrate the search, and it does not
