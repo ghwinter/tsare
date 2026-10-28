@@ -1,6 +1,6 @@
 ---
 name: tsare
-description: An external reasoning engine for an LLM that has no reasoning structure of its own. A commitment is written as a .tsare document and a deterministic binary says whether it can be checked at all, what it still owes, and whether the recorded vocabulary can tell two objects apart. No model inside.
+description: An assisted reasoning engine for an LLM that has no reasoning structure of its own. A commitment is written in a .tsare ledger, and a deterministic binary says whether it is anchored, what it still owes, and what to ask next. It judges structure, not truth. No model inside.
 ---
 
 # tsare
