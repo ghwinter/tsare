@@ -395,3 +395,22 @@ fn a_syntax_error_does_not_hide_the_other_files_semantic_errors() {
     assert!(text.contains("error[E-DUP-ID]"), "{text}");
     assert_eq!(output.status.code(), Some(1), "{text}");
 }
+
+#[test]
+fn project_groups_every_file_the_way_check_does() {
+    // Defect: cmd_project called load(), which turns the first syntax error into one string and
+    // returns; the string was attributed to the directory, and no other file's diagnostics were
+    // reported. PROTOCOL says project is "the same, grouped by file".
+    let dir = root().join("docs/repro/project-dir");
+    let output = Command::new(binary())
+        .arg("project")
+        .arg(&dir)
+        .output()
+        .expect("run");
+    let text = stdout(&output);
+    assert!(text.contains("# b.tsare"), "{text}");
+    assert!(text.contains("# c.tsare"), "{text}");
+    assert!(text.contains("E-DUP-ID"), "{text}");
+    assert!(text.contains("E-SYNTAX"), "{text}");
+    assert_eq!(output.status.code(), Some(1), "{text}");
+}

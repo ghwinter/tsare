@@ -200,24 +200,40 @@ pub(crate) fn check_against(
 }
 
 pub(crate) fn cmd_project(path: &Path) -> i32 {
-    let loaded = match load(path) {
+    // `project` is `check`, grouped by file: it must use the same loading path, so it sees the
+    // recovered declarations and every syntax diagnostic, not just the first one.
+    let loaded = match load_for_check(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
     };
-    let diagnostics = crate::check::check(&loaded.decls);
-    let mut by_file: Vec<(String, Vec<&crate::check::Diagnostic>)> = Vec::new();
+    let display = path.display().to_string();
+    let mut diagnostics = loaded.syntax.clone();
+    diagnostics.extend(crate::check::check(&loaded.decls));
+    // `check` sorts through Session; project prints its own rows, so it sorts them itself.
+    diagnostics.sort_by(|left, right| {
+        (&left.file, left.line, left.col, left.code, &left.message).cmp(&(
+            &right.file,
+            right.line,
+            right.col,
+            right.code,
+            &right.message,
+        ))
+    });
+    let name_of = |item: &crate::check::Diagnostic| {
+        if item.file.is_empty() {
+            display.clone()
+        } else {
+            item.file.clone()
+        }
+    };
+    let mut current: Option<String> = None;
     for item in &diagnostics {
-        match by_file.iter_mut().find(|(file, _)| file == &item.file) {
-            Some((_, list)) => list.push(item),
-            None => by_file.push((item.file.clone(), vec![item])),
+        let file = name_of(item);
+        if current.as_deref() != Some(file.as_str()) {
+            println!("# {file}");
+            current = Some(file.clone());
         }
-    }
-    by_file.sort_by(|left, right| left.0.cmp(&right.0));
-    for (file, list) in &by_file {
-        println!("# {file}");
-        for item in list {
-            println!("  {} {file}:{} {}", item.code, item.line, item.message);
-        }
+        println!("  {} {file}:{} {}", item.code, item.line, item.message);
     }
     println!(
         "{} error(s), {} warning(s)",
