@@ -187,3 +187,18 @@ fn a_settled_hypothesis_owes_no_test() {
     let cost = tsare::cost::report(&tsare::program::Program::new(&decls));
     assert_eq!(cost.total, 0, "{:#?}", cost.rows);
 }
+
+#[test]
+fn build_does_not_invent_a_tool_for_a_hole() {
+    // Defect: build::obligation defaulted a missing or hole vidence to "tool", so OBLIGATIONS.md
+    // reported a ready fact whose evidence was unknown while check reported W-HOLE.
+    let decls = parse(include_str!("../docs/repro/build-hole-evidence.tsare"));
+    let program = tsare::program::Program::new(&decls);
+    let row = tsare::build::obligation(
+        program.get("F_HOLE").expect("F_HOLE"),
+        &program,
+        &Default::default(),
+    );
+    assert_ne!(row.state, "ready");
+    assert!(!row.note.contains("tool"), "{}", row.note);
+}
