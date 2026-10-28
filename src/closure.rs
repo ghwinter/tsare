@@ -266,8 +266,17 @@ pub fn closure(decls: &[Decl]) -> Closure {
         if reasons.is_empty() {
             reasons.push("no live rule reached a fact".to_string());
         }
+        let hidden = reasons.len().saturating_sub(2);
         reasons.truncate(2);
-        conditional.push((name.clone(), reasons.join("; ")));
+        let joined = reasons.join("; ");
+        conditional.push((
+            name.clone(),
+            if hidden > 0 {
+                format!("{joined}; … {hidden} more")
+            } else {
+                joined
+            },
+        ));
     }
     // `state` is a HashMap; a report whose rows follow its iteration order differs between runs.
     // The conclusion set is the same, but a byte-for-byte comparison cannot see that.

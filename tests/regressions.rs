@@ -652,3 +652,45 @@ fn a_conditional_premise_is_labelled_with_its_kind() {
         conditional.message
     );
 }
+
+#[test]
+fn a_cut_list_says_how_much_it_cut() {
+    // Defect: engine showed three gates, derive three reasons and debt three facts with no
+    // marker, and W-CONDITIONAL joined at most two reasons in silence. A reader could not tell
+    // a complete list from a truncated one; the JSON carried the rest only for engine.
+    let dir = temp("cut-lists");
+    let doc = dir.join("lists.tsare");
+    std::fs::write(
+        &doc,
+        concat!(
+            "fact F_1 { claim: \"one\", evidence: model }\n",
+            "fact F_2 { claim: \"two\", evidence: model }\n",
+            "fact F_3 { claim: \"three\", evidence: model }\n",
+            "fact F_4 { claim: \"four\", evidence: model }\n",
+            "proposition P_GATED { statement: \"gated\", from: [F_1, F_2, F_3, F_4] }\n",
+            "warrant W_GATED { claim: \"four premises\", from: [F_1, F_2, F_3, F_4], to: P_GATED }\n",
+            "hypothesis H_1 { assumes: [F_1], predicts: \"h1\", test: \"t\" }\n",
+            "hypothesis H_2 { assumes: [F_2], predicts: \"h2\", test: \"t\" }\n",
+            "hypothesis H_3 { assumes: [F_3], predicts: \"h3\", test: \"t\" }\n",
+            "hypothesis H_4 { assumes: [F_4], predicts: \"h4\", test: \"t\" }\n",
+            "proposition P_COND { statement: \"conditional\", from: [H_1, H_2, H_3, H_4] }\n",
+            "warrant W_COND { claim: \"four hypotheses\", from: [H_1, H_2, H_3, H_4], to: P_COND }\n",
+        ),
+    )
+    .expect("write the document");
+    let shown = doc.to_str().unwrap().to_string();
+    let cases = [
+        ("engine", "more"),
+        ("derive", "more"),
+        ("debt", "more"),
+        ("check", "more"),
+    ];
+    for (command, marker) in cases {
+        let text = stdout(&run_in(root(), &[command, &shown]));
+        assert!(
+            text.contains(marker),
+            "{command} did not say a list was cut:\n{text}"
+        );
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+}

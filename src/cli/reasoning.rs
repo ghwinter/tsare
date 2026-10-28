@@ -148,13 +148,25 @@ pub(crate) fn cmd_engine(path: &Path, json: bool) -> i32 {
             String::new()
         } else {
             let shown: Vec<String> = gates.iter().take(3).cloned().collect();
-            format!("  gates: {}", shown.join(", "))
+            let hidden = gates.len() - shown.len();
+            let tail = if hidden > 0 {
+                format!("; … {hidden} more")
+            } else {
+                String::new()
+            };
+            format!("  gates: {}{tail}", shown.join(", "))
         };
         println!("  held {chain}{suffix}");
     }
     for (name, reasons) in &result.conditional {
         let shown: Vec<String> = reasons.iter().take(2).cloned().collect();
-        println!("  conditional {name}: {}", shown.join("; "));
+        let hidden = reasons.len() - shown.len();
+        let tail = if hidden > 0 {
+            format!("; … {hidden} more")
+        } else {
+            String::new()
+        };
+        println!("  conditional {name}: {}{tail}", shown.join("; "));
     }
     for (warrant, missing) in &result.blocked {
         println!("  blocked {warrant} needs {}", missing.join(", "));
@@ -335,6 +347,9 @@ pub(crate) fn cmd_derive(path: &Path) -> i32 {
             for reason in reasons.iter().take(3) {
                 println!("    {reason}");
             }
+            if reasons.len() > 3 {
+                println!("    … {} more", reasons.len() - 3);
+            }
         }
     }
     0
@@ -361,6 +376,9 @@ pub(crate) fn cmd_debt(path: &Path, all: bool) -> i32 {
         );
         for line in row.lines.iter().take(3) {
             println!("    {line}");
+        }
+        if row.lines.len() > 3 {
+            println!("    … {} more", row.lines.len() - 3);
         }
     }
     0
