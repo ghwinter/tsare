@@ -1896,3 +1896,38 @@ fn two_forms_that_differ_in_one_field_are_near_misses() {
     assert!(tsare::shape::near_misses(&left, &right, 0, 0).is_empty());
     assert!(tsare::shape::near_text(&misses).contains("approximation"));
 }
+
+/// A document nested past the parser's cap is a diagnostic, not a crash: recursive descent uses
+/// the call stack as its own stack, and a hostile document used to kill the process at ~2100 deep.
+#[test]
+fn a_value_nested_past_the_cap_is_refused_with_a_diagnostic() {
+    let deep = format!(
+        "fact F {{ claim: {}1{} }}\n",
+        "{a: ".repeat(200),
+        "}".repeat(200)
+    );
+    let error =
+        parse(&deep).expect_err("a value deep enough to overflow the stack must be refused");
+    assert_eq!(error.code, "E-SYNTAX");
+    assert!(error.message.contains("nested deeper"), "{}", error.message);
+    let ordinary = format!(
+        "fact F {{ claim: {}1{} }}\n",
+        "{a: ".repeat(20),
+        "}".repeat(20)
+    );
+    assert!(
+        parse(&ordinary).is_ok(),
+        "twenty levels is an ordinary document"
+    );
+}
+
+/// The `E-KIND` repair parses its own diagnostic message; a quoted name containing ` expects `
+/// put the marker before the dot and the reversed slice panicked.
+#[test]
+fn a_quoted_name_with_a_marker_does_not_panic_the_repair() {
+    let source = concat!(
+        "fact F_A { claim: \"x\", evidence: user }\n",
+        "warrant \"C expects D\" { claim: \"c\", from: [F_A], to: F_A }\n",
+    );
+    let _ = suggestions(&decls(source));
+}
