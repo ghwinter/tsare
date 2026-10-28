@@ -1,48 +1,24 @@
-pub mod abstraction;
-pub mod apply;
-pub mod argue;
-pub mod ask;
-pub mod assumptions;
-pub mod audit;
-pub mod build;
-pub mod cache;
-pub mod cases;
-pub mod cat;
+//! The library, grouped by what each part does rather than by alphabet.
+//!
+//! `lang` reads text into declarations, `check` decides whether they are well formed, `reason`
+//! computes over the whole document, `emit` turns it into files and prose, and `io` owns the few
+//! places state lives. The modules are re-exported at the root so `tsare::check::check` and the
+//! rest keep working: moving a file is a decision about reading, not about the public path.
+
 pub mod check;
 pub mod cli;
-pub mod closure;
-pub mod cost;
-pub mod coverage;
-pub mod debt;
-pub mod delta;
-pub mod derive;
-pub mod egraph;
-pub mod explain;
-pub mod fca;
-pub mod fix;
-pub mod generalize;
-pub mod graph;
-pub mod hash;
-pub mod hint;
-pub mod impact;
-pub mod imply;
-pub mod induce;
-pub mod json;
-pub mod kernel;
-pub mod mapping;
+pub mod emit;
+pub mod io;
+pub mod lang;
 pub mod mcp;
-pub mod moves;
-pub mod novel;
-pub mod outline;
-pub mod paths;
-pub mod patterns;
-pub mod program;
-pub mod propose;
-pub mod render;
-pub mod session;
-pub mod shape;
-pub mod specs;
-pub mod sugar;
-pub mod syntax;
-pub mod weigh;
-pub mod whatif;
+pub mod reason;
+
+pub use check::{fix, kernel};
+pub use emit::{build, graph, mapping, outline};
+pub use io::{apply, cache, cases, session};
+pub use lang::{explain, hash, json, paths, program, render, specs, sugar, syntax};
+pub use reason::{
+    abstraction, argue, ask, assumptions, audit, cat, closure, cost, coverage, debt, delta, derive,
+    egraph, fca, generalize, hint, impact, imply, induce, moves, novel, patterns, propose, shape,
+    weigh, whatif,
+};

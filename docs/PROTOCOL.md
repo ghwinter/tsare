@@ -254,15 +254,14 @@ Every command accepts a file or a directory. A directory is checked as one progr
 
 One crate, grouped by what a module needs:
 
-| tier | modules |
+| directory | modules |
 | --- | --- |
-| syntax | `syntax`, `specs`, `sugar` |
-| check | `check`, `coverage`, `project` (via `cli`) |
-| reasoning | `closure`, `argue`, `derive`, `debt`, `engine`, `fix`, `apply` |
-| analysis | `impact`, `cost`, `weigh`, `cat`, `moves`, `assumptions`, `egraph`, `whatif`, `audit`, `map` (`mapping`), `graph`, `induce`, `paths`, `patterns` |
-| emit | `build`, `outline` |
-| stores | `cache`, `cases`, `json`, `hash` |
-| front | `cli`, `program` |
+| `lang/` | `syntax`, `specs`, `program`, `sugar`, `render`, `hash`, `json`, `paths`, `explain` |
+| `check/` | `check` and its checks, plus `fix` and `kernel` |
+| `reason/` | `closure`, `argue`, `derive`, `debt`, `impact`, `cost`, `weigh`, `cat`, `moves`, `assumptions`, `egraph`, `whatif`, `audit`, `coverage`, `delta`, `fca`, `imply`, `induce`, `abstraction`, `generalize`, `novel`, `ask`, `shape`, `hint`, `patterns`, `propose` |
+| `emit/` | `build`, `outline`, `graph`, `mapping`, `session` |
+| `io/` | `cache`, `apply`, `cases` |
+| `cli/` | the front: argument parsing, dispatch, and one file per command group |
 
 `check` calls `closure` for the conditional-conclusion warning, so the check tier depends on
 the reasoning tier in exactly one place. Keep it that way.

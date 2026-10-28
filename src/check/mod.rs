@@ -5,6 +5,8 @@ use std::collections::{HashMap, HashSet};
 pub(crate) mod collide;
 mod confidence;
 pub(crate) mod evidence;
+pub mod fix;
+pub mod kernel;
 mod partition;
 
 use crate::closure;
