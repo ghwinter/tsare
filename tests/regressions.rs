@@ -727,3 +727,20 @@ fn a_gap_with_no_separator_does_not_end_the_sentence_with_from() {
     assert!(text.contains("from any listed element"), "{text}");
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn a_confirmed_model_fact_can_license_a_rule() {
+    // Defect: the basis criterion for a fact was `evidence != model`, ignoring `confirmed_by`.
+    // E-SELF-VERDICT already treats a confirmed model fact as strong enough to settle a
+    // hypothesis, while W-BASIS-NO-CRITERION called the same fact "a model's opinion".
+    let source = concat!(
+        "fact F { claim: \"x\", evidence: model, confirmed_by: \"reviewer\" }\n",
+        "proposition P { statement: \"p\", from: [F] }\n",
+        "warrant W { claim: \"r\", from: [F], to: P, basis: [F] }\n",
+    );
+    let found = tsare::check::check(&parse(source));
+    assert!(
+        !found.iter().any(|item| item.code == "W-BASIS-NO-CRITERION"),
+        "{found:#?}"
+    );
+}

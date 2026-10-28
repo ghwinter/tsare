@@ -1098,7 +1098,9 @@ fn check_semantics(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                         continue;
                     };
                     let licensed = match target.kind.as_str() {
-                        "fact" => id_field(target, "evidence") != Some("model"),
+                        // a model's word is not evidence, unless a person confirmed it: the same
+                        // grade E-SELF-VERDICT uses, so the two checks cannot disagree
+                        "fact" => crate::program::grade(target) >= crate::program::Grade::Confirmed,
                         "proposition" => {
                             id_field(target, "status") != Some("open")
                                 && warranty_targets.contains(&target.name)
