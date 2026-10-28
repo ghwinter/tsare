@@ -214,3 +214,28 @@ fn build_does_not_call_an_unwarranted_proposition_ready() {
     assert_eq!(row.state, "blocked", "{}", row.note);
     assert!(row.note.contains("rule"), "{}", row.note);
 }
+
+#[test]
+fn derive_does_not_ground_a_conclusion_in_a_retired_fact() {
+    // Defect: derive::analyze seeded its least fixpoint with every fact, including the ones a
+    // supersedes field had withdrawn. It reported P_FAST grounded while engine reported it
+    // conditional through the retired premise.
+    let decls = parse(include_str!("../docs/repro/retired-derive.tsare"));
+    let analysis = tsare::derive::analyze(&tsare::program::Program::new(&decls));
+    assert!(
+        !analysis.grounded.contains(&"P_FAST".to_string()),
+        "{:?}",
+        analysis.grounded
+    );
+    assert!(
+        analysis.conditional.contains(&"P_FAST".to_string()),
+        "{:?}",
+        analysis.conditional
+    );
+    let result = tsare::closure::engine(&decls);
+    assert!(
+        result.conditional.iter().any(|(name, _)| name == "P_FAST"),
+        "{:#?}",
+        result.conditional
+    );
+}
