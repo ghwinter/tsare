@@ -165,7 +165,9 @@ pub(crate) fn cmd_fix(path: &Path, apply: Option<&str>) -> i32 {
             rounds += 1;
         }
         let (after_e, after_w) = crate::fix::score_without_holes(&current);
-        fs::write(out, crate::fix::render(&current)).expect("write file");
+        if let Err(error) = fs::write(out, crate::fix::render(&current)) {
+            return fail(format!("{out}: {error}"));
+        }
         println!("applied {rounds} fix(es) -> {out} ({after_e} errors, {after_w} warnings)");
     }
     0

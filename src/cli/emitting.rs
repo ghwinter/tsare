@@ -2,6 +2,12 @@
 
 use super::*;
 
+/// Write an output file and report the filesystem error; a path that cannot be written is a
+/// file problem, not a panic.
+fn write_file(path: &Path, text: &str) -> Result<(), String> {
+    fs::write(path, text).map_err(|error| format!("{}: {error}", path.display()))
+}
+
 pub(crate) fn cmd_audit(path: &Path) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
@@ -58,7 +64,9 @@ pub(crate) fn cmd_egraph(path: &Path, write: Option<&str>) -> i32 {
     if let Some(out) = write {
         let mapping = crate::egraph::canonical_map(&mut uf);
         let new_decls = crate::egraph::rewrite(&loaded.decls, &mapping);
-        fs::write(out, crate::fix::render(&new_decls)).expect("write file");
+        if let Err(error) = write_file(Path::new(out), &crate::fix::render(&new_decls)) {
+            return fail(error);
+        }
         let reloaded = match load(Path::new(out)) {
             Ok(reloaded) => reloaded,
             Err(error) => {
@@ -92,7 +100,9 @@ pub(crate) fn cmd_graph(path: &Path, out: Option<&str>) -> i32 {
         Some(target) => PathBuf::from(target),
         None => path.with_extension("net.mmd"),
     };
-    fs::write(&destination, text).expect("write graph");
+    if let Err(error) = write_file(&destination, &text) {
+        return fail(error);
+    }
     let (nodes, edges) = crate::graph::summary(&program);
     println!("{nodes} nodes, {edges} edges -> {}", destination.display());
     let diagnostics = crate::check::check(&loaded.decls);

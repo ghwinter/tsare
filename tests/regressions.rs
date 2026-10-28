@@ -505,3 +505,31 @@ fn suggest_json_names_the_file_its_span_indexes() {
         "{text}"
     );
 }
+
+#[test]
+fn an_unwritable_output_is_reported_not_a_panic() {
+    // Defect: graph, egraph, fix --apply and build wrote with fs::write(...).expect(...), so a
+    // path that cannot be written panicked with exit 101 instead of a file problem.
+    let dir = temp("unwritable");
+    let blocker = dir.join("blocker");
+    std::fs::write(&blocker, b"a file, not a directory").expect("write blocker");
+    let target = blocker.join("graph.mmd");
+    let output = Command::new(binary())
+        .args([
+            "graph",
+            "docs/repro/project-dir/a.tsare",
+            "--out",
+            target.to_str().unwrap(),
+        ])
+        .current_dir(root())
+        .output()
+        .expect("run");
+    let text = format!(
+        "{}{}",
+        stdout(&output),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(output.status.code(), Some(1), "{text}");
+    assert!(!text.contains("panicked"), "{text}");
+    let _ = std::fs::remove_dir_all(&dir);
+}
