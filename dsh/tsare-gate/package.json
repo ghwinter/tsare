@@ -1,0 +1,15 @@
+{
+  "name": "tsare-gate",
+  "version": "0.1.0",
+  "description": "DSH plugin: the checker runs inside the loop, so a turn cannot close while the session ledger is not checkable",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "README.md"
+  ],
+  "license": "MIT"
+}

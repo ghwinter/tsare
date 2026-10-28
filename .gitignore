@@ -58,3 +58,14 @@ target/
 .tsare/
 .DS_Store
 Thumbs.db
+
+# The loop integration: without it a clone can install the skill but not the gate that makes the
+# skill non-optional.
+!/dsh/tsare-gate
+/dsh/tsare-gate/*
+!/dsh/tsare-gate/package.json
+!/dsh/tsare-gate/index.js
+!/dsh/tsare-gate/selftest.mjs
+!/dsh/tsare-gate/verify-real.mjs
+!/dsh/tsare-gate/fake-tsare.mjs
+!/dsh/tsare-gate/README.md
