@@ -1618,3 +1618,68 @@ fn a_form_that_appears_at_two_layers_is_a_fibre() {
     ));
     assert!(tsare::shape::fibres(&Program::new(&single), 0).is_empty());
 }
+
+/// The dual side of the closure: `extent ∘ intent` over sets of facts.  The two directions are
+/// computed by different code (one scans the program, the other only its sample), so an axiom that
+/// holds on one side says nothing about the other -- which is why both are checked.
+#[test]
+fn the_object_closure_obeys_the_three_axioms() {
+    let source = concat!(
+        "fact F_1 { claim: \"1\", evidence: user, attrs: { a: 1, b: 1 } }\n",
+        "fact F_2 { claim: \"2\", evidence: user, attrs: { a: 1, c: 1 } }\n",
+        "fact F_3 { claim: \"3\", evidence: user, attrs: { a: 1, b: 1, c: 1 } }\n",
+        "fact F_4 { claim: \"4\", evidence: user, attrs: { b: 1 } }\n",
+    );
+    let declared = decls(source);
+    let program = Program::new(&declared);
+    let facts = program.of_kind("fact");
+    assert!(
+        facts.len() <= 12,
+        "enumerating every subset must stay cheap"
+    );
+
+    let closure = |picked: &[usize]| -> Vec<String> {
+        let sample: Vec<&tsare::syntax::Decl> = picked.iter().map(|index| facts[*index]).collect();
+        let intent = tsare::fca::intent(&program, &sample);
+        tsare::fca::extent(&program, &intent)
+            .into_iter()
+            .map(|fact| fact.name.clone())
+            .collect()
+    };
+    let subset = |mask: u32| -> Vec<usize> {
+        (0..facts.len())
+            .filter(|index| mask & (1 << index) != 0)
+            .collect()
+    };
+
+    for mask in 0u32..(1u32 << facts.len()) {
+        let base = subset(mask);
+        let closed = closure(&base);
+        let closed_names: Vec<String> = closed.clone();
+
+        for index in &base {
+            let name = facts[*index].name.clone();
+            assert!(closed.contains(&name), "extensive: {base:?} lacks {name}");
+        }
+        let again = closure(
+            &(0..facts.len())
+                .filter(|index| closed_names.contains(&facts[*index].name))
+                .collect::<Vec<_>>(),
+        );
+        assert_eq!(again, closed, "idempotent: {base:?}");
+
+        for other in 0u32..(1u32 << facts.len()) {
+            if mask & !other != 0 {
+                continue;
+            }
+            let wider = closure(&subset(other));
+            for name in &closed {
+                assert!(
+                    wider.contains(name),
+                    "monotone: {base:?} ⊆ {:?} but {name} is not in its closure",
+                    subset(other)
+                );
+            }
+        }
+    }
+}
