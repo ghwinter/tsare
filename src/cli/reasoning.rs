@@ -428,12 +428,17 @@ pub(crate) fn cmd_abstract(path: &Path, args: &Args) -> i32 {
 
 /// The forms a document's declarations share, and the positions that vary inside each form.
 /// A form with one instance is not a structure, so only shared ones are printed.
-pub(crate) fn cmd_shape(path: &Path, top: usize, depth: usize) -> i32 {
+pub(crate) fn cmd_shape(path: &Path, top: usize, depth: usize, layers: bool) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
     };
     let program = Program::new(&loaded.decls);
+    if layers {
+        let fibres = crate::shape::fibres(&program, depth);
+        print!("{}", crate::shape::fibre_text(&fibres, depth));
+        return 0;
+    }
     let groups = crate::shape::shapes_at(&program, depth);
     print!(
         "{}",

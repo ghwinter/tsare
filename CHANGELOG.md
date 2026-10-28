@@ -92,6 +92,12 @@ All notable changes are recorded here. The format follows
   smaller closure, so monotonicity failed at exactly the sets no fact satisfies -- found by a test
   that checks the three axioms over every subset of the attribute universe, not by reading the code.
   `intent` now takes the program and returns the attribute universe for the empty sample.
+- `shape --layers` — the fibre view: a shared form that appears at more than one layer. A refinement
+  looks exactly like a contradiction from the outside (the same structure claimed twice at different
+  heights), so it is reported rather than judged. `--depth` applies here too: at depth 1 a fibre is
+  a form whose members also agree on what they point at. Measured: no document in this repository
+  has a fibre at depth 0 today -- the prelude files that use `layer:` are too heterogeneous for two
+  declarations to share a shape -- so the behaviour is pinned by a crafted test, not by the corpus.
 ### Added
 
 - `E-SUPERSEDE-UNDEFINED` — a `supersedes` field that names nothing, or names itself. A withdrawal
