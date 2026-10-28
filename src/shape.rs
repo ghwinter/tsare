@@ -154,6 +154,81 @@ fn variables(program: &Program, group: &ShapeGroup) -> Vec<(String, Vec<String>)
     out
 }
 
+/// One class seen against the layers its members sit in.  A form that appears at more than one layer
+/// is a fibre: the same structure claimed twice at different heights, which is either a refinement
+/// or a contradiction, and the document is what decides which.
+pub struct Fibre {
+    pub kind: String,
+    pub layers: Vec<String>,
+    pub members: Vec<(String, String)>,
+}
+
+/// Group the shared forms by the layers they appear in.  Only forms that span at least two layers
+/// are returned: a form inside one layer is that layer's business.
+pub fn fibres(program: &Program, depth: usize) -> Vec<Fibre> {
+    let mut out: Vec<Fibre> = Vec::new();
+    for group in shapes_at(program, depth) {
+        let mut layers: Vec<String> = Vec::new();
+        let mut members: Vec<(String, String)> = Vec::new();
+        for name in &group.members {
+            let Some(decl) = program.get(name) else {
+                continue;
+            };
+            let layer = match decl.fields.iter().find(|(key, _)| key == "layer") {
+                Some((_, Val::Id(target))) => target.clone(),
+                Some((_, other)) => render(other),
+                None => continue,
+            };
+            if !layers.contains(&layer) {
+                layers.push(layer.clone());
+            }
+            members.push((name.clone(), layer));
+        }
+        if layers.len() < 2 {
+            continue;
+        }
+        layers.sort();
+        out.push(Fibre {
+            kind: group.kind,
+            layers,
+            members,
+        });
+    }
+    out.sort_by(|left, right| {
+        right
+            .layers
+            .len()
+            .cmp(&left.layers.len())
+            .then(left.kind.cmp(&right.kind))
+    });
+    out
+}
+
+pub fn fibre_text(fibres: &[Fibre], depth: usize) -> String {
+    if fibres.is_empty() {
+        return format!("no form spans two layers at depth {depth}\n");
+    }
+    let mut out = format!(
+        "{} form(s) spanning two or more layers at depth {depth}\n\n",
+        fibres.len()
+    );
+    for (index, fibre) in fibres.iter().enumerate() {
+        out.push_str(&format!(
+            "{}. {}  layers: {}\n",
+            index + 1,
+            fibre.kind,
+            fibre.layers.join(", ")
+        ));
+        for (name, layer) in fibre.members.iter().take(10) {
+            out.push_str(&format!("   {name} in {layer}\n"));
+        }
+        if fibre.members.len() > 10 {
+            out.push_str(&format!("   … {} more\n", fibre.members.len() - 10));
+        }
+    }
+    out
+}
+
 pub fn text(groups: &[ShapeGroup], total: usize, top: usize, depth: usize) -> String {
     if groups.is_empty() {
         return format!(

@@ -1589,3 +1589,32 @@ fn the_attribute_closure_obeys_the_three_axioms() {
         }
     }
 }
+
+/// A fibre is one form seen at more than one layer: the same structure claimed twice at different
+/// heights.  It is not an error -- a refinement looks exactly like this -- but it has to be visible,
+/// because a form that appears at two layers either implements the lower one or contradicts it.
+#[test]
+fn a_form_that_appears_at_two_layers_is_a_fibre() {
+    let source = concat!(
+        "layer L_ONE { name: \"one\", exposes: [F_A] }\n",
+        "layer L_TWO { name: \"two\", exposes: [F_A] }\n",
+        "fact F_A { claim: \"a\", evidence: user }\n",
+        "proposition P_X { statement: \"x\", from: [F_A], layer: L_ONE }\n",
+        "proposition P_Y { statement: \"y\", from: [F_A], layer: L_TWO }\n",
+    );
+    let declared = decls(source);
+    let program = Program::new(&declared);
+    let fibres = tsare::shape::fibres(&program, 0);
+    assert_eq!(fibres.len(), 1, "one class spans both layers");
+    assert_eq!(fibres[0].kind, "proposition");
+    assert_eq!(fibres[0].layers, vec!["L_ONE", "L_TWO"]);
+
+    // the same declarations at one layer are not a fibre
+    let single = decls(concat!(
+        "layer L_ONE { name: \"one\", exposes: [F_A] }\n",
+        "fact F_A { claim: \"a\", evidence: user }\n",
+        "proposition P_X { statement: \"x\", from: [F_A], layer: L_ONE }\n",
+        "proposition P_Y { statement: \"y\", from: [F_A], layer: L_ONE }\n",
+    ));
+    assert!(tsare::shape::fibres(&Program::new(&single), 0).is_empty());
+}
