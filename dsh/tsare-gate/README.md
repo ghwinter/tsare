@@ -40,6 +40,7 @@ almost never fire. The plugin runs no model, opens no network, and writes nothin
 | `remindLimit` | `5` | how many claim reminders one agent may receive |
 | `command` | none | argv override (`[file, ...args]`) for the check, for tests and wrappers |
 | `askCommand` | none | argv override for the next-question call |
+| `debug` | `false` | append one line per hook (apply, created, install, post-execute, turn-stopping) to a temp file, for diagnosing a live integration |
 
 ## Activate it in a profile
 

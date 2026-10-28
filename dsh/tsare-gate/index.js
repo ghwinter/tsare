@@ -26,11 +26,13 @@
  *   remindLimit        how many such reminders one agent may receive (default 5)
  *   command            argv override for tests and wrappers; replaces [binary, check, ledger, --json]
  *   askCommand         argv override for the next-question call (default [binary, ask, ledger, --one])
+ *   debug              append one line per hook to <tmp>/tsare-gate.log (default false)
  */
 
 import { execFile } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 
 export const name = 'tsare-gate'
@@ -55,6 +57,7 @@ const DEFAULTS = {
   remindLimit: 5,
   command: null,
   askCommand: null,
+  debug: false,
 }
 
 /** The message a gate injects; the shape is the one `createUserMessage` builds. */
@@ -176,6 +179,17 @@ export function apply(ctx, raw) {
   const briefFibers = new Map()
   /** agent -> Set of ledger stamps already reminded, never more than `remindLimit` in total. */
   const remanded = new Map()
+  /** A live integration needs evidence about which hook fired; this is the only file it writes. */
+  const trace = config.debug
+    ? (line) => {
+        try {
+          appendFileSync(join(tmpdir(), 'tsare-gate.log'), `${new Date().toISOString()} ${line}\n`)
+        } catch {
+          // a trace that cannot be written is not a reason to fail a turn
+        }
+      }
+    : () => {}
+  trace(`apply pid=${process.pid} cwd=${process.cwd()} ledger=${config.ledger} brief=${config.brief}`)
 
   /** The directory the ledger lives in: the config, else the session's own working directory. */
   const cwdOf = (agent) => config.cwd || agent?.session?.header?.cwd || process.cwd()
@@ -302,6 +316,7 @@ export function apply(ctx, raw) {
     if (!config.brief) return
     // A duplicate registration throws; one agent gets one line even if the event fires again.
     if (briefFibers.has(agent)) return
+    let registered = false
     try {
       const fiber = agent.ctx.inject(['systemPrompt'], (scope) => {
         scope.systemPrompt.context({
@@ -311,19 +326,26 @@ export function apply(ctx, raw) {
         })
       })
       briefFibers.set(agent, fiber)
+      registered = true
     } catch {
       // no system prompt service here: the gate still works, the brief is just absent
     }
+    trace(`install cwd=${cwdOf(agent)} ctx=${Boolean(agent?.ctx)} registered=${registered}`)
     void refreshBrief(agent)
   }
 
-  ctx.on('agent/created', ({ agent }) => installBrief(agent))
+  ctx.on('agent/created', ({ agent }) => {
+    trace('agent/created')
+    installBrief(agent)
+  })
   // A plugin loaded into a live process (HMR) must reach the agents that already exist; the
   // event only covers agents created after the load.
   try {
-    for (const agent of ctx.get?.('agents')?.list?.() ?? []) installBrief(agent)
-  } catch {
-    // no agent registry at load time: the event path covers every later agent
+    const agents = ctx.get?.('agents')?.list?.() ?? []
+    trace(`catch-up agents=${agents.length}`)
+    for (const agent of agents) installBrief(agent)
+  } catch (error) {
+    trace(`catch-up failed: ${error?.message ?? error}`)
   }
 
   ctx.on('agent/disposed', ({ agent }) => {
@@ -342,6 +364,7 @@ export function apply(ctx, raw) {
 
   ctx.on('tools/post-execute', async (exec, _result, next) => {
     const downstream = await next()
+    trace(`post-execute ${exec.name}`)
     // The ledger changes only through tools, so this is the one place the brief needs to look.
     try {
       await refreshBrief(exec.agent)
@@ -398,6 +421,7 @@ export function apply(ctx, raw) {
     }
     void refreshBrief(agent)
     const verdict = await checkLedger(config, cwdOf(agent))
+    trace(`turn-stopping status=${verdict.status}`)
     if (verdict.status === 'ok') {
       steers.delete(agent)
       return
