@@ -159,6 +159,61 @@ pub fn expose_functor(prog: &Program) -> (usize, usize, Vec<String>) {
     (visible, total, leaks)
 }
 
+/// What one structural mapping did when asked whether it preserves its law.
+pub struct Outcome {
+    pub kept: usize,
+    pub total: usize,
+    pub failures: Vec<String>,
+}
+
+/// One structural mapping whose preservation is checkable.  This table is the list of laws the
+/// document format claims: adding a law is adding an entry, with the diagnostic that already
+/// reports it -- not a new branch in the command.
+pub struct Functor {
+    pub name: &'static str,
+    /// What it maps, in one line.
+    pub maps: &'static str,
+    /// The condition it preserves, in one line.
+    pub law: &'static str,
+    /// The code reported when the law fails; it must be a code the checker really emits.
+    pub code: &'static str,
+    pub check: fn(&Program) -> Outcome,
+}
+
+fn check_extent(program: &Program) -> Outcome {
+    let (kept, total, failures) = extent_functor(program);
+    Outcome {
+        kept,
+        total,
+        failures,
+    }
+}
+
+fn check_expose(program: &Program) -> Outcome {
+    let (visible, crossing, leaks) = expose_functor(program);
+    Outcome {
+        kept: visible,
+        total: crossing,
+        failures: leaks,
+    }
+}
+
+pub const FUNCTORS: &[Functor] = &[
+    Functor {
+        name: "Ext",
+        maps: "concept -> its extent, a set of facts",
+        law: "a child's extent sits inside its parent's",
+        code: "E-HIERARCHY",
+        check: check_extent,
+    },
+    Functor {
+        name: "Expose",
+        maps: "declaration -> the layer that may be seen from outside",
+        law: "a cross-layer reference lands on an exposed name",
+        code: "E-LAYER-LEAK",
+        check: check_expose,
+    },
+];
 pub struct Stage {
     pub name: &'static str,
     pub label: &'static str,

@@ -1,7 +1,7 @@
 objects: concept=4, fact=4
 arrows:  negative=4, positive=7
-Ext:     3/3 parent arrows preserved
-Expose:  0/0 cross-layer arrows visible
+Ext:     3/3  a child's extent sits inside its parent's  [E-HIERARCHY]
+Expose:  0/0  a cross-layer reference lands on an exposed name  [E-LAYER-LEAK]
 checker: 0 error(s)
 stages:
   source -> AST            total            parse() either produces a tree or an E-SYNTAX

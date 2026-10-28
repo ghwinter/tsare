@@ -222,6 +222,27 @@ checked against what was declared.
 introduced diagnostic is a rejection), `improve` (something besides the hole must get better).
 The default is `harmless`. None of the three looks at content.
 
+## What a machine can check here
+
+The checker operates on **structure**, not on meaning. A declaration's kind, its fields, the
+references between declarations, the shape of those references and the closure they induce are all
+machine-readable. The text of a `claim` or a `statement` is not: to every command here it is an
+opaque string that only equality can compare. That is why this is a checkability checker and not a
+semantic one -- and why "the model does not have to be trusted" is a statement about structure, not
+about understanding.
+
+The twelve kinds are an **epistemic type system**: each names an obligation rather than a data
+shape. A `fact` owes evidence someone else can check, a `value` owes an instrument and a threshold,
+a `warrant` owes premises, a rule and a licence. Passing the type check means the obligation is met,
+not that the sentence is true.
+
+| Layer | What is checked | What it does not give you |
+| --- | --- | --- |
+| syntax and types | the declaration is well formed, and its references have the kinds they claim | that the content is true |
+| evidence and dependency | evidence is declared and support is whole | that the evidence settles the world |
+| closure | which conclusions follow from the rules the document declares | that every valid inference has been found |
+| sets and equivalence | extents, the equivalences this format defines, duplicate declarations | the equivalences a person would recognise |
+| category | the named mappings preserve the relations they claim | that the document is a category |
 ## Deliberate choices about the text
 
 These are decisions, not drift. Each one was the other way in an earlier draft of the contract,

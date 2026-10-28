@@ -584,15 +584,19 @@ pub(crate) fn cmd_cat(path: &Path) -> i32 {
         .collect();
     println!("objects: {}", objects.join(", "));
     println!("arrows:  {}", arrows.join(", "));
-    let (kept, total, failures) = crate::cat::extent_functor(&program);
-    println!("Ext:     {kept}/{total} parent arrows preserved");
-    for failure in &failures {
-        println!("  FAIL {failure}");
-    }
-    let (visible, crossing, leaks) = crate::cat::expose_functor(&program);
-    println!("Expose:  {visible}/{crossing} cross-layer arrows visible");
-    for leak in &leaks {
-        println!("  FAIL {leak}");
+    for functor in crate::cat::FUNCTORS {
+        let outcome = (functor.check)(&program);
+        println!(
+            "{:<8} {}/{}  {}  [{}]",
+            format!("{}:", functor.name),
+            outcome.kept,
+            outcome.total,
+            functor.law,
+            functor.code
+        );
+        for failure in &outcome.failures {
+            println!("  FAIL {failure}");
+        }
     }
     println!("checker: {} error(s)", error_count(&diagnostics));
     println!("stages:");

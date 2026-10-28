@@ -101,6 +101,15 @@ All notable changes are recorded here. The format follows
   drive letter or a home directory in any tracked file (`:!.github/**` excluded so the guard does not
   match its own pattern). The audit that prompted it found one: the skill document told the reader
   the binary lives at an absolute path, which is wrong in every other checkout.
+- `cat` reports each structural law from a table instead of from two branches in the command. Each
+  entry names what the mapping takes, the condition it preserves, and the diagnostic that reports
+  its failure; adding a law is adding an entry. A test cross-checks every entry against the
+  document that violates it, so a law whose code never fires fails the build.
+
+- `docs/PROTOCOL.md` now says, layer by layer, what a machine can check here and what it cannot:
+  the checker operates on structure, and the text of a `claim` is an opaque string to every command.
+  The twelve kinds are named for what they are -- an epistemic type system, where each kind owes an
+  obligation rather than a data shape.
 ### Added
 
 - `E-SUPERSEDE-UNDEFINED` — a `supersedes` field that names nothing, or names itself. A withdrawal

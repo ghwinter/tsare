@@ -1683,3 +1683,35 @@ fn the_object_closure_obeys_the_three_axioms() {
         }
     }
 }
+
+/// The functor table is the list of structural laws this format claims.  Each entry names the
+/// diagnostic that reports its failure, and the two must agree: a law whose code never fires is a
+/// slogan, and a code with no law is an unexplained check.
+#[test]
+fn every_functor_names_a_code_that_actually_fires() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/codes");
+    let cases = [("E-HIERARCHY", "Ext"), ("E-LAYER-LEAK", "Expose")];
+    for (code, functor_name) in cases {
+        let functor = tsare::cat::FUNCTORS
+            .iter()
+            .find(|item| item.name == functor_name)
+            .unwrap_or_else(|| panic!("no functor named {functor_name}"));
+        assert_eq!(functor.code, code, "{functor_name} must name its own code");
+        let source = std::fs::read_to_string(root.join(format!("{code}.tsare")))
+            .unwrap_or_else(|error| panic!("read {code}.tsare: {error}"));
+        let declared = decls(&source);
+        let program = Program::new(&declared);
+        let outcome = (functor.check)(&program);
+        assert!(
+            !outcome.failures.is_empty(),
+            "{functor_name} must fail on the document that violates it"
+        );
+        assert!(
+            check(&declared).iter().any(|item| item.code == code),
+            "the checker must report {code} on the same document"
+        );
+    }
+    for functor in tsare::cat::FUNCTORS {
+        assert!(!functor.law.is_empty() && !functor.maps.is_empty());
+    }
+}

@@ -1,7 +1,7 @@
 objects: fact=1, proposition=1, value=1, warrant=1
 arrows:  basis=1, concludes=1, from=1, premise=1
-Ext:     0/0 parent arrows preserved
-Expose:  0/0 cross-layer arrows visible
+Ext:     0/0  a child's extent sits inside its parent's  [E-HIERARCHY]
+Expose:  0/0  a cross-layer reference lands on an exposed name  [E-LAYER-LEAK]
 checker: 0 error(s)
 stages:
   source -> AST            total            parse() either produces a tree or an E-SYNTAX
