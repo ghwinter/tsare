@@ -74,20 +74,35 @@ function prepend(ours, theirs) {
 
 /** One rendered line: no newlines, no runs of spaces, bounded. */
 function oneLine(text, limit) {
+  const cap = Number.isFinite(limit) && limit > 0 ? limit : 240
   const flat = String(text).replace(/\s+/g, ' ').trim()
-  return flat.length > limit ? `${flat.slice(0, limit - 1)}…` : flat
+  return flat.length > cap ? `${flat.slice(0, cap - 1)}…` : flat
 }
 
 /** Run one child and classify it.  Never throws: a plugin that crashes the turn is worse. */
 function run(argv, config, cwd) {
+  const [file, ...args] = Array.isArray(argv) ? argv : []
+  if (typeof file !== 'string' || file.length === 0) {
+    const error = new Error('tsare gate: the command names no executable')
+    return Promise.resolve({ error, stdout: '', stderr: error.message })
+  }
   return new Promise((resolve) => {
-    const [file, ...args] = argv
-    execFile(
-      file,
-      args,
-      { cwd, timeout: config.timeoutMs, windowsHide: true, maxBuffer: 8 * 1024 * 1024 },
-      (error, stdout, stderr) => resolve({ error, stdout: String(stdout ?? ''), stderr: String(stderr ?? '') }),
-    )
+    try {
+      execFile(
+        file,
+        args,
+        {
+          cwd,
+          timeout: Number.isFinite(config.timeoutMs) ? config.timeoutMs : 10_000,
+          windowsHide: true,
+          maxBuffer: 8 * 1024 * 1024,
+        },
+        (error, stdout, stderr) => resolve({ error, stdout: String(stdout ?? ''), stderr: String(stderr ?? '') }),
+      )
+    } catch (error) {
+      // execFile throws synchronously for a null cwd or a bad option; the turn must survive it.
+      resolve({ error, stdout: '', stderr: String(error?.message ?? error) })
+    }
   })
 }
 
@@ -113,18 +128,24 @@ async function checkLedger(config, cwd) {
   }
   if (!report || typeof report !== 'object') {
     const detail = String(stderr || error.message || '').trim().slice(0, 800)
-    return { status: 'unavailable', text: `tsare gate: ${argv[0]} printed no report\n${detail}`, report: null }
+    return { status: 'unavailable', text: `tsare gate: ${argv?.[0] ?? 'the checker'} printed no report\n${detail}`, report: null }
   }
-  const wanted = (item) => item.code.startsWith('E') || (config.mode === 'warnings' && item.code.startsWith('W'))
-  const rows = (report.diagnostics ?? []).filter(wanted).slice(0, 12)
+  // A checker is a separate process; its report is input, not a promise.  Every field is read
+  // defensively because the turn must survive a malformed one.
+  const rowsAll = Array.isArray(report.diagnostics) ? report.diagnostics : []
+  const codeOf = (item) => (item && typeof item === 'object' && typeof item.code === 'string' ? item.code : '')
+  const errors = typeof report.errors === 'number' ? report.errors : rowsAll.filter((item) => codeOf(item).startsWith('E')).length
+  const warnings = typeof report.warnings === 'number' ? report.warnings : rowsAll.filter((item) => codeOf(item).startsWith('W')).length
+  const wanted = (item) => codeOf(item).startsWith('E') || (config.mode === 'warnings' && codeOf(item).startsWith('W'))
+  const rows = rowsAll.filter(wanted).slice(0, 12)
   const lines = rows.map(
-    (item) => `  ${item.code} ${item.name || '<file>'} line ${item.line}: ${item.message}`,
+    (item) => `  ${item.code} ${item.name || '<file>'} line ${item.line ?? '?'}: ${item.message ?? ''}`,
   )
   return {
     status: 'dirty',
     text:
-      `tsare gate: ${config.ledger} is not checkable (${report.errors} error(s), ` +
-      `${report.warnings} warning(s))\n${lines.join('\n')}\n` +
+      `tsare gate: ${config.ledger} is not checkable (${errors} error(s), ` +
+      `${warnings} warning(s))\n${lines.join('\n')}\n` +
       'Fix the ledger before closing the turn. If a claim cannot be checked, say so in the ' +
       'answer and record the gap in the document; do not delete the declaration to silence it.',
     report,
@@ -215,14 +236,16 @@ export function apply(ctx, raw) {
       return oneLine(`${verdict.text} The ledger was not checked.`, config.briefMaxChars)
     }
     if (verdict.status === 'dirty') {
-      const rows = verdict.report?.diagnostics ?? []
+      const rows = Array.isArray(verdict.report?.diagnostics)
+        ? verdict.report.diagnostics.filter((item) => item && typeof item.code === 'string')
+        : []
       const first = rows.find((item) => item.code.startsWith('E')) ?? rows[0]
       const detail = first
-        ? `first ${first.code} ${first.name || '<file>'}: ${first.message}`
+        ? `first ${first.code} ${first.name || '<file>'}: ${first.message ?? ''}`
         : 'no diagnostic rows'
       return oneLine(
-        `tsare: ledger not checkable (${verdict.report?.errors ?? '?'} error(s), ` +
-          `${verdict.report?.warnings ?? '?'} warning(s)); ${detail}. Fix it, or record why it cannot be checked.`,
+        `tsare: ledger not checkable (${verdict.report?.errors ?? 0} error(s), ` +
+          `${verdict.report?.warnings ?? 0} warning(s)); ${detail}. Fix it, or record why it cannot be checked.`,
         config.briefMaxChars,
       )
     }
@@ -256,7 +279,9 @@ export function apply(ctx, raw) {
 
   /** The regex list is user input: one invalid pattern must not silence the rest. */
   const matchesRemind = (haystack) => {
+    if (!Array.isArray(config.remindWhen)) return false
     for (const pattern of config.remindWhen) {
+      if (typeof pattern !== 'string' || pattern.length === 0) continue
       try {
         if (new RegExp(pattern, 'i').test(haystack)) return true
       } catch {
@@ -268,7 +293,7 @@ export function apply(ctx, raw) {
 
   // The only advisory part: a session that starts without a ledger gets one, and a session with
   // one gets a standing line.  Everything else is enforced by the listeners below.
-  ctx.on('agent/created', ({ agent }) => {
+  const installBrief = (agent) => {
     try {
       ensureLedger(agent)
     } catch {
@@ -290,7 +315,16 @@ export function apply(ctx, raw) {
       // no system prompt service here: the gate still works, the brief is just absent
     }
     void refreshBrief(agent)
-  })
+  }
+
+  ctx.on('agent/created', ({ agent }) => installBrief(agent))
+  // A plugin loaded into a live process (HMR) must reach the agents that already exist; the
+  // event only covers agents created after the load.
+  try {
+    for (const agent of ctx.get?.('agents')?.list?.() ?? []) installBrief(agent)
+  } catch {
+    // no agent registry at load time: the event path covers every later agent
+  }
 
   ctx.on('agent/disposed', ({ agent }) => {
     const fiber = briefFibers.get(agent)
@@ -316,7 +350,8 @@ export function apply(ctx, raw) {
     }
     let decision = downstream
     // Opt-in: the named tools attach the current diagnostics, dirty only, never blocking.
-    if (config.remindAfterTools.length && config.remindAfterTools.includes(exec.name)) {
+    const afterTools = Array.isArray(config.remindAfterTools) ? config.remindAfterTools : []
+    if (afterTools.length && afterTools.includes(exec.name)) {
       try {
         ensureLedger(exec.agent)
         const verdict = await checkLedger(config, cwdOf(exec.agent))
@@ -331,7 +366,7 @@ export function apply(ctx, raw) {
         // a reminder is optional; a failed one must not fail the tool call
       }
     }
-    if (!config.remindWhen.length) return decision
+    if (!Array.isArray(config.remindWhen) || !config.remindWhen.length) return decision
     const agent = exec.agent
     if (!agent) return decision
     let haystack
@@ -342,7 +377,8 @@ export function apply(ctx, raw) {
     }
     if (!matchesRemind(haystack)) return decision
     const seen = remanded.get(agent) ?? new Set()
-    if (seen.size >= config.remindLimit) return decision
+    const limit = Number.isFinite(config.remindLimit) && config.remindLimit >= 0 ? config.remindLimit : 5
+    if (seen.size >= limit) return decision
     const stamp = stampOf(agent)
     if (seen.has(stamp)) return decision
     seen.add(stamp)
@@ -372,7 +408,8 @@ export function apply(ctx, raw) {
         : `${verdict.text}\nThe ledger was not checked. Say so in the answer instead of presenting the result as verified.`
     const full = text + growthNote(agent)
     const used = steers.get(agent) ?? 0
-    if (used >= config.steerLimit) {
+    const limit = Number.isFinite(config.steerLimit) && config.steerLimit >= 0 ? config.steerLimit : 3
+    if (used >= limit) {
       // Bounded, and saturated: resetting the counter here would make the limit a periodic
       // allowance instead of a stop.  Only a clean ledger (above) resets it.
       return

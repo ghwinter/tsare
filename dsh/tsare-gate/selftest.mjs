@@ -170,4 +170,33 @@ const [third] = await remindCtx.fire('tools/post-execute', {
 })
 assert.equal(third.additionalContexts.length, 1, 'a new ledger state may be reminded again')
 
-console.log('tsare-gate selftest: 12 checks passed')
+// 13. a malformed report is data, not a promise: a non-object row must not reject the turn
+const malformed = [
+  process.execPath,
+  '-e',
+  'process.stdout.write(JSON.stringify({diagnostics:[null],errors:1,warnings:0}));process.exit(1)',
+]
+const malformedCtx = context()
+apply(malformedCtx, { command: malformed })
+const malformedAgent = makeAgent()
+await malformedCtx.fire('agent/turn-stopping', {
+  agent: malformedAgent,
+  turn: 1,
+  signal: new AbortController().signal,
+})
+assert.equal(malformedAgent.steered.length, 1, 'a malformed report must still steer')
+assert.match(malformedAgent.steered[0].content[0].text, /not checkable/, 'the malformed report had no words')
+
+// 14. a null binary is a config mistake, not a failed turn
+const nullCtx = context()
+apply(nullCtx, { binary: null, command: null })
+const nullAgent = makeAgent()
+await nullCtx.fire('agent/turn-stopping', {
+  agent: nullAgent,
+  turn: 1,
+  signal: new AbortController().signal,
+})
+assert.equal(nullAgent.steered.length, 1, 'a null binary must steer, not throw')
+assert.match(nullAgent.steered[0].content[0].text, /not checked|no executable/, 'the reason is not visible')
+
+console.log('tsare-gate selftest: 14 checks passed')
