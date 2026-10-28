@@ -202,3 +202,15 @@ fn build_does_not_invent_a_tool_for_a_hole() {
     assert_ne!(row.state, "ready");
     assert!(!row.note.contains("tool"), "{}", row.note);
 }
+
+#[test]
+fn build_does_not_call_an_unwarranted_proposition_ready() {
+    // Defect: build::obligation marked a proposition "ready | premises given" as soon as it had
+    // a from list, without asking whether any rule concluded it. On the same bytes, check warned
+    // W-UNWARRANTED and cost charged "no rule supports it".
+    let decls = parse(include_str!("../docs/repro/build-unwarranted.tsare"));
+    let program = tsare::program::Program::new(&decls);
+    let row = tsare::build::obligation(program.get("P").expect("P"), &program, &Default::default());
+    assert_eq!(row.state, "blocked", "{}", row.note);
+    assert!(row.note.contains("rule"), "{}", row.note);
+}

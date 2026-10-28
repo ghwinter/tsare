@@ -84,7 +84,7 @@ stands on, who checks it, and what is still owed.
 
 > 暗色模式很重要
 
-  uses: C_REQUESTED | from: F_DARK | by: deductive | obligation: prove (ready)
+  uses: C_REQUESTED | from: F_DARK | by: deductive | obligation: prove (blocked), no rule supports it
   ! W-UNWARRANTED: proposition P_IMPORTANT cites premises, but no rule connects them to it
   ! W-BY-MISMATCH: proposition P_IMPORTANT is declared deductive, but its structure is inductive: it generalises concepts and no rule concludes it
 
@@ -98,7 +98,7 @@ stands on, who checks it, and what is still owed.
 
 > 优雅在这里被分解成对比度与切换速度两件事
 
-  uses: C_ELEGANT, C_SWIFT | from: F_CONTRAST_OK, F_THEME_FAST | by: inductive | obligation: prove (ready)
+  uses: C_ELEGANT, C_SWIFT | from: F_CONTRAST_OK, F_THEME_FAST | by: inductive | obligation: prove (blocked), no rule supports it
   ! W-UNWARRANTED: proposition P_ELEGANT cites premises, but no rule connects them to it
 
 ### H_RETENTION -- hypothesis
@@ -186,4 +186,4 @@ stands on, who checks it, and what is still owed.
 
 ---
 
-27 obligation(s), 23 ready.
+27 obligation(s), 21 ready.

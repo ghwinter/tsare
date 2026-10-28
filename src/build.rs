@@ -54,7 +54,7 @@ pub struct Obligation {
 
 pub fn obligation(
     decl: &Decl,
-    _prog: &Program,
+    prog: &Program,
     learnings: &HashMap<String, Learning>,
 ) -> Obligation {
     let action = action_of(&decl.kind);
@@ -118,10 +118,21 @@ pub fn obligation(
         }
         "proposition" => {
             if !f_ids(decl, "from").is_empty() {
-                Obligation {
-                    action,
-                    state: "ready",
-                    note: "premises given".to_string(),
+                let connected = crate::closure::applications(prog.decls)
+                    .iter()
+                    .any(|rule| rule.target == decl.name);
+                if connected {
+                    Obligation {
+                        action,
+                        state: "ready",
+                        note: "premises given".to_string(),
+                    }
+                } else {
+                    Obligation {
+                        action,
+                        state: "blocked",
+                        note: "no rule supports it".to_string(),
+                    }
                 }
             } else {
                 Obligation {
