@@ -267,3 +267,36 @@ fn a_class_conclusion_connects_its_rule_to_every_target() {
         );
     }
 }
+
+#[test]
+fn opposition_is_not_a_justification_cycle() {
+    // Defect: check_cycles followed every REF_KEYS edge, including `rival` and `attacks`. Two
+    // hypotheses that are each other's rival -- the normal shape of a live disagreement -- were
+    // refused with "nothing in the circle is grounded", which is a claim about support.
+    let rivals = tsare::check::check(&parse(include_str!("../docs/repro/mutual-rival.tsare")));
+    assert!(
+        !rivals.iter().any(|item| item.code == "E-CYCLE"),
+        "{rivals:#?}"
+    );
+    let attacks = parse(concat!(
+        "fact F { claim: \"x\", evidence: user }\n",
+        "proposition P_A { statement: \"a\", from: [F] }\n",
+        "proposition P_B { statement: \"b\", from: [F] }\n",
+        "warrant W_A { claim: \"a\", from: [F], to: P_A, attacks: [W_B] }\n",
+        "warrant W_B { claim: \"b\", from: [F], to: P_B, attacks: [W_A] }\n",
+    ));
+    assert!(
+        !tsare::check::check(&attacks)
+            .iter()
+            .any(|item| item.code == "E-CYCLE"),
+        "mutual attack is an undecided argument, not a circular proof"
+    );
+    // A support cycle is still refused: the rule and the proposition lean on each other.
+    let support = parse(concat!(
+        "proposition P_ONE { statement: \"one\", from: [P_TWO] }\n",
+        "proposition P_TWO { statement: \"two\", from: [P_ONE] }\n",
+    ));
+    assert!(tsare::check::check(&support)
+        .iter()
+        .any(|item| item.code == "E-CYCLE"));
+}

@@ -404,7 +404,11 @@ fn check_cycles(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     for decl in decls {
         let mut targets = Vec::new();
         for (key, value) in &decl.fields {
-            if REF_KEYS.contains(&key.as_str()) {
+            // `rival` and `attacks` are opposition edges, not justification edges. Two hypotheses
+            // that are each other's rival, or two rules that attack each other, are a live
+            // disagreement the grounded extension is designed to leave undecided; calling that a
+            // dependency cycle would refuse the normal shape of an argument.
+            if REF_KEYS.contains(&key.as_str()) && key != "attacks" && key != "rival" {
                 targets.extend(ids(value));
             }
         }
