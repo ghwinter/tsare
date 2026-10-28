@@ -19,6 +19,7 @@ pub mod egraph;
 pub mod explain;
 pub mod fca;
 pub mod fix;
+pub mod generalize;
 pub mod graph;
 pub mod hash;
 pub mod impact;
