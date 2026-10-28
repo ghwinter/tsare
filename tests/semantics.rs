@@ -1256,3 +1256,43 @@ fn a_basis_must_meet_its_own_kind_criterion() {
         );
     }
 }
+
+/// A verified repair may create the declaration it needs -- adding a rule to connect a
+/// proposition creates the rule, and the rule can owe something of its own.  What it may not do is
+/// put a new complaint on a declaration that was already there.  A total score cannot tell those
+/// two apart, which is the whole reason the judgment moved to (declaration, code) pairs.
+#[test]
+fn a_verified_repair_does_not_borrow_trouble() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("fixtures");
+    let pairs = |list: &[Decl]| -> HashSet<(String, &'static str)> {
+        check(list)
+            .into_iter()
+            .filter(|item| item.code != "W-HOLE")
+            .filter_map(|item| item.witness.map(|name| (name, item.code)))
+            .collect()
+    };
+    for entry in std::fs::read_dir(&root).expect("fixtures") {
+        let path = entry.expect("entry").path();
+        if path.extension().map(|ext| ext != "tsare").unwrap_or(true) {
+            continue;
+        }
+        let source = std::fs::read_to_string(&path).expect("read a fixture");
+        let declared = decls(&source);
+        let known: HashSet<&str> = declared.iter().map(|item| item.name.as_str()).collect();
+        let before = pairs(&declared);
+        let (accepted, _) = tsare::fix::verified(&declared);
+        for fix in accepted {
+            let after = pairs(&fix.trial);
+            for (declaration, code) in after.difference(&before) {
+                assert!(
+                    !known.contains(declaration.as_str()),
+                    "{}: {} adds {code} to the existing {declaration}",
+                    path.display(),
+                    fix.description
+                );
+            }
+        }
+    }
+}

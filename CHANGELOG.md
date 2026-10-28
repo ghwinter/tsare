@@ -36,6 +36,13 @@ All notable changes are recorded here. The format follows
 
   Its first run found three in `SELF.tsare`: three warrants that rest on model-supplied facts.
   They are left in place -- the warning is the finding.
+- `fix` accepts a repair when the complaints on the declarations that already existed shrink, and
+  refuses one that puts a new complaint on any of them. `fix::verified` still compared the
+  document's error and warning totals, so a repair that silenced a warning in one corner while
+  breaking something else could read as progress -- and "verified" is the word this command uses.
+  A repair may still bring the declaration it needs: adding a rule to connect a proposition creates
+  the rule, and the rule can owe something of its own. `W-HOLE` is ignored on both sides, because
+  turning a missing field into a hole is the repair, not a new complaint.
 ### Added
 
 - `E-SUPERSEDE-UNDEFINED` — a `supersedes` field that names nothing, or names itself. A withdrawal

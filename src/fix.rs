@@ -352,8 +352,25 @@ pub struct Verified {
 }
 
 /// Candidates that a full re-check accepts: fewer errors, or fewer warnings without new ones.
+/// The complaints, as (declaration, code) pairs.  A repair answers a specific complaint, so what
+/// has to shrink is a pair, not a total: the document's error count cannot tell "I fixed this" from
+/// "I broke something else and got lucky".  `W-HOLE` is left out on both sides because turning a
+/// missing field into a hole is the intended repair, not a new complaint.
+fn witnesses(decls: &[Decl]) -> std::collections::BTreeSet<(String, &'static str)> {
+    check(decls)
+        .into_iter()
+        .filter(|item| item.code != "W-HOLE")
+        .filter_map(|item| item.witness.map(|name| (name, item.code)))
+        .collect()
+}
+
 pub fn verified(decls: &[Decl]) -> (Vec<Verified>, (usize, usize)) {
     let (before_e, before_w) = score_without_holes(decls);
+    let before = witnesses(decls);
+    // A repair may bring its own declaration with it: adding a rule to connect a proposition
+    // creates the rule, and the rule can owe something of its own.  What it may not do is put a
+    // new complaint on a declaration that was already there.
+    let existing: HashSet<&str> = decls.iter().map(|decl| decl.name.as_str()).collect();
     let mut accepted = Vec::new();
     let mut seen: HashSet<String> = HashSet::new();
     for (description, trial) in candidates(decls) {
@@ -361,7 +378,12 @@ pub fn verified(decls: &[Decl]) -> (Vec<Verified>, (usize, usize)) {
             continue;
         }
         let (after_e, after_w) = score_without_holes(&trial);
-        let better = after_e < before_e || (after_e == before_e && after_w < before_w);
+        let after = witnesses(&trial);
+        let removed = before.difference(&after).next().is_some();
+        let added = after
+            .difference(&before)
+            .any(|(name, _)| existing.contains(name.as_str()));
+        let better = removed && !added && after_e <= before_e;
         if better {
             accepted.push(Verified {
                 description,
