@@ -136,6 +136,7 @@ const COMMANDS: &[(&str, &[&str])] = &[
     ("fix", &[]),
     ("induce", &[]),
     ("shape", &[]),
+    ("meet", &[]),
 ];
 
 #[test]
