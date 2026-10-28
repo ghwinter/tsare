@@ -8,15 +8,19 @@ remember it. The skill (`../tsare/SKILL.md`) is still the instruction; this is t
 `tsare` decides whether a claim can be checked. Whether it is *called*, and whether its answer is
 obeyed, is the model's choice — and a compiler that runs at the model's discretion is a compiler
 that runs when the model is confident, which is exactly when it is wrong. The plugin removes that
-choice at two seams DSH owns:
+choice at three seams DSH owns:
 
 | seam | behaviour |
 | --- | --- |
 | `agent/turn-stopping` | the turn is about to close; the plugin runs `tsare check LEDGER --json` and, if the ledger is not checkable, calls `agent.steer(...)` with the diagnostics. The machine runs another step: **the turn cannot close while the checker objects**, up to `steerLimit` times. |
-| `tools/post-execute` | for the tools named in `remindAfterTools`, a dirty ledger rides along as context on the next request. It never blocks the tool. |
+| `systemPrompt.context` | one standing line: the ledger's **next question** (`tsare ask --one`) or its first error, replaced in place and recomputed only when the ledger changes. This is the engine; the gate is the brake. |
+| `tools/post-execute` | for the tools named in `remindAfterTools`, a dirty ledger rides along as context on the next request; for arguments matching `remindWhen`, one reminder that the result is a claim, once per ledger state. It never blocks the tool. |
 | `agent/created` | a session that starts without a ledger gets one: a single `note` declaration, which is a valid document. |
 
-The plugin runs no model, opens no network, and writes nothing but that template.
+The brief is the cheap channel: DSH renders runtime context every step but replaces it in place,
+so a line that only changes when the ledger does costs one message per change, not one per turn.
+The gate is the expensive channel: one steer is a full model request, so it is capped and should
+almost never fire. The plugin runs no model, opens no network, and writes nothing but the template.
 
 ## Config
 
@@ -29,8 +33,13 @@ The plugin runs no model, opens no network, and writes nothing but that template
 | `mode` | `errors` | `errors` fails on errors; `warnings` also fails on warnings (`--strict`) |
 | `steerLimit` | `3` | how many times one agent may be held open before the gate gives up |
 | `timeoutMs` | `10000` | per check |
+| `brief` | `true` | keep the next question in the runtime snapshot |
+| `briefMaxChars` | `240` | cap for that line |
 | `remindAfterTools` | `[]` | tool names that attach the diagnostics as context; empty means off |
-| `command` | none | argv override (`[file, ...args]`) for tests and wrappers |
+| `remindWhen` | `[]` | regexes matched against a call's arguments (e.g. `cargo (test|build)`); a match gets one claim reminder per ledger state |
+| `remindLimit` | `5` | how many claim reminders one agent may receive |
+| `command` | none | argv override (`[file, ...args]`) for the check, for tests and wrappers |
+| `askCommand` | none | argv override for the next-question call |
 
 ## Activate it in a profile
 
@@ -71,6 +80,12 @@ $env:TSARE_BIN = "tsare"; node verify-real.mjs   # the real binary, same parser
 - The steer limit is finite on purpose: a checker that always objects must not be able to hold a
   turn forever. When the limit is reached the turn closes with the last objection unaddressed, and
   that is visible in the transcript.
+- The brief is a reading of the ledger, not of the answer. It can say "next question: does F_X
+  record weight?" while the answer says something the ledger never mentions; closing that needs
+  `tsare cite`, which does not exist yet.
+- The brief has no freshness rule: a ledger that was not touched this session renders the same
+  line. That is why the line names the ledger path and the question, not "this session checked N
+  claims" — the former is true even when stale, the latter would not be.
 
 ## Where the ledger lives, and why not in the tree
 

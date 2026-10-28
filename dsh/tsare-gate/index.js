@@ -2,28 +2,35 @@
  * DSH plugin: run the checker inside the loop instead of asking the model to remember it.
  *
  * A skill is a prompt, and a prompt is a probability: whether tsare gets called and whether its
- * answer is obeyed both depend on the model's goodwill.  This plugin moves the gate to two seams
- * the model does not control:
+ * answer is obeyed both depend on the model's goodwill.  This plugin moves the gate to seams the
+ * model does not control:
  *
  *   agent/turn-stopping   the turn is held open (agent.steer) while the ledger is not checkable
- *   tools/post-execute    a dirty ledger rides along as context on the next request (opt-in)
+ *   systemPrompt.context  one standing line: the ledger's next question, replaced in place
+ *   tools/post-execute    a dirty ledger or a verification command rides along as context (opt-in)
  *
  * It writes nothing but the ledger template, and it runs no model.
  *
  * Config (all optional except `binary` when `command` is not given):
  *   binary             the tsare executable, resolved from PATH by default ('tsare')
- *   ledger             ledger path, relative to `cwd` (default 'SESSION.tsare')
+ *   ledger             ledger path, relative to `cwd` (default '.tsare/session.tsare')
  *   cwd                where the ledger lives (default: the process working directory)
  *   mode               'errors' (default) fails on errors, 'warnings' also on warnings (--strict)
  *   steerLimit         steers per agent before the gate gives up (default 3)
  *   timeoutMs          per check (default 10000)
+ *   brief              keep one line in the runtime snapshot: the next question (default true)
+ *   briefMaxChars      cap for that line (default 240)
  *   remindAfterTools   tool names that attach the diagnostics as context after they run (default [])
+ *   remindWhen         regexes matched against a tool call's arguments; a match gets one reminder
+ *                      that the result is a claim (default [])
+ *   remindLimit        how many such reminders one agent may receive (default 5)
  *   command            argv override for tests and wrappers; replaces [binary, check, ledger, --json]
+ *   askCommand         argv override for the next-question call (default [binary, ask, ledger, --one])
  */
 
 import { execFile } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
 export const name = 'tsare-gate'
@@ -41,8 +48,13 @@ const DEFAULTS = {
   mode: 'errors',
   steerLimit: 3,
   timeoutMs: 10_000,
+  brief: true,
+  briefMaxChars: 240,
   remindAfterTools: [],
+  remindWhen: [],
+  remindLimit: 5,
   command: null,
+  askCommand: null,
 }
 
 /** The message a gate injects; the shape is the one `createUserMessage` builds. */
@@ -60,12 +72,27 @@ function prepend(ours, theirs) {
   return [ours, ...(theirs ?? [])]
 }
 
-/**
- * Run the checker once and classify the outcome.  Never throws: a plugin that crashes the turn
- * is worse than a plugin that reports it could not run.
- * @returns {Promise<{status: 'ok'|'dirty'|'unavailable', text: string}>}
- */
-function runGate(config, cwd) {
+/** One rendered line: no newlines, no runs of spaces, bounded. */
+function oneLine(text, limit) {
+  const flat = String(text).replace(/\s+/g, ' ').trim()
+  return flat.length > limit ? `${flat.slice(0, limit - 1)}…` : flat
+}
+
+/** Run one child and classify it.  Never throws: a plugin that crashes the turn is worse. */
+function run(argv, config, cwd) {
+  return new Promise((resolve) => {
+    const [file, ...args] = argv
+    execFile(
+      file,
+      args,
+      { cwd, timeout: config.timeoutMs, windowsHide: true, maxBuffer: 8 * 1024 * 1024 },
+      (error, stdout, stderr) => resolve({ error, stdout: String(stdout ?? ''), stderr: String(stderr ?? '') }),
+    )
+  })
+}
+
+/** The check report, or the sentence that says why there is none. */
+async function checkLedger(config, cwd) {
   const argv = config.command ?? [
     config.binary,
     'check',
@@ -73,50 +100,46 @@ function runGate(config, cwd) {
     '--json',
     ...(config.mode === 'warnings' ? ['--strict'] : []),
   ]
-  cwd = cwd || config.cwd || process.cwd()
-  const [file, ...args] = argv
-  return new Promise((resolve) => {
-    execFile(
-      file,
-      args,
-      { cwd, timeout: config.timeoutMs, windowsHide: true, maxBuffer: 8 * 1024 * 1024 },
-      (error, stdout, stderr) => {
-        if (error && error.code === 'ENOENT') {
-          resolve({ status: 'unavailable', text: `tsare gate: cannot run ${file} (ENOENT)` })
-          return
-        }
-        let report = null
-        try {
-          report = JSON.parse(stdout)
-        } catch {
-          report = null
-        }
-        if (!error) {
-          resolve({ status: 'ok', text: '' })
-          return
-        }
-        if (!report || typeof report !== 'object') {
-          const detail = String(stderr || error.message || '').trim().slice(0, 800)
-          resolve({ status: 'unavailable', text: `tsare gate: ${file} printed no report\n${detail}` })
-          return
-        }
-        const wanted = (item) =>
-          item.code.startsWith('E') || (config.mode === 'warnings' && item.code.startsWith('W'))
-        const rows = (report.diagnostics ?? []).filter(wanted).slice(0, 12)
-        const lines = rows.map(
-          (item) => `  ${item.code} ${item.name || '<file>'} line ${item.line}: ${item.message}`,
-        )
-        resolve({
-          status: 'dirty',
-          text:
-            `tsare gate: ${config.ledger} is not checkable (${report.errors} error(s), ` +
-            `${report.warnings} warning(s))\n${lines.join('\n')}\n` +
-            'Fix the ledger before closing the turn. If a claim cannot be checked, say so in the ' +
-            'answer and record the gap in the document; do not delete the declaration to silence it.',
-        })
-      },
-    )
-  })
+  const { error, stdout, stderr } = await run(argv, config, cwd)
+  let report = null
+  try {
+    report = JSON.parse(stdout)
+  } catch {
+    report = null
+  }
+  if (!error) return { status: 'ok', text: '', report }
+  if (error.code === 'ENOENT') {
+    return { status: 'unavailable', text: `tsare gate: cannot run ${argv[0]} (ENOENT)`, report: null }
+  }
+  if (!report || typeof report !== 'object') {
+    const detail = String(stderr || error.message || '').trim().slice(0, 800)
+    return { status: 'unavailable', text: `tsare gate: ${argv[0]} printed no report\n${detail}`, report: null }
+  }
+  const wanted = (item) => item.code.startsWith('E') || (config.mode === 'warnings' && item.code.startsWith('W'))
+  const rows = (report.diagnostics ?? []).filter(wanted).slice(0, 12)
+  const lines = rows.map(
+    (item) => `  ${item.code} ${item.name || '<file>'} line ${item.line}: ${item.message}`,
+  )
+  return {
+    status: 'dirty',
+    text:
+      `tsare gate: ${config.ledger} is not checkable (${report.errors} error(s), ` +
+      `${report.warnings} warning(s))\n${lines.join('\n')}\n` +
+      'Fix the ledger before closing the turn. If a claim cannot be checked, say so in the ' +
+      'answer and record the gap in the document; do not delete the declaration to silence it.',
+    report,
+  }
+}
+
+/** The next question the ledger needs, or null when there is none (or it cannot run). */
+async function nextQuestion(config, cwd) {
+  const argv = config.askCommand ?? (config.command ? null : [config.binary, 'ask', config.ledger, '--one'])
+  if (!argv) return null
+  const { error, stdout } = await run(argv, config, cwd)
+  if (error) return null
+  const text = String(stdout).trim()
+  if (!text || text.startsWith('nothing to ask')) return null
+  return text.split('\n')[0]
 }
 
 /**
@@ -127,6 +150,11 @@ function runGate(config, cwd) {
 export function apply(ctx, raw) {
   const config = { ...DEFAULTS, ...(raw ?? {}) }
   const steers = new Map()
+  /** agent -> {stamp, text}; the runtime context reads `text`, the post-execute hook refreshes it. */
+  const briefs = new Map()
+  const briefFibers = new Map()
+  /** agent -> Set of ledger stamps already reminded, never more than `remindLimit` in total. */
+  const remanded = new Map()
 
   /** The directory the ledger lives in: the config, else the session's own working directory. */
   const cwdOf = (agent) => config.cwd || agent?.session?.header?.cwd || process.cwd()
@@ -162,30 +190,166 @@ export function apply(ctx, raw) {
     )
   }
 
-  // The only advisory part: a session that starts without a ledger gets one, so the gate has a
-  // subject.  Everything else is enforced by the two listeners below.
+  /** A cheap identity for the ledger's current bytes; null when it cannot be read. */
+  const stampOf = (agent) => {
+    try {
+      const info = statSync(ledgerPath(agent))
+      return `${info.mtimeMs}:${info.size}`
+    } catch {
+      return ''
+    }
+  }
+
+  const countDecls = (agent) => {
+    try {
+      return (readFileSync(ledgerPath(agent), 'utf8').match(/^[a-z]+ [A-Z][A-Z0-9_]* \{/gm) ?? []).length
+    } catch {
+      return 0
+    }
+  }
+
+  /** The one line the runtime snapshot carries.  It changes only when the ledger does. */
+  const composeBrief = async (agent) => {
+    const verdict = await checkLedger(config, cwdOf(agent))
+    if (verdict.status === 'unavailable') {
+      return oneLine(`${verdict.text} The ledger was not checked.`, config.briefMaxChars)
+    }
+    if (verdict.status === 'dirty') {
+      const rows = verdict.report?.diagnostics ?? []
+      const first = rows.find((item) => item.code.startsWith('E')) ?? rows[0]
+      const detail = first
+        ? `first ${first.code} ${first.name || '<file>'}: ${first.message}`
+        : 'no diagnostic rows'
+      return oneLine(
+        `tsare: ledger not checkable (${verdict.report?.errors ?? '?'} error(s), ` +
+          `${verdict.report?.warnings ?? '?'} warning(s)); ${detail}. Fix it, or record why it cannot be checked.`,
+        config.briefMaxChars,
+      )
+    }
+    const question = await nextQuestion(config, cwdOf(agent))
+    if (question) {
+      return oneLine(
+        `tsare: next question — ${question} (ledger ${config.ledger})`,
+        config.briefMaxChars,
+      )
+    }
+    const many = countDecls(agent)
+    return oneLine(
+      `tsare: ledger clean, ${many} claim(s); nothing to ask. Record a claim with evidence, or say unchecked with the reason.`,
+      config.briefMaxChars,
+    )
+  }
+
+  /** Recompute the brief only when the ledger's bytes changed.  Never throws. */
+  const refreshBrief = async (agent) => {
+    if (!config.brief || !agent) return
+    const stamp = stampOf(agent)
+    const held = briefs.get(agent)
+    if (held && held.stamp === stamp) return
+    try {
+      const text = await composeBrief(agent)
+      briefs.set(agent, { stamp, text })
+    } catch {
+      // a brief that cannot be built is a missing line, not a failed turn
+    }
+  }
+
+  /** The regex list is user input: one invalid pattern must not silence the rest. */
+  const matchesRemind = (haystack) => {
+    for (const pattern of config.remindWhen) {
+      try {
+        if (new RegExp(pattern, 'i').test(haystack)) return true
+      } catch {
+        // an invalid pattern is skipped, not fatal
+      }
+    }
+    return false
+  }
+
+  // The only advisory part: a session that starts without a ledger gets one, and a session with
+  // one gets a standing line.  Everything else is enforced by the listeners below.
   ctx.on('agent/created', ({ agent }) => {
     try {
       ensureLedger(agent)
     } catch {
       // a read-only working directory is not a reason to fail the agent
     }
+    if (!config.brief) return
+    try {
+      const fiber = agent.ctx.inject(['systemPrompt'], (scope) => {
+        scope.systemPrompt.context({
+          name: 'tsare-gate:ledger',
+          order: 900,
+          text: () => briefs.get(agent)?.text ?? '',
+        })
+      })
+      briefFibers.set(agent, fiber)
+    } catch {
+      // no system prompt service here: the gate still works, the brief is just absent
+    }
+    void refreshBrief(agent)
+  })
+
+  ctx.on('agent/disposed', ({ agent }) => {
+    const fiber = briefFibers.get(agent)
+    briefFibers.delete(agent)
+    briefs.delete(agent)
+    remanded.delete(agent)
+    if (fiber) {
+      try {
+        void fiber.dispose().catch(() => {})
+      } catch {
+        // disposal races with unload; nothing to report
+      }
+    }
   })
 
   ctx.on('tools/post-execute', async (exec, _result, next) => {
     const downstream = await next()
-    if (!config.remindAfterTools.length || !config.remindAfterTools.includes(exec.name)) {
-      return downstream
-    }
+    // The ledger changes only through tools, so this is the one place the brief needs to look.
     try {
-      ensureLedger(exec.agent)
+      await refreshBrief(exec.agent)
     } catch {
-      return downstream
+      // refreshBrief already absorbs its own failures
     }
-    const verdict = await runGate(config, cwdOf(exec.agent))
-    if (verdict.status !== 'dirty') return downstream
-    const context = notice(verdict.text + growthNote(exec.agent))
-    return { ...downstream, additionalContexts: prepend(context, downstream.additionalContexts) }
+    let decision = downstream
+    // Opt-in: the named tools attach the current diagnostics, dirty only, never blocking.
+    if (config.remindAfterTools.length && config.remindAfterTools.includes(exec.name)) {
+      try {
+        ensureLedger(exec.agent)
+        const verdict = await checkLedger(config, cwdOf(exec.agent))
+        if (verdict.status === 'dirty') {
+          const context = notice(verdict.text + growthNote(exec.agent))
+          decision = {
+            ...decision,
+            additionalContexts: prepend(context, decision.additionalContexts),
+          }
+        }
+      } catch {
+        // a reminder is optional; a failed one must not fail the tool call
+      }
+    }
+    if (!config.remindWhen.length) return decision
+    const agent = exec.agent
+    if (!agent) return decision
+    let haystack
+    try {
+      haystack = `${exec.name} ${JSON.stringify(exec.arguments ?? {})}`
+    } catch {
+      return decision
+    }
+    if (!matchesRemind(haystack)) return decision
+    const seen = remanded.get(agent) ?? new Set()
+    if (seen.size >= config.remindLimit) return decision
+    const stamp = stampOf(agent)
+    if (seen.has(stamp)) return decision
+    seen.add(stamp)
+    remanded.set(agent, seen)
+    const context = notice(
+      `tsare: that ${exec.name} result is a claim. Record it as a fact with evidence: tool(...) ` +
+        `in ${config.ledger}, or say unchecked with the reason.`,
+    )
+    return { ...decision, additionalContexts: prepend(context, decision.additionalContexts) }
   })
 
   ctx.on('agent/turn-stopping', async ({ agent }) => {
@@ -194,7 +358,8 @@ export function apply(ctx, raw) {
     } catch {
       // reported as a steer below rather than thrown: the turn must still be able to close
     }
-    const verdict = await runGate(config, cwdOf(agent))
+    void refreshBrief(agent)
+    const verdict = await checkLedger(config, cwdOf(agent))
     if (verdict.status === 'ok') {
       steers.delete(agent)
       return

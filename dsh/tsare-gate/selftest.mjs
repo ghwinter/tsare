@@ -30,13 +30,46 @@ function context() {
 }
 
 const command = [process.execPath, fake, 'check', '.tsare/session.tsare', '--json']
+const askCommand = [process.execPath, fake, 'ask', '.tsare/session.tsare', '--one']
 const dirty = 'tsare 1\nfact F_X { claim: "a claim with nothing behind it" }\n'
 const clean = 'tsare 1\nnote N_OK { tag: conjecture, text: "OK" }\n'
 const session = { header: { cwd: dir } }
-const agent = { session, steered: [], steer(message) { this.steered.push(message) } }
+const contexts = []
 
+/** Every agent gets a ctx whose only job is to capture the runtime-context registration. */
+function makeAgent() {
+  return {
+    session,
+    steered: [],
+    contexts,
+    steer(message) {
+      this.steered.push(message)
+    },
+    ctx: {
+      inject(_services, fn) {
+        fn({
+          systemPrompt: {
+            context(options) {
+              contexts.push(options)
+              return () => {}
+            },
+          },
+        })
+        return { dispose: async () => {} }
+      },
+    },
+  }
+}
+
+const agent = makeAgent()
 const ctx = context()
-apply(ctx, { command, remindAfterTools: ['bash'], steerLimit: 3, maxDeclarations: 1 })
+apply(ctx, {
+  command,
+  askCommand,
+  remindAfterTools: ['bash'],
+  steerLimit: 3,
+  maxDeclarations: 1,
+})
 
 // 1. the session starts with a ledger, in the harness's own directory, which ignores itself
 await ctx.fire('agent/created', { agent })
@@ -72,7 +105,7 @@ const [untouched] = await ctx.fire('tools/post-execute', { name: 'read', argumen
 assert.equal(untouched.additionalContexts, undefined, 'only configured tools are reminded')
 
 // 7. the steer limit is finite: a checker that always objects cannot hold a turn forever
-const other = { session, steered: [], steer(message) { this.steered.push(message) } }
+const other = makeAgent()
 for (let turn = 0; turn < 6; turn += 1) {
   await ctx.fire('agent/turn-stopping', { agent: other, turn, signal: new AbortController().signal })
 }
@@ -81,9 +114,60 @@ assert.equal(other.steered.length, 3, `expected 3 steers, got ${other.steered.le
 // 8. a checker that cannot run says so instead of passing silently
 const broken = context()
 apply(broken, { command: ['definitely-not-tsare', 'check', '.tsare/session.tsare', '--json'] })
-const missing = { session, steered: [], steer(message) { this.steered.push(message) } }
+const missing = makeAgent()
 await broken.fire('agent/turn-stopping', { agent: missing, turn: 1, signal: new AbortController().signal })
 assert.equal(missing.steered.length, 1, 'an unavailable checker must steer')
 assert.match(missing.steered[0].content[0].text, /cannot run/, 'the reason is not visible')
 
-console.log('tsare-gate selftest: 8 checks passed')
+// 9. the brief is registered once, under a stable name, and renders a string
+assert.equal(contexts.length, 1, `expected one runtime context, got ${contexts.length}`)
+assert.equal(contexts[0].name, 'tsare-gate:ledger')
+assert.equal(typeof contexts[0].text, 'function', 'the brief must be a function')
+assert.equal(typeof contexts[0].text(), 'string', 'the brief must render a string')
+
+// 10. after a tool writes a clean ledger with a question, the brief carries that question
+writeFileSync(ledger, clean.replace('OK', 'OK ASK'))
+await ctx.fire('tools/post-execute', { name: 'write', arguments: { file: 'x' }, agent })
+assert.match(contexts[0].text(), /next question/, contexts[0].text())
+assert.match(contexts[0].text(), /does F_GAP record weight/, contexts[0].text())
+
+// 11. a dirty ledger replaces the question with the first error
+writeFileSync(ledger, dirty)
+await ctx.fire('tools/post-execute', { name: 'write', arguments: { file: 'x' }, agent })
+assert.match(contexts[0].text(), /not checkable/, contexts[0].text())
+assert.match(contexts[0].text(), /E-MISSING/, contexts[0].text())
+
+// 12. a verification command gets one reminder per ledger state, and an unrelated one gets none
+const remindCtx = context()
+apply(remindCtx, { command, askCommand, remindWhen: ['cargo (test|build)'], remindLimit: 2 })
+const remindAgent = makeAgent()
+await remindCtx.fire('agent/created', { agent: remindAgent })
+writeFileSync(ledger, clean)
+const [first] = await remindCtx.fire('tools/post-execute', {
+  name: 'pwsh',
+  arguments: { command: 'cargo test --release' },
+  agent: remindAgent,
+})
+assert.equal(first.additionalContexts.length, 1, 'the verification reminder was not attached')
+assert.match(first.additionalContexts[0].content[0].text, /claim/, 'the reminder does not name the claim')
+const [second] = await remindCtx.fire('tools/post-execute', {
+  name: 'pwsh',
+  arguments: { command: 'cargo test --release' },
+  agent: remindAgent,
+})
+assert.equal(second.additionalContexts, undefined, 'the same ledger state must not be reminded twice')
+const [unrelated] = await remindCtx.fire('tools/post-execute', {
+  name: 'pwsh',
+  arguments: { command: 'git status' },
+  agent: remindAgent,
+})
+assert.equal(unrelated.additionalContexts, undefined, 'an unrelated command must not be reminded')
+writeFileSync(ledger, `${clean}note N_MORE { tag: conjecture, text: "OK" }\n`)
+const [third] = await remindCtx.fire('tools/post-execute', {
+  name: 'pwsh',
+  arguments: { command: 'cargo build' },
+  agent: remindAgent,
+})
+assert.equal(third.additionalContexts.length, 1, 'a new ledger state may be reminded again')
+
+console.log('tsare-gate selftest: 12 checks passed')

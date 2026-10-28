@@ -1,7 +1,21 @@
-// A stand-in for `tsare check LEDGER --json` so the plugin can be tested without the real binary.
-// The ledger is "clean" when it contains the word OK.
+// A stand-in for `tsare check LEDGER --json` and `tsare ask LEDGER --one`, so the plugin can be
+// tested without the real binary.  The ledger is "clean" when it contains the word OK, and it has
+// a question when it contains ASK.
+import { readFileSync } from 'node:fs'
+
+const args = process.argv.slice(2)
 const ledger = process.argv.find((item) => item.endsWith('.tsare'))
-const text = ledger ? (await import('node:fs')).readFileSync(ledger, 'utf8') : ''
+const text = ledger ? readFileSync(ledger, 'utf8') : ''
+
+if (args[0] === 'ask') {
+  process.stdout.write(
+    text.includes('ASK')
+      ? 'does F_GAP record weight?\n'
+      : 'nothing to ask: every list covers its extent and nothing collides\n',
+  )
+  process.exit(0)
+}
+
 if (text.includes('OK')) {
   process.stdout.write('{"diagnostics":[],"errors":0,"warnings":0}\n')
   process.exit(0)
