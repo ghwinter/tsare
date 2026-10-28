@@ -328,3 +328,18 @@ fn a_percent_suffixed_confidence_is_still_out_of_range() {
         "{found:#?}"
     );
 }
+
+#[test]
+fn a_mistyped_unit_is_one_type_error_not_also_a_missing_field() {
+    // Defect: the "blank unit" test counted every present value that was not a non-empty string,
+    // so `unit: 5` produced E-TYPE and E-INCOMMENSURABLE, the second saying the value "lacks
+    // unit" when it has one of the wrong type.
+    let found = tsare::check::check(&parse(include_str!("../docs/repro/unit-num.tsare")));
+    let types = found.iter().filter(|item| item.code == "E-TYPE").count();
+    let missing = found
+        .iter()
+        .filter(|item| item.code == "E-INCOMMENSURABLE")
+        .count();
+    assert_eq!(types, 1, "{found:#?}");
+    assert_eq!(missing, 0, "{found:#?}");
+}

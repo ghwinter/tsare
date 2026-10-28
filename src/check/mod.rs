@@ -1391,13 +1391,15 @@ fn check_remaining(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                     .into_iter()
                     .filter(|key| !decl.fields.iter().any(|(name, _)| name == *key))
                     .collect();
+                // A wrong-typed unit is E-TYPE's business; "lacks unit" is reserved for a unit
+                // that is present and blank.  Counting a number or a hole as blank produced two
+                // diagnostics for one fault, and the second one said something untrue.
                 let blank: Vec<&str> = ["unit"]
                     .into_iter()
                     .filter(|key| {
                         decl.fields.iter().any(|(name, value)| {
                             name == *key
-                                && !matches!(value, Val::Hole)
-                                && !matches!(value, Val::Str(text) if !text.trim().is_empty())
+                                && matches!(value, Val::Str(text) if text.trim().is_empty())
                         })
                     })
                     .collect();
