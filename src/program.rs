@@ -333,7 +333,12 @@ pub fn obligations(prog: &Program, decl: &Decl) -> Vec<String> {
             }
         }
         "hypothesis" => {
-            if f_str(decl, "test").is_none() {
+            let decided = matches!(f_id(decl, "verdict"), Some("supported") | Some("refuted"));
+            if decided && f_id(decl, "verdict_by").is_some() {
+                // the fact that decided it is the observation, so no test is owed
+            } else if decided {
+                out.push("verdict with no deciding fact".to_string());
+            } else if !f_str(decl, "test").is_some_and(|test| !test.trim().is_empty()) {
                 out.push("no test to run".to_string());
             }
         }

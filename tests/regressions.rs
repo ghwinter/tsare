@@ -178,3 +178,12 @@ fn propose_apply_with_a_later_option_still_writes_the_document() {
     assert!(written.contains("evidence: user"), "not applied: {written}");
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn a_settled_hypothesis_owes_no_test() {
+    // Defect: program::obligations charged a hypothesis for a missing test even when a measured
+    // fact had already settled it, so cost claimed external work that uild called done.
+    let decls = parse(include_str!("../docs/repro/decided-hypothesis.tsare"));
+    let cost = tsare::cost::report(&tsare::program::Program::new(&decls));
+    assert_eq!(cost.total, 0, "{:#?}", cost.rows);
+}
