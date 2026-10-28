@@ -106,29 +106,34 @@ pub(crate) fn check_partition(
     };
 
     let target = by_name.get(dimension).copied();
-    let extent = target
-        .filter(|target| target.kind == "concept")
+    let resolved = target.filter(|target| target.kind == "concept");
+    // E-UNDEFINED (a name nothing declares) and E-KIND (a dimension that is not a concept) have
+    // already reported the only thing that is known.  Comparing elements against an extent that
+    // does not exist would claim they are "not an instance" of something that is not there.
+    let extent = resolved
         .map(|target| list_field(target, "grounded_by"))
         .unwrap_or_default();
-    for name in &elements {
-        if !extent.contains(name) {
-            sem(
-                decl,
-                "E-PARTITION-ELEMENT",
-                format!("{name} is not an instance of {dimension}, which is what the list claims"),
-                Some("elements"),
-                out,
-            );
+    if let Some(concept) = resolved {
+        for name in &elements {
+            if !extent.contains(name) {
+                sem(
+                    decl,
+                    "E-PARTITION-ELEMENT",
+                    format!(
+                        "{name} is not an instance of {dimension}, which is what the list claims"
+                    ),
+                    Some("elements"),
+                    out,
+                );
+            }
         }
-    }
 
-    // a named dimension is only a type if its own examples can be separated; if they
-    // collide, the list leans on a distinction that was never recorded
-    if let Some(target) = target.filter(|target| target.kind == "concept") {
-        let has_negative = !list_field(target, "against").is_empty();
+        // a named dimension is only a type if its own examples can be separated; if they
+        // collide, the list leans on a distinction that was never recorded
+        let has_negative = !list_field(concept, "against").is_empty();
         if has_negative {
             let program = crate::program::Program::new(decls);
-            if crate::induce::induce_concept(&program, target)
+            if crate::induce::induce_concept(&program, concept)
                 .clause
                 .is_none()
             {
@@ -159,20 +164,20 @@ pub(crate) fn check_partition(
                 out,
             );
         }
-        for name in &extent {
-            if !elements.contains(name) {
-                sem(
-                    decl,
-                    "E-PARTITION-CLOSED-CONTRADICTED",
-                    format!("{dimension} also holds of {name}, which the closed list omits"),
-                    Some("elements"),
-                    out,
-                );
+        if let Some(target) = resolved {
+            for name in &extent {
+                if !elements.contains(name) {
+                    sem(
+                        decl,
+                        "E-PARTITION-CLOSED-CONTRADICTED",
+                        format!("{dimension} also holds of {name}, which the closed list omits"),
+                        Some("elements"),
+                        out,
+                    );
+                }
             }
-        }
-        // the attributes imply more instances than the concept lists; a closed list that
-        // omits one is contradicted by its own recorded evidence, not only by the author
-        if let Some(target) = target.filter(|target| target.kind == "concept") {
+            // the attributes imply more instances than the concept lists; a closed list that
+            // omits one is contradicted by its own recorded evidence, not only by the author
             let program = crate::program::Program::new(decls);
             let positives: Vec<&Decl> = crate::program::pos(target)
                 .iter()

@@ -343,3 +343,19 @@ fn a_mistyped_unit_is_one_type_error_not_also_a_missing_field() {
     assert_eq!(types, 1, "{found:#?}");
     assert_eq!(missing, 0, "{found:#?}");
 }
+
+#[test]
+fn an_unresolved_dimension_does_not_condemn_its_elements() {
+    // Defect: check_partition reported E-PARTITION-ELEMENT for every element when the dimension
+    // was undefined, claiming "F_A is not an instance of C_NOPE" about a concept that does not
+    // exist. E-UNDEFINED had already said the only thing that is known.
+    let found = tsare::check::check(&parse(include_str!("../docs/repro/partition-undef.tsare")));
+    assert!(
+        found.iter().any(|item| item.code == "E-UNDEFINED"),
+        "{found:#?}"
+    );
+    assert!(
+        !found.iter().any(|item| item.code == "E-PARTITION-ELEMENT"),
+        "{found:#?}"
+    );
+}
