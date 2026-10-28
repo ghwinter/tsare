@@ -1375,3 +1375,54 @@ fn a_withdrawal_that_gives_no_reason_is_reported_but_not_refused() {
         "a reason that names nothing is an error"
     );
 }
+
+/// The search used to stop at three literals, so a consistent clause that needed four was reported
+/// as none.  The literals of any covering clause must hold on every positive, so the search space
+/// is exactly that set, and the full set is always checked.
+#[test]
+fn a_clause_may_need_more_than_three_literals() {
+    let source = r#"
+concept C_FOUR { name: "four at once", grounded_by: [F_P1, F_P2], against: [F_N1, F_N2, F_N3, F_N4] }
+fact F_P1 { claim: "p1", evidence: user, attrs: { a: 1, b: 1, c: 1, d: 1, e: 1 } }
+fact F_P2 { claim: "p2", evidence: user, attrs: { a: 1, b: 1, c: 1, d: 1, e: 2 } }
+fact F_N1 { claim: "n1", evidence: user, attrs: { a: 2, b: 1, c: 1, d: 1, e: 1 } }
+fact F_N2 { claim: "n2", evidence: user, attrs: { a: 1, b: 2, c: 1, d: 1, e: 1 } }
+fact F_N3 { claim: "n3", evidence: user, attrs: { a: 1, b: 1, c: 2, d: 1, e: 1 } }
+fact F_N4 { claim: "n4", evidence: user, attrs: { a: 1, b: 1, c: 1, d: 2, e: 2 } }
+"#;
+    let declared = decls(source);
+    let program = Program::new(&declared);
+    let concept = program.of_kind("concept")[0];
+    let learning = induce_concept(&program, concept);
+    let clause = learning.clause.expect("a four-literal clause exists");
+    assert_eq!(clause.len(), 4, "{}", tsare::induce::clause_text(&clause));
+    assert_eq!(
+        tsare::induce::clause_text(&clause),
+        "a <= 1 and b <= 1 and c <= 1 and d <= 1"
+    );
+}
+
+/// When the most specific conjunction still covers a negative, no conjunction does: everything more
+/// general covers strictly more.  Saying that is different from saying "the search gave up".
+#[test]
+fn an_impossible_clause_says_why_it_is_impossible() {
+    let source = r#"
+concept C_TWIN { name: "twins", grounded_by: [F_A], against: [F_B, F_C] }
+fact F_A { claim: "a", evidence: user, attrs: { x: 1 } }
+fact F_B { claim: "b", evidence: user, attrs: { x: 2 } }
+fact F_C { claim: "c", evidence: user, attrs: { x: 1 } }
+"#;
+    let declared = decls(source);
+    let program = Program::new(&declared);
+    let concept = program.of_kind("concept")[0];
+    let learning = induce_concept(&program, concept);
+    assert!(
+        learning.clause.is_none(),
+        "a negative with the same attributes cannot be excluded"
+    );
+    assert!(
+        learning.reason.contains("no consistent conjunction"),
+        "{}",
+        learning.reason
+    );
+}

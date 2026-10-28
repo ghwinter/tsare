@@ -264,13 +264,34 @@ pub fn induce_concept(prog: &Program, decl: &Decl) -> Learning {
         positive.iter().map(|fact| attrs_of(fact)).collect();
     let negative_attrs: Vec<HashMap<String, Rhs>> =
         negative.iter().map(|fact| attrs_of(fact)).collect();
-    for size in 1..=3 {
-        if size > lits.len() {
+    // Every literal of a consistent clause must hold on every positive -- otherwise the clause does
+    // not cover them.  So the search space is not `lits` but `must`, the literals that already hold
+    // everywhere, and a clause that needs four of them is not "no clause": it used to be, because
+    // the loop stopped at three.
+    let must: Vec<Lit> = lits
+        .iter()
+        .filter(|lit| positive_attrs.iter().all(|attrs| lit.holds(attrs)))
+        .cloned()
+        .collect();
+    let maximal_excludes = negative_attrs
+        .iter()
+        .all(|attrs| !must.iter().all(|lit| lit.holds(attrs)));
+    if must.is_empty() || !maximal_excludes {
+        // The most specific conjunction still covers a negative, and anything more general covers
+        // more, so no consistent conjunction exists at all.
+        result.reason =
+            "no consistent conjunction exists: the most specific one still covers a negative"
+                .to_string();
+        result.witness = first_collision(&positive, &negative);
+        return result;
+    }
+    for size in 1..=must.len() {
+        if size > must.len() {
             continue;
         }
         let mut best: Option<(usize, Vec<Lit>)> = None;
-        for indices in combinations(lits.len(), size) {
-            let combo: Vec<Lit> = indices.iter().map(|index| lits[*index].clone()).collect();
+        for indices in combinations(must.len(), size) {
+            let combo: Vec<Lit> = indices.iter().map(|index| must[*index].clone()).collect();
             let covers = positive_attrs
                 .iter()
                 .all(|attrs| combo.iter().all(|lit| lit.holds(attrs)));
@@ -294,7 +315,7 @@ pub fn induce_concept(prog: &Program, decl: &Decl) -> Learning {
         }
     }
 
-    result.reason = "no consistent conjunction of at most three literals exists".to_string();
+    result.reason = "no consistent conjunction exists".to_string();
     result.witness = first_collision(&positive, &negative);
     if result.witness.is_some() {
         result.reason = "a positive and a negative have identical attributes".to_string();

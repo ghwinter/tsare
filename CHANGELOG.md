@@ -58,6 +58,13 @@ All notable changes are recorded here. The format follows
   that withdrew something is still readable, and the reader only loses the ability to tell a
   considered withdrawal from a quiet one. `because` is a reference field, so a reason that names
   nothing is `E-UNDEFINED`, and a declaration cited as a reason counts as affected by `impact`.
+- Induction could not find a clause that needed four literals: the search stopped at three and
+  reported "no consistent conjunction of at most three literals exists". The literals of any
+  covering clause must hold on every positive, so the search space is exactly that set -- and the
+  full set is always checked, whatever its size. Measured: a concept whose four negatives each
+  differ in one attribute went from `_failed_` to `a <= 1 and b <= 1 and c <= 1 and d <= 1`.
+  The "impossible" answer now says why in the general case: when the most specific conjunction still
+  covers a negative, nothing more general can exclude it either.
 ### Added
 
 - `E-SUPERSEDE-UNDEFINED` — a `supersedes` field that names nothing, or names itself. A withdrawal
