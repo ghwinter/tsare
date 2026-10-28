@@ -36,12 +36,14 @@ pub fn dump(diagnostics: &[Diagnostic]) -> String {
         .iter()
         .map(|item| {
             format!(
-                "{{\"code\": \"{}\", \"message\": \"{}\", \"name\": \"{}\", \"line\": {}, \"col\": {}}}",
+                "{{\"code\": \"{}\", \"message\": \"{}\", \"name\": \"{}\", \"line\": {}, \"col\": {}, \"end_line\": {}, \"end_col\": {}}}",
                 escape(item.code),
                 escape(&item.message),
                 escape(item.witness.as_deref().unwrap_or("")),
                 item.line,
-                item.col
+                item.col,
+                item.end_line,
+                item.end_col
             )
         })
         .collect();
@@ -68,15 +70,35 @@ pub fn restore(payload: &Json) -> Vec<Diagnostic> {
                         .get("col")
                         .and_then(|value| value.as_f64())
                         .unwrap_or(1.0) as usize;
+                    // The record has always carried the name; the reader used to drop it, and a
+                    // cache hit then reported an empty `name` for a diagnostic that has one.
+                    let name = item
+                        .get("name")
+                        .and_then(|value| value.as_str())
+                        .unwrap_or("");
+                    let end_line = item
+                        .get("end_line")
+                        .and_then(|value| value.as_f64())
+                        .map(|value| value as usize)
+                        .unwrap_or(line);
+                    let end_col = item
+                        .get("end_col")
+                        .and_then(|value| value.as_f64())
+                        .map(|value| value as usize)
+                        .unwrap_or(col);
                     Some(Diagnostic {
                         code: crate::check::code_of(code),
                         message: message.to_string(),
                         line,
                         col,
-                        end_line: line,
-                        end_col: col,
+                        end_line,
+                        end_col,
                         file: String::new(),
-                        witness: None,
+                        witness: if name.is_empty() {
+                            None
+                        } else {
+                            Some(name.to_string())
+                        },
                     })
                 })
                 .collect()
