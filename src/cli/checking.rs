@@ -53,7 +53,11 @@ pub(crate) fn cmd_check(
         .with_sources(&loaded.sources);
     session.extend(loaded.syntax.clone());
     let mut coverage = None;
-    if loaded.syntax.is_empty() {
+    // Recovery already kept the declarations that parsed, whether or not another file (or this
+    // one) also produced E-SYNTAX.  Skipping the semantic pass because one file failed hid every
+    // error in the files that did not, so fixing the first syntax error revealed the next.  The
+    // semantic diagnostics are computed over what parsed, and the syntax diagnostics stay.
+    {
         let cacheable = use_cache && !sugar && !path.is_dir();
         let cache_key = if cacheable {
             Some(crate::cache::key(&loaded.text))

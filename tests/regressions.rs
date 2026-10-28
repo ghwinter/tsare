@@ -378,3 +378,20 @@ fn weigh_propagates_confidence_through_a_proposition() {
         "{found:#?}"
     );
 }
+
+#[test]
+fn a_syntax_error_does_not_hide_the_other_files_semantic_errors() {
+    // Defect: cmd_check skipped the whole semantic pass when any file failed to parse, so a
+    // directory with one unterminated string hid the duplicate declaration in the file next to
+    // it. Recovery had already parsed that file; the guard threw its diagnostics away.
+    let dir = root().join("docs/repro/project-dir");
+    let output = Command::new(binary())
+        .arg("check")
+        .arg(&dir)
+        .output()
+        .expect("run");
+    let text = stdout(&output);
+    assert!(text.contains("error[E-SYNTAX]"), "{text}");
+    assert!(text.contains("error[E-DUP-ID]"), "{text}");
+    assert_eq!(output.status.code(), Some(1), "{text}");
+}
