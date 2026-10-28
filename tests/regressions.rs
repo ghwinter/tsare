@@ -694,3 +694,35 @@ fn a_cut_list_says_how_much_it_cut() {
     }
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn explain_does_not_promise_a_migration_command_that_does_not_exist() {
+    // Defect: --explain E-VERSION told the reader to use "the format's migration command".
+    // There is no such command in the dispatch table, and the format has never moved, so the
+    // sentence named a repair the tool cannot perform.
+    let text = tsare::explain::explain("E-VERSION").expect("explained");
+    assert!(!text.contains("migration command"), "{text}");
+}
+
+#[test]
+fn a_gap_with_no_separator_does_not_end_the_sentence_with_from() {
+    // Defect: when the listed elements had no common attribute and no twin, the gap question
+    // ended "no recorded attribute separates it from " -- the list it named was empty.
+    let dir = temp("ask-gap");
+    let doc = dir.join("gap.tsare");
+    std::fs::write(
+        &doc,
+        concat!(
+            "fact F_A { claim: \"a\", evidence: user, attrs: { a: 1 } }\n",
+            "fact F_B { claim: \"b\", evidence: user, attrs: { b: 2 } }\n",
+            "fact F_GAP { claim: \"g\", evidence: user }\n",
+            "concept C_THINGS { name: \"things\", grounded_by: [F_A, F_B, F_GAP] }\n",
+            "partition P_SOME { dimension: C_THINGS, elements: [F_A, F_B], closure: open }\n",
+        ),
+    )
+    .expect("write the document");
+    let shown = doc.to_str().unwrap().to_string();
+    let text = stdout(&run_in(root(), &["ask", &shown]));
+    assert!(text.contains("from any listed element"), "{text}");
+    let _ = std::fs::remove_dir_all(&dir);
+}

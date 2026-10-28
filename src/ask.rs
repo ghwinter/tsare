@@ -167,7 +167,11 @@ fn gaps(program: &Program) -> Vec<Question> {
                     "{} does not list {}; no recorded attribute separates it from {}",
                     draft.partition,
                     draft.fact,
-                    and_list(&draft.twins)
+                    if draft.twins.is_empty() {
+                        "any listed element".to_string()
+                    } else {
+                        and_list(&draft.twins)
+                    }
                 ),
             };
             Question {
