@@ -299,7 +299,7 @@ fn usage() {
     println!("exit codes");
     println!("  0  no errors (warnings are allowed)");
     println!("  1  errors found, or a proposal refused");
-    println!("  2  usage problem, or a file could not be read");
+    println!("  2  usage problem: no document named, or a command that does not exist");
 }
 
 fn is_command(name: &str) -> bool {
