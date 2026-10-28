@@ -1896,3 +1896,61 @@ fn two_forms_that_differ_in_one_field_are_near_misses() {
     assert!(tsare::shape::near_misses(&left, &right, 0, 0).is_empty());
     assert!(tsare::shape::near_text(&misses).contains("approximation"));
 }
+
+/// A document nested past the parser's cap is a diagnostic, not a crash.  Recursive descent uses
+/// the call stack as its own stack, and the fuzzer found the depth at which every command died
+/// with a stack overflow and no message at all.
+#[test]
+fn a_value_nested_past_the_cap_is_refused_with_a_diagnostic() {
+    let deep = format!(
+        "fact F {{ claim: {}1{} }}\n",
+        "{a: ".repeat(200),
+        "}".repeat(200)
+    );
+    let error =
+        parse(&deep).expect_err("a value deep enough to overflow the stack must be refused");
+    assert_eq!(error.code, "E-SYNTAX");
+    assert!(error.message.contains("nested deeper"), "{}", error.message);
+    // a depth a person could write still parses
+    let ordinary = format!(
+        "fact F {{ claim: {}1{} }}\n",
+        "{a: ".repeat(20),
+        "}".repeat(20)
+    );
+    assert!(
+        parse(&ordinary).is_ok(),
+        "twenty levels is an ordinary document"
+    );
+}
+
+/// The engine reads its statuses out of a HashMap.  Two runs of one document must not disagree
+/// about the order of the conclusions, or `engine` is not deterministic and nothing above it is.
+#[test]
+fn conditional_conclusions_keep_a_fixed_order() {
+    let source = concat!(
+        "proposition P_1 { statement: \"a\", from: [F_1] }\n",
+        "warrant W_1 { claim: \"c\", from: [F_1], to: P_1 }\n",
+        "proposition P_2 { statement: \"b\", from: [F_1] }\n",
+        "warrant W_2 { claim: \"c\", from: [F_1], to: P_2 }\n",
+    );
+    let result = engine(&decls(source));
+    let order: Vec<&str> = result
+        .conditional
+        .iter()
+        .map(|(name, _)| name.as_str())
+        .collect();
+    assert_eq!(order, ["P_1", "P_2"]);
+}
+
+/// The `E-KIND` repair parses the diagnostic message.  A quoted declaration name containing
+/// ` expects ` puts that marker before the first dot, and the slice panicked on the reversed range.
+#[test]
+fn a_quoted_name_with_a_marker_does_not_panic_the_repair() {
+    let source = concat!(
+        "fact F_A { claim: \"x\", evidence: user }\n",
+        "warrant \"C expects D\" { claim: \"c\", from: [F_A], to: F_A }\n",
+    );
+    let found = suggestions(&decls(source));
+    // the assertion is that the call returned at all; what it proposes is a separate question
+    let _ = found;
+}

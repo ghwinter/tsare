@@ -151,7 +151,12 @@ pub fn from_diagnostics(decls: &[Decl]) -> Vec<Suggestion> {
             continue;
         };
         let owner = &message[..dot];
-        let key = &message[dot + 1..space];
+        // A quoted name can contain  expects , which puts the marker before the dot; slicing
+        // then panics on a range whose start is after its end.  The repair needs the three parts
+        // in order, so a message that does not have them is simply not this repair.
+        let Some(key) = message.get(dot + 1..space) else {
+            continue;
+        };
         let rest = &message[space + " expects ".len()..];
         let Some(comma) = rest.find(", but ") else {
             continue;

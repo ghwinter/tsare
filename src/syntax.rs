@@ -173,7 +173,15 @@ struct Parser {
     pos: usize,
     ref_pos: Vec<(String, usize, usize, usize)>,
     last_end: (usize, usize),
+    /// How deep the value currently being parsed is nested.  Recursive descent uses the call
+    /// stack as its own stack, so without a bound a hostile document can overflow it before any
+    /// diagnostic exists: the process dies instead of saying the document is too deep.
+    depth: usize,
 }
+
+/// Deeper than any document a person writes; shallow enough that the recursion cannot exhaust
+/// the stack (the crash the fuzzer found first happened around 2100).
+const MAX_DEPTH: usize = 128;
 
 impl Parser {
     fn peek(&self) -> Option<&str> {
@@ -225,6 +233,18 @@ impl Parser {
     }
 
     fn value(&mut self) -> Result<Val, ParseError> {
+        if self.depth >= MAX_DEPTH {
+            return Err(self.fail(format!(
+                "value nested deeper than {MAX_DEPTH}; a document this deep has no reading"
+            )));
+        }
+        self.depth += 1;
+        let parsed = self.value_inner();
+        self.depth -= 1;
+        parsed
+    }
+
+    fn value_inner(&mut self) -> Result<Val, ParseError> {
         match self.peek() {
             Some("{") => {
                 self.bump();
@@ -483,6 +503,7 @@ pub fn parse_recovering(src: &str) -> (Vec<Decl>, Vec<ParseError>) {
         pos: 0,
         ref_pos: Vec::new(),
         last_end: (0, 0),
+        depth: 0,
     };
     let mut decls = Vec::new();
     let mut errors = lex_errors;

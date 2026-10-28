@@ -342,6 +342,7 @@ const VALUE_FLAGS: &[&str] = &[
     "--action",
     "--store",
     "--near",
+    "--write",
 ];
 
 impl Args {

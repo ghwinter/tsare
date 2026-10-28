@@ -376,6 +376,9 @@ pub fn engine(decls: &[Decl]) -> EngineResult {
         }
         conditional.push((name.clone(), reasons));
     }
+    // state is a HashMap: two runs of the same document must not disagree about the order of
+    // the conditional conclusions.
+    conditional.sort_by(|left, right| left.0.cmp(&right.0));
 
     let mut blocked = Vec::new();
     for rule in &rules {
