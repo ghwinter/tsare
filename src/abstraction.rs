@@ -86,7 +86,7 @@ pub fn candidates(
         if named.contains(&names) || !seen.insert(names.clone()) {
             continue;
         }
-        let closed = intent(&members);
+        let closed = intent(program, &members);
         if closed.is_empty() || closed.len() > max_intent {
             continue;
         }

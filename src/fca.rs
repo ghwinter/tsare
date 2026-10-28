@@ -28,11 +28,23 @@ pub fn attributes(decl: &Decl) -> Vec<Pair> {
     }
 }
 
-/// The attribute pairs every fact in the sample has.  Empty means: nothing recorded is shared.
-pub fn intent(facts: &[&Decl]) -> Vec<Pair> {
+/// The attribute pairs every fact in the sample has.
+///
+/// For an empty sample this is **every attribute in the program**, not none: intent of no objects is
+/// vacuously satisfied by all of them.  That convention is what makes `intent ∘ extent` a closure
+/// operator -- with the empty intent instead, a larger attribute set can have a smaller closure and
+/// monotonicity fails at exactly the sets no fact satisfies.
+pub fn intent(prog: &Program, facts: &[&Decl]) -> Vec<Pair> {
     let mut iter = facts.iter();
     let Some(first) = iter.next() else {
-        return Vec::new();
+        let mut universe: Vec<Pair> = prog
+            .of_kind("fact")
+            .iter()
+            .flat_map(|fact| attributes(fact))
+            .collect();
+        universe.sort();
+        universe.dedup();
+        return universe;
     };
     let mut common = attributes(first);
     for fact in iter {
@@ -72,7 +84,7 @@ pub fn concepts(prog: &Program) -> Vec<Concept> {
         if positives.is_empty() {
             continue;
         }
-        let pairs = intent(&positives);
+        let pairs = intent(prog, &positives);
         let implied = if pairs.is_empty() {
             Vec::new()
         } else {
@@ -109,7 +121,7 @@ pub fn piles(prog: &Program) -> Vec<Pile> {
             .iter()
             .filter_map(|name| prog.get(name))
             .collect();
-        let shared = intent(&elements);
+        let shared = intent(prog, &elements);
         out.push(Pile {
             name: partition.name.clone(),
             shared,

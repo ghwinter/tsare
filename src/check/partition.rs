@@ -178,7 +178,7 @@ pub(crate) fn check_partition(
                 .iter()
                 .filter_map(|name| program.get(name))
                 .collect();
-            let pairs = crate::fca::intent(&positives);
+            let pairs = crate::fca::intent(&program, &positives);
             if !pairs.is_empty() {
                 for fact in crate::fca::extent(&program, &pairs) {
                     if !elements.contains(&fact.name) && !extent.contains(&fact.name) {

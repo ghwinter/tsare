@@ -86,6 +86,12 @@ All notable changes are recorded here. The format follows
   `--depth` was not in the value-flag list, so `--depth 1` was parsed as a flag plus a positional
   and every run silently read depth 0 -- the first output looked like "the filtration never
   splits", which is exactly how a flag that does nothing reads.
+- The attribute reading is now a closure operator, and it was not one before. `intent` of an empty
+  sample returned no attributes; mathematically the intent of no objects is every attribute, since
+  all of them are vacuously common. With the empty intent, a larger attribute set could have a
+  smaller closure, so monotonicity failed at exactly the sets no fact satisfies -- found by a test
+  that checks the three axioms over every subset of the attribute universe, not by reading the code.
+  `intent` now takes the program and returns the attribute universe for the empty sample.
 ### Added
 
 - `E-SUPERSEDE-UNDEFINED` — a `supersedes` field that names nothing, or names itself. A withdrawal
