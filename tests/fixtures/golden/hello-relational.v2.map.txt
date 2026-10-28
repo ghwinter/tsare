@@ -6,3 +6,4 @@
 0.62 w=5  F_SCROLL           ~ F_C                 shared: premise>concludes, premise>in:basis, premise
 0.55 w=6  F_SCROLL           ~ F_A1                shared: from>in:concludes, premise>concludes, from, premise
 0.55 w=6  F_SCROLL           ~ F_A2                shared: from>in:concludes, premise>concludes, from, premise
+… 3 more pair(s); raise --top

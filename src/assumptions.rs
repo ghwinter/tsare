@@ -59,7 +59,9 @@ pub struct Assumption {
     pub count: usize,
 }
 
-pub fn report(prog: &Program, top: usize) -> Vec<Assumption> {
+/// The rows to show and how many there are in all: a caller that is handed only `top` rows cannot
+/// say whether it is looking at the whole list, and a total that counts the cut is a false total.
+pub fn report(prog: &Program, top: usize) -> (Vec<Assumption>, usize) {
     let impact = reachable(prog);
     let mut rows = Vec::new();
     for decl in prog.decls {
@@ -83,6 +85,7 @@ pub fn report(prog: &Program, top: usize) -> Vec<Assumption> {
             .cmp(&left.count)
             .then_with(|| left.name.cmp(&right.name))
     });
+    let total = rows.len();
     rows.truncate(top);
-    rows
+    (rows, total)
 }

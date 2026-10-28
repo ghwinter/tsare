@@ -112,7 +112,7 @@ pub(crate) fn cmd_map(left: &Path, right: &Path, top: usize) -> i32 {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
     };
-    let rows = crate::mapping::align(
+    let (rows, total) = crate::mapping::align(
         &Program::new(&left_doc.decls),
         &Program::new(&right_doc.decls),
         top,
@@ -136,6 +136,9 @@ pub(crate) fn cmd_map(left: &Path, right: &Path, top: usize) -> i32 {
             pad(&row.name_b, 18),
             shown.join(", ")
         );
+    }
+    if total > rows.len() {
+        println!("… {} more pair(s); raise --top", total - rows.len());
     }
     0
 }

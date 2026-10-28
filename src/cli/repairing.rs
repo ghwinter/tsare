@@ -45,8 +45,10 @@ pub(crate) fn cmd_apply(path: &Path, dry: bool) -> i32 {
     };
     let items = crate::fix::suggestions(&loaded.decls);
     let (updated, applied) = crate::apply::apply_best(&loaded.text, &items);
-    if !dry {
-        fs::write(path, &updated).expect("write file");
+    if !dry && updated != loaded.text {
+        if let Err(error) = crate::apply::replace(path, &updated) {
+            return fail(format!("{}: {error}", path.display()));
+        }
     }
     let list: Vec<String> = applied
         .iter()
@@ -237,8 +239,10 @@ pub(crate) fn cmd_propose(path: &Path, proposals_path: &str, apply: bool, policy
             }
         }
     }
-    if apply {
-        fs::write(path, &current).expect("write file");
+    if apply && current != loaded.text {
+        if let Err(error) = crate::apply::replace(path, &current) {
+            return fail(format!("{}: {error}", path.display()));
+        }
     }
     println!(
         "{admitted} admitted, {needs_review} review, {} rejected",

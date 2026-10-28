@@ -138,7 +138,7 @@ fn compare(left: &Signature, right: &Signature) -> (f64, usize, Vec<Vec<String>>
     (shared_weight as f64 / total as f64, shared_weight, sorted)
 }
 
-pub fn align(prog_a: &Program, prog_b: &Program, top: usize) -> Vec<Pair> {
+pub fn align(prog_a: &Program, prog_b: &Program, top: usize) -> (Vec<Pair>, usize) {
     let sig_a = signatures(prog_a, 2);
     let sig_b = signatures(prog_b, 2);
     let mut rows = Vec::new();
@@ -169,6 +169,7 @@ pub fn align(prog_a: &Program, prog_b: &Program, top: usize) -> Vec<Pair> {
             .then_with(|| left.name_a.cmp(&right.name_a))
             .then_with(|| left.name_b.cmp(&right.name_b))
     });
+    let total = rows.len();
     rows.truncate(top);
-    rows
+    (rows, total)
 }

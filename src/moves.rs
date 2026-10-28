@@ -62,7 +62,8 @@ pub fn suggest(prog: &Program) -> Vec<Move> {
     }
 
     // R2: load-bearing and never checked
-    for row in assumption_report(prog, 20) {
+    let (assumptions, _) = assumption_report(prog, 20);
+    for row in assumptions {
         rows.push(Move {
             code: "R2",
             target: row.name,

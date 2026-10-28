@@ -147,6 +147,28 @@ fn severity_follows_the_code_prefix() {
     assert!(seen > 3, "the fixture should carry several diagnostics");
 }
 
+/// A count printed above a list is a claim about the document, not about the flag.  `--top` may cut
+/// what is shown, never the total: a loop that reads "1 load-bearing assumption" and stops has been
+/// told the wrong number by the tool it is trusting.
+#[test]
+fn a_cut_list_still_reports_the_whole_total() {
+    let path = std::env::temp_dir().join(format!("tsare-total-{}.tsare", std::process::id()));
+    std::fs::write(
+        &path,
+        concat!(
+            "fact F1 { claim: \"a\", evidence: model }\n",
+            "fact F2 { claim: \"b\", evidence: model }\n",
+            "fact F3 { claim: \"c\", evidence: model }\n",
+            "proposition P { statement: \"p\", from: [F1, F2, F3] }\n",
+        ),
+    )
+    .expect("write the document");
+    let shown = run(&["assumptions", &path.display().to_string(), "--top", "1"]);
+    let _ = std::fs::remove_file(&path);
+    assert!(shown.contains("3 load-bearing assumption(s)"), "{shown}");
+    assert!(shown.contains("2 more"), "{shown}");
+}
+
 fn field(object: &str, key: &str) -> String {
     let needle = format!("\"{key}\": ");
     let start = object

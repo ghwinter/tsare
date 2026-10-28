@@ -77,6 +77,19 @@ pub fn apply_best(text: &str, suggestions: &[Suggestion]) -> (String, Vec<String
     (current, applied)
 }
 
-pub fn write(path: &Path, text: &str) {
-    std::fs::write(path, text).expect("write file");
+/// Replace a document in one step.  The file on disk is the only copy of what its author wrote, so
+/// a half-written one is worse than an unwritten one: the text goes into a sibling file and is
+/// renamed over the original, which the filesystem does in a single step.
+pub fn replace(path: &Path, text: &str) -> std::io::Result<()> {
+    let mut beside = path.as_os_str().to_owned();
+    beside.push(".tmp");
+    let beside = Path::new(&beside);
+    std::fs::write(beside, text)?;
+    match std::fs::rename(beside, path) {
+        Ok(()) => Ok(()),
+        Err(error) => {
+            let _ = std::fs::remove_file(beside);
+            Err(error)
+        }
+    }
 }

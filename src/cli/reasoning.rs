@@ -577,6 +577,9 @@ pub(crate) fn cmd_cost(path: &Path, top: usize) -> i32 {
     for (name, found) in cost.rows.iter().take(top) {
         println!("  {} {}  {}", pad(name, 18), found.len(), found.join("; "));
     }
+    if cost.rows.len() > top {
+        println!("  … {} more; raise --top", cost.rows.len() - top);
+    }
     if cost.depth > 0 {
         println!("chain: {}", cost.chain.join(" -> "));
     }
@@ -697,12 +700,12 @@ pub(crate) fn cmd_assumptions(path: &Path, top: usize) -> i32 {
         Err(error) => return fail(error),
     };
     let program = Program::new(&loaded.decls);
-    let rows = crate::assumptions::report(&program, top);
+    let (rows, total) = crate::assumptions::report(&program, top);
     if rows.is_empty() {
         println!("no load-bearing unsupported declarations");
         return 0;
     }
-    println!("{} load-bearing assumption(s):", rows.len());
+    println!("{total} load-bearing assumption(s):");
     for row in &rows {
         println!(
             "  {} {} touches {:>2}  {}",
@@ -711,6 +714,9 @@ pub(crate) fn cmd_assumptions(path: &Path, top: usize) -> i32 {
             row.count,
             row.why
         );
+    }
+    if total > rows.len() {
+        println!("  … {} more; raise --top", total - rows.len());
     }
     0
 }

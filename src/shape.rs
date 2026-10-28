@@ -323,10 +323,11 @@ pub fn difference_text(difference: &Difference, depth: usize) -> String {
             return "none".to_string();
         }
         let mut shown: Vec<&str> = items.iter().take(8).map(String::as_str).collect();
-        let more = if items.len() > shown.len() {
-            ", …"
+        let hidden = items.len() - shown.len();
+        let more = if hidden > 0 {
+            format!(", … {hidden} more")
         } else {
-            ""
+            String::new()
         };
         shown.sort();
         format!("{}{more}", shown.join(", "))

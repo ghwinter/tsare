@@ -1814,3 +1814,34 @@ fn two_documents_sharing_a_form_and_differing_in_another() {
     let same = tsare::shape::compare(&Program::new(&here), &Program::new(&here), 0);
     assert!(same.only_here.is_empty() && same.only_there.is_empty());
 }
+
+/// `weigh` propagates a lower bound under the weakest link, not a probability: min over premises,
+/// max over rules.  The property that makes it a bound rather than a guess is that a rule cannot
+/// gain strength by demanding one more premise, so the arithmetic is not what is tested here.
+#[test]
+fn an_extra_weak_premise_never_raises_a_weight() {
+    let alone = concat!(
+        "fact F1 { claim: \"a\", evidence: user, confidence: 0.9 }\n",
+        "warrant W1 { claim: \"r\", from: [F1], to: P1, confidence: 0.8 }\n",
+        "proposition P1 { statement: \"p\", from: [W1] }\n",
+    );
+    let burdened = concat!(
+        "fact F1 { claim: \"a\", evidence: user, confidence: 0.9 }\n",
+        "fact F2 { claim: \"b\", evidence: user, confidence: 0.2 }\n",
+        "warrant W1 { claim: \"r\", from: [F1, F2], to: P1, confidence: 0.8 }\n",
+        "proposition P1 { statement: \"p\", from: [W1] }\n",
+    );
+    let weight = |source: &str| -> f64 {
+        tsare::weigh::weights(&Program::new(&decls(source)))
+            .into_iter()
+            .find(|row| row.name == "P1")
+            .and_then(|row| row.value)
+            .expect("P1 carries a weight")
+    };
+    let (light, heavy) = (weight(alone), weight(burdened));
+    assert!(
+        heavy < light,
+        "the weak premise should lower the bound: {heavy} vs {light}"
+    );
+    assert!(heavy <= 0.2, "the bound is the weakest link, got {heavy}");
+}
