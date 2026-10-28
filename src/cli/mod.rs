@@ -305,6 +305,14 @@ fn is_command(name: &str) -> bool {
     COMMANDS.iter().any(|command| command.1 == name) || HIDDEN.contains(&name)
 }
 
+/// A bare path is shorthand for `check PATH`.  A misspelled command is not a path: guessing turns
+/// `tsare shap doc.tsare` into "shap: the system cannot find the file", which reads as the tool
+/// being broken instead of the invocation being wrong, and would silently check a file that
+/// happens to carry the typo's name.
+fn looks_like_a_document(word: &str) -> bool {
+    word == "-" || word.ends_with(".tsare") || Path::new(word).exists()
+}
+
 /// The arguments after the command, split into positional values and options.
 struct Args {
     positional: Vec<String>,
@@ -421,8 +429,11 @@ pub fn run() -> i32 {
     }
     let (command, rest) = if is_command(&raw[0]) {
         (raw[0].clone(), raw[1..].to_vec())
-    } else {
+    } else if looks_like_a_document(&raw[0]) {
         ("check".to_string(), raw.clone())
+    } else {
+        println!("unknown command {}; `tsare help` lists them", raw[0]);
+        return 2;
     };
     let args = Args::parse(&rest);
     if command == "mcp" {

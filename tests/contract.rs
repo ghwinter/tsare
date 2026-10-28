@@ -169,6 +169,20 @@ fn a_cut_list_still_reports_the_whole_total() {
     assert!(shown.contains("2 more"), "{shown}");
 }
 
+/// A misspelled command must not turn into a file name.  The shorthand `tsare doc.tsare` is worth
+/// keeping; guessing that any unknown word is a path is not, because the error then blames the
+/// filesystem for a typo and a file named after it would be checked in its place.
+#[test]
+fn a_misspelled_command_is_not_a_document() {
+    let output = Command::new(binary())
+        .args(["shap", "doc.tsare"])
+        .output()
+        .expect("run the binary");
+    let text = String::from_utf8_lossy(&output.stdout);
+    assert!(text.contains("unknown command shap"), "{text}");
+    assert_eq!(output.status.code(), Some(2), "{text}");
+}
+
 fn field(object: &str, key: &str) -> String {
     let needle = format!("\"{key}\": ");
     let start = object
