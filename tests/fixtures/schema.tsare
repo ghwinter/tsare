@@ -3,6 +3,9 @@
 # W_RULE does not point at any proposition.  It says: every proposition that uses
 # C_RENDERED is concluded by this rule.  `derive` therefore marks both P_SMOOTH and
 # P_STABLE as grounded, although no warrant names either of them.
+#
+# P_STABLE states "16 ms" and no value carries the instrument that produced it, so this
+# document also demonstrates W-BARE-NUMBER -- a true positive, left in place.
 
 fact F_TRACE { claim: "the list renders at 60 fps under trace", evidence: tool("trace") }
 fact F_HEADLESS { claim: "nothing renders with --headless", evidence: tool("run --headless") }

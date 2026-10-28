@@ -49,6 +49,7 @@ pub const CODES: &[&str] = &[
     "E-VERSION",
     "E-WARRANT-MODE",
     "E-WITNESS",
+    "W-BARE-NUMBER",
     "W-BASIS-NO-CRITERION",
     "W-BY-MISMATCH",
     "W-COARSE",
@@ -190,6 +191,10 @@ pub fn explain(code: &str) -> Option<&'static str> {
             Fix: use `to:` for one conclusion, or `concludes:` for every match.",
         "E-WITNESS" => "A blind spot needs exactly two witnesses.\n\
             Fix: name the pair that the current signature cannot separate.",
+        "W-BARE-NUMBER" => "A conclusion states a number and cites no value that carries an instrument.\n\
+            The sentence looks measured; nothing in the document says what produced the number, so a\n\
+            reader cannot tell it from an estimate.\n\
+            Fix: cite the `value` (with `measured_by`) in `from:` or `basis:`, or say the number is an estimate.",
         "W-BASIS-NO-CRITERION" => "A warrant rests on something that is not a licence.\n\
             Each kind has one criterion, and it is the same one that kind owes elsewhere: a law is\n\
             checked by something, a value was measured, a concept has a positive example, a fact is\n\

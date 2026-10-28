@@ -17,6 +17,7 @@ pub(crate) fn check(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     check_dead_values(decls, out);
     check_artifacts(decls, out);
     check_bindings(decls, out);
+    check_bare_numbers(decls, out);
     check_retirement(decls, out);
 }
 /// A law may name the fields a declaration must carry in order to cite it (`requires`).  Without
@@ -258,6 +259,100 @@ fn check_bindings(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                 out,
             );
         }
+    }
+}
+
+/// The units a quantity is written with.  A digit alone is not a quantity: `A1`, `0.4.3` and
+/// `F_1` are names, and a rule that fires on them is a rule about typing, not about measuring.
+const UNITS: &[&str] = &[
+    "%", "×", "倍", "ms", "ns", "s", "x", "fps", "Hz", "kHz", "MB", "GB", "times", "秒", "毫秒",
+];
+
+/// Whether the text states a quantity: a digit run followed by a unit, on a word boundary.
+fn states_a_quantity(text: &str) -> bool {
+    let chars: Vec<char> = text.chars().collect();
+    let mut index = 0;
+    while index < chars.len() {
+        if !chars[index].is_ascii_digit() {
+            index += 1;
+            continue;
+        }
+        let mut after = index;
+        while after < chars.len() && (chars[after].is_ascii_digit() || chars[after] == '.') {
+            after += 1;
+        }
+        while after < chars.len() && chars[after] == ' ' {
+            after += 1;
+        }
+        for unit in UNITS {
+            let width = unit.chars().count();
+            if after + width > chars.len() {
+                continue;
+            }
+            let candidate: String = chars[after..after + width].iter().collect();
+            if candidate != *unit {
+                continue;
+            }
+            let next = chars.get(after + width);
+            let boundary = next
+                .map(|ch| !(ch.is_alphanumeric() || *ch == '_'))
+                .unwrap_or(true);
+            if boundary {
+                return true;
+            }
+        }
+        index = after.max(index + 1);
+    }
+    false
+}
+
+/// A number in a conclusion needs an instrument, or it is an opinion wearing a number's clothes.
+///
+/// The criterion is structural -- does this sentence cite a `value` that names the instrument that
+/// produced it -- and only the question "what counts as a number" is lexical.  Measured on 76
+/// documents: firing on any digit gave 6 warnings of which 4 were identifiers (`A1`, `B1`); firing
+/// on a digit with a unit gave 2, both real.
+///
+/// shortcut: only unit-anchored quantities are caught, so `97 tests` and `第 3 条` are not; upgrade
+/// when there is a criterion for counting and for ordinals.
+fn check_bare_numbers(decls: &[Decl], out: &mut Vec<Diagnostic>) {
+    let measured: std::collections::HashSet<&str> = decls
+        .iter()
+        .filter(|decl| decl.kind == "value" && carries(decl, "measured_by"))
+        .map(|decl| decl.name.as_str())
+        .collect();
+    for decl in decls
+        .iter()
+        .filter(|decl| decl.kind == "proposition" || decl.kind == "warrant")
+    {
+        let key = if decl.kind == "proposition" {
+            "statement"
+        } else {
+            "claim"
+        };
+        let Some(text) = string_field(decl, key) else {
+            continue;
+        };
+        if !states_a_quantity(text) {
+            continue;
+        }
+        let cited: std::collections::HashSet<String> = field_ids(decl, "from")
+            .into_iter()
+            .chain(field_ids(decl, "basis"))
+            .collect();
+        if cited.iter().any(|name| measured.contains(name.as_str())) {
+            continue;
+        }
+        sem(
+            decl,
+            "W-BARE-NUMBER",
+            format!(
+                "{} states a number and cites no measured value: nothing here says what produced it",
+                decl.name
+            ),
+            Some(key),
+            out,
+        );
     }
 }
 

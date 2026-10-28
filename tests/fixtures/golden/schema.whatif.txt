@@ -1,4 +1,4 @@
 without F_TRACE:
-  errors 0 -> 2, warnings 0 -> 1
+  errors 0 -> 2, warnings 1 -> 2
   new codes: E-NO-PREMISE, E-UNGROUNDED, W-BASIS-NO-CRITERION
   no proposition changed status

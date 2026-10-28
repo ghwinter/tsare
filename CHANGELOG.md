@@ -43,6 +43,15 @@ All notable changes are recorded here. The format follows
   A repair may still bring the declaration it needs: adding a rule to connect a proposition creates
   the rule, and the rule can owe something of its own. `W-HOLE` is ignored on both sides, because
   turning a missing field into a hole is the repair, not a new complaint.
+- `W-BARE-NUMBER` — a conclusion states a quantity and cites no value that carries the instrument
+  that produced it. The criterion is structural (does the sentence cite a `value` with
+  `measured_by`); only the question "what counts as a number" is lexical, and that part was
+  measured rather than guessed: firing on any digit produced 6 warnings over 76 documents, 4 of
+  them identifiers like `A1`; firing on a digit with a unit produced 2, both real. So a quantity is
+  a digit run with a unit (`16 ms`, `60 fps`, `3x`, `40%`), and `A1`, `0.4.3` and `F_1` are names.
+
+  Known limit, in the code: `97 tests` and `第 3 条` are not caught, because there is no criterion
+  yet for counting or for ordinals.
 ### Added
 
 - `E-SUPERSEDE-UNDEFINED` — a `supersedes` field that names nothing, or names itself. A withdrawal

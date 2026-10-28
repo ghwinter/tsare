@@ -197,6 +197,7 @@ checked against what was declared.
 | `W-BY-MISMATCH` | an inference type is derived from structure — a warrant makes deduction, concepts without a rule make induction — and a declaration that disagrees is contradicted |
 | `W-CONFIDENCE-INFLATED` | a declared number is bounded by the weakest link: the rule's premises, or the premises a rule-less proposition cites |
 | `E-PARTITION-*` | a closed list is contradicted by the dimension's extent and by any fact the attributes imply |
+| `W-BARE-NUMBER` | a digit run with a unit in a `statement`/`claim` must be matched by a `value` carrying `measured_by` in `from:` or `basis:`; identifiers are not quantities |
 | `W-BASIS-NO-CRITERION` | a `basis` entry is compared with the criterion its own kind owes: a law is checked, a value measured, a proposition concluded, a fact not merely a model opinion |
 | `E-SUPERSEDE-UNDEFINED` | a `supersedes` name is resolved against the declared set; the edge is not a dependency, so nothing else would notice |
 | `W-RETIRED` | a reference is compared with the set of names retired by `supersedes:`; it resolves, but it no longer grounds |

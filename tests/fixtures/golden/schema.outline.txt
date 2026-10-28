@@ -35,6 +35,7 @@ stands on, who checks it, and what is still owed.
 > frame times stay under 16 ms while scrolling
 
   uses: C_RENDERED | obligation: prove (assumed), no premises; treated as an assumption
+  ! W-BARE-NUMBER: P_STABLE states a number and cites no measured value: nothing here says what produced it
 
 ### W_RULE -- warrant
 

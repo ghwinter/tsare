@@ -1,4 +1,4 @@
 without F_SCROLL:
-  errors 0 -> 1, warnings 1 -> 2
+  errors 0 -> 1, warnings 2 -> 3
   new codes: E-UNGROUNDED, W-BASIS-NO-CRITERION
   no proposition changed status
