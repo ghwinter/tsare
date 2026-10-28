@@ -14,6 +14,7 @@ pub mod closure;
 pub mod cost;
 pub mod coverage;
 pub mod debt;
+pub mod delta;
 pub mod derive;
 pub mod egraph;
 pub mod explain;

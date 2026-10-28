@@ -111,6 +111,7 @@ Exit codes: `0` no errors, `1` errors found or a proposal refused, `2` a usage o
 | which laws does the attribute table already hold, and where does one run backwards? | `imply` |
 | which diagnostics have a machine repair, and which need a value only the author can choose? | `fix` |
 | are two documents the same argument? | `map` |
+| did the last edit remove complaints, or trade them for others? | `delta` |
 | what does the checked document oblige, and what did it learn? | `build` |
 
 Twelve kinds, each with a decidable obligation: a fact owes evidence someone else can check, a

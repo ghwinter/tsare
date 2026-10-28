@@ -238,7 +238,7 @@ const GROUPS: &[&str] = &["checking", "reasoning", "repairing", "emitting"];
 const HIDDEN: &[&str] = &["mcp"];
 
 const COMMANDS: &[Command] = &[
-        Command("checking", "check", "check PATH [--json] [--goals F] [--sugar] [--cache]   parse and check (the default)"),
+        Command("checking", "check", "check PATH [--json] [--goals F] [--sugar] [--cache] [--against OTHER] [--strict]   parse and check (the default)"),
         Command("checking", "project", "project DIR                                          the same, grouped by file"),
         Command("reasoning", "engine", "engine PATH [--json]         held, conditional, blocked, chains, gates"),
         Command("reasoning", "argue", "argue PATH [--against OTHER] which conclusions survive attack"),
@@ -246,19 +246,20 @@ const COMMANDS: &[Command] = &[
         Command("reasoning", "derive", "derive PATH                  which conclusions are grounded in facts"),
         Command("reasoning", "debt", "debt PATH [--all]            which facts transitively gate a conclusion"),
         Command("reasoning", "impact", "impact PATH                  dead facts, single support, load-bearing nodes"),
-        Command("reasoning", "next", "next PATH                    open decisions, ranked by what they touch"),
+        Command("reasoning", "next", "next PATH [--json]            open decisions, ranked by what they touch"),
         Command("reasoning", "ask", "ask PATH [--json] [--one]   the next question, ranked by what one answer settles"),
         Command("reasoning", "novel", "novel PATH --attribute N [--holds IDS]\n                               is a proposed attribute new, redundant, or a recombination"),
         Command("reasoning", "meet", "meet PATH LEFT RIGHT        the most general form two declarations share, and the holes it leaves"),
-        Command("reasoning", "shape", "shape PATH [--top N] [--depth D] [--layers] [--against OTHER]  the forms declarations share"),
+        Command("reasoning", "shape", "shape PATH [--top N] [--depth D] [--layers] [--against OTHER [--near N]] [--json]  the forms declarations share"),
         Command("reasoning", "imply", "imply PATH [--json] [--max-antecedent N] [--min-support N]"),
         Command("reasoning", "abstract", "abstract PATH [--min-support N] [--max-intent N]\n                               concepts the attributes already hold but nobody named"),
-        Command("reasoning", "cost", "cost PATH [--top N]          external confirmations the document demands"),
+        Command("reasoning", "cost", "cost PATH [--top N] [--json]  external confirmations the document demands"),
         Command("reasoning", "weigh", "weigh PATH [--threshold X]   confidence propagated by min/max"),
         Command("reasoning", "fca", "fca PATH                     what a concept's examples share, and what they imply"),
         Command("reasoning", "cat", "cat PATH                     the pipeline read as a category"),
         Command("reasoning", "moves", "moves PATH                   six representation moves as candidates"),
         Command("reasoning", "assumptions", "assumptions PATH [--top N]   load-bearing declarations without support"),
+        Command("reasoning", "delta", "delta BEFORE AFTER [--json] [--record STORE --doc DOC [--action A]]  what changed between two `check --json` reports"),
         Command("reasoning", "whatif", "whatif PATH NAME             what falls when one assumption is removed"),
         Command("reasoning", "kinds", "kinds                        the obligation table: what each kind owes"),
         Command("repairing", "fix", "fix PATH [--apply OUT]          verified repair candidates, and applying them"),
@@ -273,7 +274,7 @@ const COMMANDS: &[Command] = &[
         Command("emitting", "pattern", "pattern PATH CONCEPT [--vars]       the structure that separates the examples"),
         Command("emitting", "audit", "audit PATH                          can a kind be written with a smaller vocabulary"),
         Command("emitting", "egraph", "egraph PATH [--write OUT]           merge equivalent declarations, rewrite references"),
-        Command("emitting", "mem", "mem [--recall CODE...] [--k N]      the case store: audit it, or recall situations"),
+        Command("emitting", "mem", "mem [--store FILE] [--recall CODE...] [--k N]  the case store: audit it, or recall situations"),
 ];
 
 fn usage() {
@@ -336,6 +337,11 @@ const VALUE_FLAGS: &[&str] = &[
     "--max-antecedent",
     "--min-support",
     "--max-intent",
+    "--record",
+    "--doc",
+    "--action",
+    "--store",
+    "--near",
 ];
 
 impl Args {
@@ -443,13 +449,17 @@ pub fn run() -> i32 {
         return cmd_kinds();
     }
     if command == "mem" {
+        let store = args
+            .option("--store")
+            .map(PathBuf::from)
+            .unwrap_or_else(crate::cases::store_path);
         let codes: Vec<String> = args.positional.clone();
         let recall = if args.has("--recall") {
             Some(codes.as_slice())
         } else {
             None
         };
-        return cmd_mem(recall, args.count("--k", 3));
+        return cmd_mem(&store, recall, args.count("--k", 3));
     }
     let Some(target) = args.at(0) else {
         println!("usage: tsare {command} FILE");
@@ -464,6 +474,7 @@ pub fn run() -> i32 {
             args.option("--goals"),
             args.has("--cache"),
             args.option("--against"),
+            args.has("--strict"),
         ),
         "engine" => cmd_engine(&path, args.has("--json")),
         "suggest" => cmd_suggest(&path, args.has("--json")),
@@ -479,7 +490,7 @@ pub fn run() -> i32 {
         "derive" => cmd_derive(&path),
         "debt" => cmd_debt(&path, args.has("--all")),
         "impact" => cmd_impact(&path),
-        "next" => cmd_next(&path),
+        "next" => cmd_next(&path, args.has("--json")),
         "ask" => cmd_ask(&path, &args),
         "novel" => cmd_novel(&path, &args),
         "meet" => cmd_meet(&path, &args),
@@ -489,9 +500,11 @@ pub fn run() -> i32 {
             args.count("--depth", 0),
             args.has("--layers"),
             args.option("--against"),
+            args.count("--near", 0),
+            args.has("--json"),
         ),
         "imply" => cmd_imply(&path, &args),
-        "cost" => cmd_cost(&path, args.count("--top", 8)),
+        "cost" => cmd_cost(&path, args.count("--top", 8), args.has("--json")),
         "weigh" => cmd_weigh(&path, args.number("--threshold", 0.7)),
         "cat" => cmd_cat(&path),
         "moves" => cmd_moves(&path),
@@ -513,6 +526,20 @@ pub fn run() -> i32 {
                 return 2;
             };
             cmd_map(&path, Path::new(right), args.count("--top", 8))
+        }
+        "delta" => {
+            let Some(after) = args.at(1) else {
+                println!("usage: tsare delta BEFORE.json AFTER.json");
+                return 2;
+            };
+            cmd_delta(
+                &path,
+                Path::new(after),
+                args.has("--json"),
+                args.option("--record"),
+                args.option("--doc"),
+                args.option("--action"),
+            )
         }
         "induce" => cmd_induce(&path),
         "propose" => {

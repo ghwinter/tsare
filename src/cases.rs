@@ -12,19 +12,100 @@
 //! checks the store itself: a memory that cannot say which of its entries are stale is a rumour.
 
 use std::collections::HashSet;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::cache::SALT;
 use crate::json::{self, Json};
 
+/// Where the store is when the caller does not name one.  Nothing is written there unless a
+/// command was handed `--record`, so the file appearing at all is the caller's decision.
 pub fn store_path() -> PathBuf {
     PathBuf::from(".tsare").join("cases.jsonl")
 }
 
-pub fn load() -> Vec<Json> {
-    std::fs::read_to_string(store_path())
+pub fn load(store: &Path) -> Vec<Json> {
+    std::fs::read_to_string(store)
         .map(|text| json::parse_lines(&text))
         .unwrap_or_default()
+}
+
+/// What a report says, in the four things a case remembers about it.
+struct Summary {
+    errors: usize,
+    warnings: usize,
+    codes: Vec<String>,
+}
+
+fn summary(report: &str) -> Result<Summary, String> {
+    let parsed = json::parse(report).map_err(|error| format!("not a report: {error}"))?;
+    let number = |key: &str| -> usize {
+        parsed
+            .get(key)
+            .and_then(Json::as_f64)
+            .unwrap_or(0.0)
+            .max(0.0) as usize
+    };
+    let mut codes: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+    for item in parsed
+        .get("diagnostics")
+        .and_then(Json::as_arr)
+        .unwrap_or(&[])
+    {
+        if let Some(code) = item.get("code").and_then(Json::as_str) {
+            codes.insert(code.to_string());
+        }
+    }
+    Ok(Summary {
+        errors: number("errors"),
+        warnings: number("warnings"),
+        codes: codes.into_iter().collect(),
+    })
+}
+
+/// One recorded outcome, as a line of JSON.  Everything in it is read from the two reports or from
+/// the flags; the agent that made the edit supplies only the name of its own action, because a
+/// memory narrated by the party being judged is the thing the audit exists to catch.
+pub fn entry(
+    before: &str,
+    after: &str,
+    doc: &str,
+    action: &str,
+    checker: &str,
+) -> Result<String, String> {
+    let left = summary(before)?;
+    let right = summary(after)?;
+    let block = |item: &Summary| {
+        Json::Obj(vec![
+            ("errors".to_string(), Json::Num(item.errors as f64)),
+            ("warnings".to_string(), Json::Num(item.warnings as f64)),
+        ])
+    };
+    let codes = Json::Arr(
+        left.codes
+            .iter()
+            .cloned()
+            .map(Json::Str)
+            .collect::<Vec<Json>>(),
+    );
+    Ok(json::serialize(&Json::Obj(vec![
+        ("doc".to_string(), Json::Str(doc.to_string())),
+        ("codes".to_string(), codes),
+        ("action".to_string(), Json::Str(action.to_string())),
+        ("before".to_string(), block(&left)),
+        ("after".to_string(), block(&right)),
+        ("checker".to_string(), Json::Str(checker.to_string())),
+    ])))
+}
+
+/// Append one entry.  The store is a line-per-case file so that a crash loses at most one case and
+/// a reader can skip a malformed line instead of discarding the whole memory.
+pub fn append(store: &Path, line: &str) -> std::io::Result<()> {
+    use std::io::Write;
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(store)?;
+    writeln!(file, "{line}")
 }
 
 fn pair(entry: &Json, side: &str) -> (f64, f64) {
@@ -33,14 +114,15 @@ fn pair(entry: &Json, side: &str) -> (f64, f64) {
         .and_then(|item| item.get("errors"))
         .and_then(|item| item.as_f64())
         .unwrap_or(0.0);
-    let cost = block
-        .and_then(|item| item.get("cost"))
+    let warnings = block
+        .and_then(|item| item.get("warnings"))
         .and_then(|item| item.as_f64())
         .unwrap_or(0.0);
-    (errors, cost)
+    (errors, warnings)
 }
 
-/// Fewer errors, then less cost: the pair is compared the way the reference compares tuples.
+/// Fewer errors, then fewer warnings: the same order the repair gate uses, so that a case that the
+/// engine would have accepted outranks one it would have refused.
 pub fn improved(entry: &Json) -> bool {
     let before = pair(entry, "before");
     let after = pair(entry, "after");
@@ -76,9 +158,9 @@ pub struct Recalled {
     pub improved: bool,
 }
 
-pub fn recall(codes: &[String], k: usize) -> Vec<Recalled> {
+pub fn recall(store: &Path, codes: &[String], k: usize) -> Vec<Recalled> {
     let mut scored: Vec<(f64, bool, Json)> = Vec::new();
-    for entry in load() {
+    for entry in load(store) {
         let score = overlap(codes, &codes_of(&entry));
         if score > 0.0 {
             scored.push((score, improved(&entry), entry));
@@ -108,8 +190,8 @@ pub struct Audit {
     pub orphans: usize,
 }
 
-pub fn audit() -> Audit {
-    let entries = load();
+pub fn audit(store: &Path) -> Audit {
+    let entries = load(store);
     let expired = entries
         .iter()
         .filter(|entry| entry.get("checker").and_then(|value| value.as_str()) != Some(SALT))
@@ -122,13 +204,25 @@ pub fn audit() -> Audit {
         .iter()
         .filter(|entry| pair(entry, "after") == pair(entry, "before"))
         .count();
+    // A store and the documents it remembers belong to the same tree, so a relative path is read
+    // from the store's directory and not from wherever the reader happens to stand: an audit that
+    // calls every case orphan because it was run from another shell teaches nobody anything.
+    let base = store.parent().unwrap_or(Path::new("."));
     let orphans = entries
         .iter()
         .filter(|entry| {
             entry
                 .get("doc")
                 .and_then(|value| value.as_str())
-                .map(|doc| !PathBuf::from(doc).exists())
+                .map(|doc| {
+                    let path = Path::new(doc);
+                    let resolved = if path.is_absolute() {
+                        path.to_path_buf()
+                    } else {
+                        base.join(path)
+                    };
+                    !resolved.exists()
+                })
                 .unwrap_or(true)
         })
         .count();

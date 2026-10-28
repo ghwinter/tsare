@@ -32,6 +32,18 @@ The crate number may move as often as the work needs:
 arriving afterwards; what stops is the rewriting of documents. A version is not a date and not a
 count of work: a number that rises because a week passed says nothing about what changed.
 
+## Exit codes
+
+| code | meaning |
+| --- | --- |
+| `0` | the document is as checkable as it claims: no errors, and warnings are advice |
+| `1` | an error, a file that is not there, or a warning under `--strict` |
+| `2` | the invocation is wrong: it names no document, or names a command that does not exist |
+
+`--strict` turns every warning into a gate. Use it where a document is meant to be finished: a
+loop that reads only the number then cannot ignore `W-UNCONFIRMED`, which is the engine's way of
+saying that a declaration rests on a model's word.
+
 ## Commands
 
 Every command reads files and prints text. Where a command also has a machine contract it
@@ -39,25 +51,28 @@ answers `--json`.
 
 | command | what it answers | JSON |
 | --- | --- | --- |
-| `check FILE\|DIR` | which declarations are well formed; `--goals`, `--sugar`, `--cache`, `--against OTHER` | yes |
+| `check FILE\|DIR` | which declarations are well formed; `--goals`, `--sugar`, `--cache`, `--against OTHER`, `--strict` | yes |
 | `engine FILE\|DIR` | held, conditional, blocked, chains, gates | yes |
 | `argue FILE [--against OTHER]` | which conclusions survive attack; with `--against`, the attack graph is the merge | |
 | `confront LEFT RIGHT` | which rules attack across the pair, and which attacks nobody answered; exit 1 when `LEFT` leaves one unanswered | |
 | `derive FILE` | which conclusions are grounded in facts | |
 | `debt FILE [--all]` | which facts transitively gate a conclusion | |
 | `impact FILE` | dead facts, single support, load-bearing nodes | |
-| `next FILE` | open decisions ranked by what they touch | |
+| `next FILE [--json]` | open decisions ranked by what they touch | yes |
 | `ask FILE [--json] [--one]` | the next question the document needs: a gap in a list, two facts nothing tells apart, or a concept whose examples look alike; `--one` gives the question that settles the most | yes |
 | `novel FILE --attribute N [--holds IDS]` | new, redundant, or a recombination: whether a proposed attribute is a distinction the recorded vocabulary already contains | |
+| `shape FILE [--top N] [--depth D] [--layers] [--against OTHER [--near N]] [--json]` | the forms declarations share, at a depth; `--layers` the forms that cross a layer, `--against` the forms two documents differ in, `--near` the closest unshared forms and how close they are | yes |
+| `meet FILE LEFT RIGHT` | the most general form two declarations share, and the fields where they differ | |
 | `imply FILE [--json] [--max-antecedent N] [--min-support N]` | the laws the attribute table already holds, with support and a counterexample to the converse; bounded on purpose | yes |
 | `abstract FILE [--min-support N] [--max-intent N]` | concept declarations the attribute table supports but nobody wrote: extent, closed intent, and the witness pair that separates them | |
-| `cost FILE` | external confirmations the document demands, and its longest chain | |
+| `cost FILE [--top N] [--json]` | external confirmations the document demands, and its longest chain | yes |
 | `weigh FILE` | confidence propagated by min/max, with no probability | |
 | `kinds` | the obligation table: what each kind owes | |
 | `induce FILE` | the clause each concept's examples support, or why none exists | |
 | `pattern FILE CONCEPT [--vars]` | the structure that separates a concept's examples | |
 | `moves FILE` | six representation moves as concrete candidates | |
 | `assumptions FILE` | load-bearing declarations without support | |
+| `delta BEFORE AFTER [--record STORE --doc DOC [--action A]]` | what changed between two `check --json` reports, keyed by declaration; `--record` appends the change to a case store | yes |
 | `whatif FILE NAME` | what falls when one assumption is removed | |
 | `graph FILE [--out]` | the typed relation net as Mermaid | |
 | `map LEFT RIGHT` | structure mapping between two documents | |
@@ -70,7 +85,7 @@ answers `--json`.
 | `apply FILE [--dry-run]` | machine repairs spliced and recompiled | |
 | `build FILE\|DIR [--out] [--goals]` | obligations, learned clauses, open items, notes, predicates | |
 | `outline FILE` | the document read as prose: each field quoted, its ground and its diagnostics in the margin | |
-| `mem [--recall CODE...] [--k N]` | the case store: audit it, or recall similar situations | |
+| `mem [--store FILE] [--recall CODE...] [--k N]` | the case store: audit it, or recall similar situations | |
 | `propose FILE --proposals FILE.json [--policy ...]` | gate values an outside model wants to fill into holes | |
 | `fca FILE` | what a concept's positives share, and which facts the attributes imply | |
 
@@ -96,7 +111,7 @@ the cheaper way to keep the tool reachable.
 ```json
 {
   "diagnostics": [
-    {"code": "E-UNDEFINED", "severity": "error", "file": "02-claims.tsare",
+    {"code": "E-UNDEFINED", "severity": "error", "name": "P_RATE", "file": "02-claims.tsare",
      "line": 2, "col": 41, "message": "..."}
   ],
   "errors": 1, "warnings": 2
@@ -104,6 +119,11 @@ the cheaper way to keep the tool reachable.
 ```
 
 `file` is required. Attribution by parsing message text is not allowed.
+
+`name` is the declaration the diagnostic is about, and it is the only field a diff can be keyed
+by: a line moves whenever anything above it is edited, a name does not.  A diagnostic about the
+file rather than about a declaration (a parse error) carries an empty name.  `delta` compares two
+of these reports by `(name, code)` and says what went and what arrived.
 
 ### `engine --json FILE|DIR`
 
@@ -134,6 +154,65 @@ Applicability is one of `MachineApplicable`, `MaybeIncorrect`, `HasPlaceholders`
 A suggestion names a `span` and a `replacement` for exactly that span. A deletion is an empty
 replacement over the removed declaration. `span` may be `null` when the repair inserts
 something with no existing declaration to replace.
+
+### `delta --json BEFORE AFTER`
+
+```json
+{
+  "before": 17, "after": 16,
+  "gone": [{"name": "F_ENUM_FORM", "code": "W-UNCONFIRMED", "count": 1}],
+  "appeared": []
+}
+```
+
+Both files are the output of `check --json`. A complaint is identified by `(name, code)` and
+counted, so a warning that moved down the file is not a change. The report says what changed, not
+whether the change is an improvement: fewer warnings can also mean a document that stopped
+demanding a confirmation, which is the opposite.
+
+### `next`, `cost`, `shape`
+
+```json
+{"decisions": [{"label": "Q_GOAL (question)", "node": "Q_GOAL", "touches": 3}]}
+{"total": 20, "depth": 4, "chain": ["F_A", "W_B"], "by_kind": [{"kind": "fact", "count": 13}], "rows": [{"name": "F_A", "needs": ["a measured value"]}]}
+{"depth": 0, "total": 44, "forms": [{"kind": "fact", "signature": "...", "members": ["F_A"], "variables": [{"field": "evidence", "values": ["user"]}]}]}
+```
+
+`shape --layers` answers `{"depth": D, "fibres": [...]}`; `shape --against OTHER` answers
+`{"depth": D, "shared": [...], "only_here": [...], "only_there": [...]}`. In both of those a name
+is written `<kind> <name>`, joined by one space.
+
+`--near N` adds `"near": [{"here": ..., "there": ..., "score": ...}]`: for each form only one
+document has, the closest form only the other has, scored by the share of positions -- kind and
+`field:shape` -- they both name. A score is an approximation, not an equivalence: two forms can
+score `1.00` and still mean different things, which is why the exact lists above are not replaced.
+
+`--top` shapes the text. `--json` carries every row, because a machine that asked for the data did
+not ask for a sample.
+
+## The case store
+
+A repair can be remembered, and a later run can ask what worked. `delta --record STORE --doc DOC`
+appends one line:
+
+```json
+{"doc": "claim.tsare", "codes": ["W-UNCONFIRMED"], "action": "model",
+ "before": {"errors": 0, "warnings": 2}, "after": {"errors": 0, "warnings": 1},
+ "checker": "tsare-0.2"}
+```
+
+Every field but `action` is read from the two reports. `action` is `mechanical`, `model`, `manual`
+or `unspecified`, and no free text is accepted: a sentence written by the agent that made the edit
+is the one thing the store cannot audit.
+
+The store is one line per case, appended to and never rewritten, so a malformed line is skipped
+instead of losing the memory around it. Nothing writes `.tsare/cases.jsonl` unless a command was
+handed `--record`.
+
+`mem --store FILE` audits a store: `expired` (written by another checker), `conflicting` (the same
+situation and action, opposite outcome), `no-op`, `unchanged`, and `orphans` (the document is gone;
+a relative `doc` is resolved from the store's directory, not from the shell). `mem --recall CODE...`
+ranks cases by how much of their code set overlaps the one given, improved cases first.
 
 ## The prelude
 

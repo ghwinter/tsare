@@ -2,6 +2,17 @@
 
 use super::*;
 
+/// Errors decide the exit code.  `--strict` lets a warning decide it too: a warning is the engine
+/// saying the document states something it cannot settle, and a loop that reads only the number
+/// should not be able to ignore that.
+fn exit_code(session: &crate::session::Session, strict: bool) -> i32 {
+    if strict && session.warnings() > 0 {
+        1
+    } else {
+        session.exit_code()
+    }
+}
+
 pub(crate) fn cmd_check(
     path: &Path,
     json: bool,
@@ -9,6 +20,7 @@ pub(crate) fn cmd_check(
     goals_path: Option<&str>,
     use_cache: bool,
     against: Option<&str>,
+    strict: bool,
 ) -> i32 {
     let loaded = if sugar {
         let raw = match fs::read_to_string(path) {
@@ -33,7 +45,7 @@ pub(crate) fn cmd_check(
         }
     };
     if let Some(kernel_path) = against {
-        return check_against(path, &loaded, Path::new(kernel_path), json);
+        return check_against(path, &loaded, Path::new(kernel_path), json, strict);
     }
     let display = path.display().to_string();
     let mut session = crate::session::Session::new(display)
@@ -87,7 +99,7 @@ pub(crate) fn cmd_check(
     }
     if json {
         println!("{}", session.json());
-        return session.exit_code();
+        return exit_code(&session, strict);
     }
     print!("{}", session.text());
     if let Some((covered, total)) = coverage {
@@ -101,10 +113,16 @@ pub(crate) fn cmd_check(
         );
     }
     println!("{}", session.summary());
-    session.exit_code()
+    exit_code(&session, strict)
 }
 
-pub(crate) fn check_against(path: &Path, loaded: &Loaded, kernel_path: &Path, json: bool) -> i32 {
+pub(crate) fn check_against(
+    path: &Path,
+    loaded: &Loaded,
+    kernel_path: &Path,
+    json: bool,
+    strict: bool,
+) -> i32 {
     let kernel = match load_for_check(kernel_path) {
         Ok(kernel) => kernel,
         Err(error) => return fail(error),
@@ -163,7 +181,7 @@ pub(crate) fn check_against(path: &Path, loaded: &Loaded, kernel_path: &Path, js
     session.extend(diagnostics);
     if json {
         println!("{}", session.json());
-        return session.exit_code();
+        return exit_code(&session, strict);
     }
     print!("{}", session.text());
     let kernel_warnings = merged_diagnostics
@@ -174,7 +192,7 @@ pub(crate) fn check_against(path: &Path, loaded: &Loaded, kernel_path: &Path, js
         println!("kernel: {kernel_warnings} warning(s) of its own");
     }
     println!("{}", session.summary());
-    session.exit_code()
+    exit_code(&session, strict)
 }
 
 pub(crate) fn cmd_project(path: &Path) -> i32 {

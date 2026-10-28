@@ -160,9 +160,10 @@ impl Session {
         let mut lines: Vec<String> = Vec::new();
         for item in self.sorted() {
             lines.push(format!(
-                "    {{\"code\": \"{}\", \"severity\": \"{}\", \"file\": \"{}\", \"line\": {}, \"col\": {}, \"message\": \"{}\"}}",
+                "    {{\"code\": \"{}\", \"severity\": \"{}\", \"name\": \"{}\", \"file\": \"{}\", \"line\": {}, \"col\": {}, \"message\": \"{}\"}}",
                 item.code,
                 Self::severity(item.code),
+                crate::cli::escape(item.witness.as_deref().unwrap_or("")),
                 crate::cli::escape(&self.file_of(item)),
                 item.line,
                 item.col,
