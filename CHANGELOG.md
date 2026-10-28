@@ -110,6 +110,13 @@ All notable changes are recorded here. The format follows
   the checker operates on structure, and the text of a `claim` is an opaque string to every command.
   The twelve kinds are named for what they are -- an epistemic type system, where each kind owes an
   obligation rather than a data shape.
+- `generalize` — subsumption between declaration forms, and the meet it induces. A form with holes
+  is a pattern; one pattern subsumes another when every constraint of the first is met by the
+  second; the meet is the fields both agree on, with everything else free. That is anti-unification
+  over shapes, and the three laws that define a meet are checked as tests (it is below both inputs,
+  and anything below both is below it). It generalises over **shapes**, not content: two facts with
+  different sentences still share `claim:text`. Different kinds have no meet, and the API says so by
+  returning nothing rather than inventing a top.
 ### Added
 
 - `E-SUPERSEDE-UNDEFINED` — a `supersedes` field that names nothing, or names itself. A withdrawal

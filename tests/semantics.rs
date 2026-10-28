@@ -1463,7 +1463,7 @@ fn a_retired_kernel_law_stops_grounding() {
 fn declarations_of_the_same_form_fall_into_one_class() {
     let source = concat!(
         "fact F_A { claim: \"a\", evidence: tool(\"t\") }\n",
-        "fact F_B { claim: \"b\", evidence: tool(\"t\") }\n",
+        "fact F_B { claim: \"b\", evidence: model }\n",
         "proposition P_ONE { statement: \"one\", from: [F_A] }\n",
         "proposition P_TWO { statement: \"two\", from: [F_B] }\n",
         "warrant W_ONE { claim: \"r\", from: [F_A], to: P_ONE }\n",
@@ -1714,4 +1714,66 @@ fn every_functor_names_a_code_that_actually_fires() {
     for functor in tsare::cat::FUNCTORS {
         assert!(!functor.law.is_empty() && !functor.maps.is_empty());
     }
+}
+
+/// Subsumption is a preorder and `meet` is its greatest lower bound, so the three laws that define a
+/// meet are checked: the meet is below both inputs, and anything below both is below the meet.  The
+/// point of stating them is that anti-unification can then be used without trusting the
+/// implementation's taste.
+#[test]
+fn the_meet_of_two_forms_is_a_greatest_lower_bound() {
+    let source = concat!(
+        "fact F_A { claim: \"a\", evidence: tool(\"t\") }\n",
+        "fact F_B { claim: \"b\", evidence: model }\n",
+        "proposition P_ONE { statement: \"one\", from: [F_A] }\n",
+        "proposition P_TWO { statement: \"two\", from: [F_A] }\n",
+        "warrant W_ONE { claim: \"r\", from: [F_A], to: P_ONE }\n",
+        "warrant W_TWO { claim: \"s\", from: [F_A], to: P_TWO, basis: [F_A] }\n",
+    );
+    let declared = decls(source);
+    let program = Program::new(&declared);
+    let one = tsare::generalize::pattern_of(&program, "W_ONE").expect("W_ONE");
+    let _ = tsare::generalize::pattern_of(&program, "W_TWO").expect("W_TWO");
+    let same = tsare::generalize::pattern_of(&program, "F_A").expect("F_A");
+    let other = tsare::generalize::pattern_of(&program, "F_B").expect("F_B");
+
+    // reflexivity: a form subsumes itself
+    assert!(tsare::generalize::subsumes(&one, &one));
+
+    // The meet generalises over shapes, not over content: two facts with different sentences still
+    // share the shape `claim:text`, while `tool("t")` and `model` are different shapes and become
+    // the free position.
+    let meet = tsare::generalize::meet(&same, &other).expect("same kind has a meet");
+    assert!(tsare::generalize::subsumes(&meet, &same));
+    assert!(tsare::generalize::subsumes(&meet, &other));
+    assert!(
+        matches!(meet.fields.get("claim"), Some(tsare::generalize::Slot::Pinned(shape)) if shape == "text"),
+        "text is the shared shape, whatever the sentences say: {}",
+        tsare::generalize::text(&meet)
+    );
+    assert!(
+        matches!(
+            meet.fields.get("evidence"),
+            Some(tsare::generalize::Slot::Variable)
+        ),
+        "the evidence shapes differ, so the position is free: {}",
+        tsare::generalize::text(&meet)
+    );
+
+    // greatest lower bound: anything below both is below the meet
+    for candidate in [&same, &other, &meet] {
+        if tsare::generalize::subsumes(candidate, &same)
+            && tsare::generalize::subsumes(candidate, &other)
+        {
+            assert!(
+                tsare::generalize::subsumes(candidate, &meet),
+                "{} is not below the meet",
+                tsare::generalize::text(candidate)
+            );
+        }
+    }
+
+    // different kinds have no meet: the preorder is partial, and the answer says so
+    let rule = one.clone();
+    assert!(tsare::generalize::meet(&rule, &same).is_none());
 }

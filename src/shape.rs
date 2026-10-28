@@ -25,7 +25,7 @@ pub struct ShapeGroup {
 /// The shape of a value at a given depth.  At depth 0 a reference is its target's kind; at depth
 /// `k+1` it is the target's own signature at depth `k`, so the quotient refines: two declarations
 /// that look alike at depth 0 stop being alike when what they point at turns out to differ.
-fn shape_of(program: &Program, value: &Val, depth: usize) -> String {
+pub(crate) fn shape_of(program: &Program, value: &Val, depth: usize) -> String {
     match value {
         Val::Str(_) => "text".to_string(),
         Val::Num(_) => "number".to_string(),
