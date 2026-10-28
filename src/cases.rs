@@ -185,7 +185,8 @@ pub struct Audit {
     pub entries: usize,
     pub expired: usize,
     pub conflicting: usize,
-    pub noop: usize,
+    /// The counts changed but did not improve: a regression, not a no-op.
+    pub regressed: usize,
     pub unchanged: usize,
     pub orphans: usize,
 }
@@ -196,7 +197,7 @@ pub fn audit(store: &Path) -> Audit {
         .iter()
         .filter(|entry| entry.get("checker").and_then(|value| value.as_str()) != Some(SALT))
         .count();
-    let noop = entries
+    let regressed = entries
         .iter()
         .filter(|entry| !improved(entry) && pair(entry, "after") != pair(entry, "before"))
         .count();
@@ -249,7 +250,7 @@ pub fn audit(store: &Path) -> Audit {
         entries: entries.len(),
         expired,
         conflicting,
-        noop,
+        regressed,
         unchanged,
         orphans,
     }

@@ -444,3 +444,26 @@ fn a_command_that_reports_an_error_exits_nonzero() {
     }
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn a_case_that_got_worse_is_not_called_a_no_op() {
+    // Defect: cases::audit counted "not improved and the counts changed" as `noop` and printed
+    // "changed nothing either way". That bucket is a regression: the record it is derived from
+    // has different before and after counts.
+    let dir = temp("mem-regression");
+    let store = dir.join("cases.jsonl");
+    std::fs::write(
+        &store,
+        format!(
+            "{{\"doc\": \"gone.tsare\", \"codes\": [\"W-UNCONFIRMED\"], \"action\": \"model\", \"before\": {{\"errors\": 0, \"warnings\": 0}}, \"after\": {{\"errors\": 0, \"warnings\": 1}}, \"checker\": \"{}\"}}\n",
+            tsare::cache::SALT
+        ),
+    )
+    .expect("write the store");
+    let output = run_in(root(), &["mem", "--store", store.to_str().unwrap()]);
+    let text = stdout(&output);
+    assert!(text.contains("regressed:"), "{text}");
+    assert!(text.contains("not for the better"), "{text}");
+    assert!(!text.contains("no-op:"), "{text}");
+    let _ = std::fs::remove_dir_all(&dir);
+}

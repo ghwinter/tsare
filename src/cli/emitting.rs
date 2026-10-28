@@ -488,7 +488,10 @@ pub(crate) fn cmd_mem(store: &Path, recall: Option<&[String]>, k: usize) -> i32 
         "conflicting: {}  (same situation and action, opposite outcome)",
         report.conflicting
     );
-    println!("no-op:       {}  (changed nothing either way)", report.noop);
+    println!(
+        "regressed:   {}  (the counts changed, not for the better)",
+        report.regressed
+    );
     println!("unchanged:   {}", report.unchanged);
     println!(
         "orphans:     {}  (document no longer exists)",

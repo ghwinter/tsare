@@ -210,8 +210,10 @@ instead of losing the memory around it. Nothing writes `.tsare/cases.jsonl` unle
 handed `--record`.
 
 `mem --store FILE` audits a store: `expired` (written by another checker), `conflicting` (the same
-situation and action, opposite outcome), `no-op`, `unchanged`, and `orphans` (the document is gone;
-a relative `doc` is resolved from the store's directory, not from the shell). `mem --recall CODE...`
+situation and action, opposite outcome), `regressed` (the counts changed but did not improve),
+`unchanged` (the counts are identical), and `orphans` (the document is gone; a relative `doc` is
+resolved from the store's directory, not from the shell). `regressed` used to be printed as
+`no-op`, which was the opposite of what the filter tests: a no-op is `unchanged`. `mem --recall CODE...`
 ranks cases by how much of their code set overlaps the one given, improved cases first.
 
 ## The prelude
