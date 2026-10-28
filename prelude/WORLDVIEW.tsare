@@ -1,4 +1,4 @@
-# OUTLINE.mf -- a worldview, written in the language and checked by the language.
+# WORLDVIEW.tsare -- a worldview, written in the language and checked by the language.
 #
 # Not a manifesto.  Every sentence is a field, every ground is a reference, every category
 # carries a counterexample, and the claim that the categories are exhaustive is itself a
@@ -94,7 +94,7 @@ question Q_STANDING {
 hypothesis H_ONLY_EXTERNAL {
   assumes: [P_THESIS],
   predicts: "no claim ever stands on a cited-but-unapplied ground alone",
-  test: "find a claim that only cites a law and is accepted; HOLE.mf does exactly that",
+  test: "find a claim that only cites a law and is accepted",
   verdict: open,
   layer: L_SAID
 }
@@ -102,7 +102,7 @@ hypothesis H_ONLY_EXTERNAL {
 hypothesis H_POINTER_COUNTS {
   assumes: [C_POINTER],
   predicts: "a claim citing an unrelated law is accepted as grounded, because only resolution is checked",
-  test: "tsare check HOLE.mf --against KERNEL.mf admits P_TASTE and reports no E-UNPRINCIPLED",
+  test: "check a document whose only ground is a cited law: it is admitted, and no E-UNPRINCIPLED is reported",
   rival: H_ONLY_EXTERNAL,
   verdict: open,
   layer: L_SAID

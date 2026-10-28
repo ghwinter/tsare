@@ -34,3 +34,14 @@ jobs:
       - name: nothing is untracked
         if: matrix.os == 'ubuntu-latest'
         run: test -z "$(git status --porcelain)"
+
+      # A tracked file must not carry a fact about the machine it was written on.  A drive letter or
+      # a home directory is wrong in every other checkout, and it is the kind of detail that gets
+      # into a document once and then gets copied.  The SKILL shipped one; this is the alarm for it.
+      - name: no machine paths
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          if git grep -n -I -E '(^|[^[:alnum:]_])([A-Za-z]:\\|/Users/|/home/[a-z])' -- . ':!*.lock' ':!.github/**'; then
+            echo 'a tracked file names a machine path; use a path relative to the repository root'
+            exit 1
+          fi

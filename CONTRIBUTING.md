@@ -20,8 +20,8 @@ cargo run --release --quiet -- check SELF.tsare docs/REPO.tsare
    says so instead of guessing.
 2. Every diagnostic code has an entry in `src/explain.rs`; `tests/semantics.rs` fails if one
    does not.
-3. A new check needs the document that would have caught it: add it to `tests/fixtures/` or
-   `docs/rounds/`.
+3. A new check needs the document that would have caught it: add it to `tests/fixtures/`, the
+   corpus every check runs against.
 4. Output changes are golden changes. Run `UPDATE_GOLDEN=1 cargo test`, then read the diff
    before committing it.
 5. Negative results stay in the repository. If the compiler refuted a hypothesis, the

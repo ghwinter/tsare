@@ -1,9 +1,9 @@
-# SELF.mf -- the reply that proposed this document, written as declarations.
+# SELF.tsare -- the reply that proposed this document, written as declarations.
 #
 # This file exists so the reply can be checked by the thing it describes.  Compile it:
 #
-#     tsare check SELF.mf
-#     tsare derive SELF.mf
+#     tsare check SELF.tsare
+#     tsare derive SELF.tsare
 #
 # Every fact below is model-supplied.  The checker is expected to say so; only the user can
 # discharge that, and the document says which claims are waiting.
@@ -56,7 +56,7 @@ fact F_MORE_ILP {
 }
 
 fact F_ADVICE_PROSE {
-  claim: "generated advice prose made repair worse in our own experiment, not better",
+  claim: "generated advice prose is an addition no checker here can verify",
   evidence: model,
   attrs: { checker_can_verify: false, adds: advice }
 }
@@ -67,7 +67,7 @@ fact F_PARTITION_IS_ADDITION {
   attrs: { checker_can_verify: true, adds: classification }
 }
 
-# The three things the reply told me not to add, and the one that looks the same but is not:
+# Three things were proposed and rejected, and one that looks the same but is not:
 # the criterion is decidability, not novelty.  Without the negative example this concept
 # would be "any addition", and the list would be worthless.
 concept C_REFUSE_NOW {
@@ -235,7 +235,7 @@ proposition P_TYPE_IS_BIAS {
 }
 
 warrant W_TYPE_IS_BIAS {
-  claim: "mode declarations are an add-on in Progol and a well-formedness rule here, so the two readings name the same constraint",
+  claim: "mode declarations are an add-on in some ILP systems and a well-formedness rule here, so the two readings name the same constraint",
   from: [F_BIAS_DIMENSIONS, F_ILP_CONTROL],
   to: P_TYPE_IS_BIAS,
   basis: [F_BIAS_DIMENSIONS]

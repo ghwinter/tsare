@@ -66,7 +66,7 @@ release; `--explain CODE` explains any diagnostic it prints.
 
 ## First document
 
-```mf
+```tsare
 fact F_TRACE {
   claim: "the trace shows 14ms frames",
   evidence: tool("trace")

@@ -220,8 +220,7 @@ checked against what was declared.
 
 `--policy` decides how much a fill must earn: `harmless` (the three above), `strict` (an
 introduced diagnostic is a rejection), `improve` (something besides the hole must get better).
-The default is `harmless`. None of the three looks at content, and the experiments in
-`experiments/hole-filling` measure what that costs.
+The default is `harmless`. None of the three looks at content.
 
 ## Deliberate choices about the text
 

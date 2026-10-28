@@ -1,4 +1,4 @@
-# CLAIM.mf -- an external claim, checked against the kernel.
+# VIOLATION.tsare -- an external claim, checked against the kernel.
 #
 # It is not a bad claim. It is a claim that skipped the admissions the kernel asks for: it lives
 # in the governed layer and stands on none of that layer's laws, its number has no instrument,

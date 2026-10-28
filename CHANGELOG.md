@@ -8,8 +8,7 @@ All notable changes are recorded here. The format follows
 
 ### Changed
 
-- The document extension is `.tsare`. `.mf` collided with Java manifests and carried the name of
-  a project this one split away from; 105 documents were renamed and every reference with them.
+- The document extension is `.tsare`. `.mf` collided with Java manifests.
   The header line is unchanged (`tsare 1`), because the tool and the format now share a name. The
   generated `predicates.py` header also stopped saying `mf7`, which nothing had noticed.
 
@@ -98,6 +97,10 @@ All notable changes are recorded here. The format follows
   a form whose members also agree on what they point at. Measured: no document in this repository
   has a fibre at depth 0 today -- the prelude files that use `layer:` are too heterogeneous for two
   declarations to share a shape -- so the behaviour is pinned by a crafted test, not by the corpus.
+- No tracked file names the machine it was written on. `.github/workflows/ci.yml` now fails on a
+  drive letter or a home directory in any tracked file (`:!.github/**` excluded so the guard does not
+  match its own pattern). The audit that prompted it found one: the skill document told the reader
+  the binary lives at an absolute path, which is wrong in every other checkout.
 ### Added
 
 - `E-SUPERSEDE-UNDEFINED` — a `supersedes` field that names nothing, or names itself. A withdrawal

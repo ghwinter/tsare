@@ -1,4 +1,4 @@
-# KERNEL.mf -- six principles, and the one document that signs for them.
+# KERNEL.tsare -- six principles, and the one document that signs for them.
 #
 # A kernel is not a constitution. It is a prelude: the shapes a claim has to have before the
 # engine will admit it, written in the same language the claim is written in, so the kernel
@@ -19,7 +19,7 @@ layer L_ENGINE {
 # 那个域在 Rust 里可枚举（specs.rs / explain.rs），在文档里没有对应声明，
 # 所以 `over:` 绑不到东西。这是内核的**表达力代价**，不是写法问题：
 # 引擎不能把自己的类型系统当量词域。真要修，只有两条路——把句子写弱（"本文档里的…"），
-# 或者给 kinds 建一份 .mf 镜像；后者正是我们反复拒绝的漂移源。
+# 或者给 kinds 建一份 .tsare 镜像；后者正是我们反复拒绝的漂移源。
 
 fact F_OBLIGATIONS {
   claim: "every declaration kind carries a decidable obligation",

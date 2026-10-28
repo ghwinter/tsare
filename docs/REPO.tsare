@@ -1,9 +1,9 @@
-# docs/REPO.mf -- the repository describing what it promises, and what checks it.
+# docs/REPO.tsare -- the repository describing what it promises, and what checks it.
 #
 # The code is one kind of claim.  Everything else in the repository also claims something
 # about the code, and each of those claims has a checker or it does not.
 #
-#     tsare check docs/REPO.mf
+#     tsare check docs/REPO.tsare
 
 layer L_REPO {
   name: "the repository itself",
@@ -34,13 +34,13 @@ fact F_EXPLAIN {
 }
 
 fact F_CI {
-  claim: "continuous integration runs formatting, clippy as errors, the tests, and compiles the examples and SELF.mf on three platforms",
+  claim: "continuous integration runs formatting, clippy as errors, the tests, and compiles the examples and SELF.tsare on three platforms",
   evidence: code(".github/workflows/ci.yml"),
   attrs: { checker: automated }
 }
 
 fact F_SELF {
-  claim: "SELF.mf compiles with no error and its concept learns a clause, or the test fails",
+  claim: "SELF.tsare compiles with no error and its concept learns a clause, or the test fails",
   evidence: code("tests/semantics.rs"),
   attrs: { checker: automated }
 }
@@ -52,8 +52,8 @@ fact F_ZERO_DEPENDENCIES {
 }
 
 fact F_EXAMPLES {
-  claim: "the examples compile with no diagnostic at all",
-  evidence: doc("examples/hello.mf")
+  claim: "the smallest fixture document compiles with no diagnostic at all",
+  evidence: doc("tests/fixtures/hello.tsare")
 }
 
 concept C_PROOF_CARRIER {
@@ -124,7 +124,7 @@ question Q_READ_ME {
 hypothesis H_COMPILE_README {
   assumes: [F_README_IS_PROSE],
   predicts: "the claims in the README can be written as declarations and checked like the rest",
-  test: "write docs/README.mf, compile it, and compare with the prose"
+  test: "write docs/README.tsare, compile it, and compare with the prose"
 }
 
 hypothesis H_KEEP_PROSE {

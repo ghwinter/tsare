@@ -7,8 +7,8 @@
 //!
 //! The search is bounded on purpose: antecedents are enumerated up to `--max-antecedent`
 //! attributes and implications need `--min-support` objects behind them.  A bounded search is
-//! not the canonical basis -- the Duquenne-Guigues basis may need larger antecedents -- so the
-//! output says what it searched instead of pretending to be complete.
+//! not the canonical basis -- a minimal basis may need larger antecedents -- so the output says
+//! what it searched instead of pretending to be complete.
 
 use std::collections::{BTreeMap, BTreeSet};
 
