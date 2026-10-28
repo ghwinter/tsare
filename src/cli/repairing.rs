@@ -21,11 +21,18 @@ pub(crate) fn cmd_suggest(path: &Path, json: bool) -> i32 {
     let rendered: Vec<String> = items
         .iter()
         .map(|item| {
+            // A single-file load leaves decl.file empty; the command knows the document it read,
+            // and a span without a file is not a location a caller can apply.
+            let file = if item.file.is_empty() {
+                path.display().to_string()
+            } else {
+                item.file.clone()
+            };
             format!(
                 "{{\"applicability\": \"{}\", \"message\": \"{}\", \"file\": \"{}\", \"span\": {{\"line\": {}, \"col\": {}, \"end_line\": {}, \"end_col\": {}}}, \"replacement\": \"{}\"}}",
                 item.applicability,
                 escape(&item.message),
-                escape(&item.file),
+                escape(&file),
                 item.line,
                 item.col,
                 item.end_line,

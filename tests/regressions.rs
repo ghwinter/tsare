@@ -488,3 +488,20 @@ fn the_help_screen_does_not_promise_exit_two_for_a_missing_file() {
     assert!(text.contains("2  usage problem"), "{text}");
     assert!(!text.contains("or a file could not be read"), "{text}");
 }
+
+#[test]
+fn suggest_json_names_the_file_its_span_indexes() {
+    // Defect: fix::Suggestion.file is empty for a single-file load (decl.file is only filled by
+    // the directory loader), and cmd_suggest printed it as-is. A consumer got line numbers and
+    // no document to apply them to, although PROTOCOL's example shows `file`.
+    let output = Command::new(binary())
+        .args(["suggest", "docs/repro/project-dir/b.tsare", "--json"])
+        .current_dir(root())
+        .output()
+        .expect("run");
+    let text = stdout(&output);
+    assert!(
+        text.contains("\"file\": \"docs/repro/project-dir/b.tsare\""),
+        "{text}"
+    );
+}
