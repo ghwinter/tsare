@@ -365,6 +365,8 @@ export function apply(ctx, raw) {
   ctx.on('tools/post-execute', async (exec, _result, next) => {
     const downstream = await next()
     trace(`post-execute ${exec.name}`)
+    // A resumed agent never fires agent/created; the first tool call is its registration point.
+    if (exec.agent) installBrief(exec.agent)
     // The ledger changes only through tools, so this is the one place the brief needs to look.
     try {
       await refreshBrief(exec.agent)
@@ -419,6 +421,9 @@ export function apply(ctx, raw) {
     } catch {
       // reported as a steer below rather than thrown: the turn must still be able to close
     }
+    // The last chance to register the line for a resumed agent: this turn's text may be empty,
+    // but the next turn's snapshot will carry it.
+    installBrief(agent)
     void refreshBrief(agent)
     const verdict = await checkLedger(config, cwdOf(agent))
     trace(`turn-stopping status=${verdict.status}`)
