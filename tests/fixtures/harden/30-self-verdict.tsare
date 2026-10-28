@@ -1,0 +1,17 @@
+# Decision recorded as a refused verdict: the hypothesis was marked supported by the very model
+# that proposed it. A model assessing its own guess is not an observation, so the verdict asserts a
+# grade nothing reached.
+#
+# The fact stays legal. What it cannot do is settle the hypothesis; a tool or a person has to.
+
+fact F_MODEL_GUESS {
+  claim: "the new path is faster",
+  evidence: model
+}
+
+hypothesis H_FASTER {
+  assumes: [F_MODEL_GUESS],
+  predicts: "the new path beats the old one on the same trace",
+  verdict: supported,
+  verdict_by: F_MODEL_GUESS
+}

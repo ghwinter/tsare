@@ -1,0 +1,50 @@
+# Decision: the four readings of the project goal are a pile, not a partition. We can list them
+# and we cannot say what property makes the list complete, so closure is `unknown` and the list is
+# attached to the question that would type it.
+#
+# This is the honest third state: refusing to compile would teach the author to invent a dimension,
+# and calling it closed would assert something nobody can check.
+
+fact F_READ_COMPILER {
+  claim: "the goal is a compiler for statements about thinking",
+  evidence: model
+}
+
+fact F_READ_ILP {
+  claim: "the goal is induction over recorded attributes",
+  evidence: model
+}
+
+fact F_READ_TYPE {
+  claim: "the goal is a generalised type system for claims",
+  evidence: model
+}
+
+fact F_READ_EXCEED {
+  claim: "the goal is to go past what a compiler can do",
+  evidence: model
+}
+
+partition E_GOAL_READINGS {
+  elements: [F_READ_COMPILER, F_READ_ILP, F_READ_TYPE, F_READ_EXCEED],
+  closure: unknown,
+  closes_with: [Q_GOAL]
+}
+
+question Q_GOAL {
+  asks: "are these four descriptions one goal seen at four resolutions, or four goals?",
+  answers: ["one goal, four resolutions", "four goals, and the project must pick", "none of them is the goal"],
+  separates: [H_ONE_GOAL, H_MANY_GOALS]
+}
+
+hypothesis H_ONE_GOAL {
+  assumes: [F_READ_COMPILER, F_READ_TYPE],
+  predicts: "each description is the same obligation stated at a different height",
+  test: "state the obligation once, then show each description is an instance of it"
+}
+
+hypothesis H_MANY_GOALS {
+  assumes: [F_READ_ILP, F_READ_EXCEED],
+  predicts: "the descriptions pull in different directions and cannot hold at once",
+  rival: H_ONE_GOAL
+}

@@ -180,7 +180,7 @@ struct Parser {
 }
 
 /// Deeper than any document a person writes; shallow enough that the recursion cannot exhaust
-/// the stack (the crash the fuzzer found first happened around 2100).
+/// the stack.
 const MAX_DEPTH: usize = 128;
 
 impl Parser {

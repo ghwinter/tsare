@@ -1,0 +1,56 @@
+# Decision: the same form at two layers is allowed, but it must be visible. A proposition in the
+# policy layer and a proposition in the implementation layer share a shape; `shape --layers`
+# reports the fibre, and a reader decides whether it is a refinement or a contradiction.
+#
+# This is the allowed case: the implementation proposition stands on its own fact, so the fibre is
+# a refinement and not a claim that the policy proposition has been proved twice.
+
+layer L_POLICY {
+  name: "what the project promises",
+  exposes: [F_PROMISE, P_PROMISE]
+}
+
+layer L_IMPL {
+  name: "what the build does",
+  exposes: [F_IMPL]
+}
+
+fact F_PROMISE {
+  claim: "the release promises to keep the checker dependency-free",
+  evidence: doc("README.md"),
+  layer: L_POLICY
+}
+
+fact F_IMPL {
+  claim: "the manifest declares no runtime dependencies",
+  evidence: doc("Cargo.toml"),
+  layer: L_IMPL
+}
+
+proposition P_PROMISE {
+  statement: "the release has no runtime dependency",
+  from: [F_PROMISE],
+  layer: L_POLICY
+}
+
+proposition P_IMPL {
+  statement: "the build links no dependency crate",
+  from: [F_IMPL],
+  layer: L_IMPL
+}
+
+warrant W_PROMISE {
+  claim: "a promise stated in the release notes is the policy",
+  from: [F_PROMISE],
+  to: P_PROMISE,
+  basis: [F_PROMISE],
+  layer: L_POLICY
+}
+
+warrant W_IMPL {
+  claim: "an empty dependency table is the implementation",
+  from: [F_IMPL],
+  to: P_IMPL,
+  basis: [F_IMPL],
+  layer: L_IMPL
+}

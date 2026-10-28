@@ -299,7 +299,7 @@ fn usage() {
     println!("exit codes");
     println!("  0  no errors (warnings are allowed)");
     println!("  1  errors found, or a proposal refused");
-    println!("  2  usage problem: no document named, or a command that does not exist");
+    println!("  2  usage problem");
 }
 
 fn is_command(name: &str) -> bool {
@@ -328,7 +328,6 @@ const VALUE_FLAGS: &[&str] = &[
     "--out",
     "--goals",
     "--k",
-    "--apply",
     "--proposals",
     "--policy",
     "--attribute",
@@ -342,11 +341,27 @@ const VALUE_FLAGS: &[&str] = &[
     "--action",
     "--store",
     "--near",
-    "--write",
+];
+
+/// Options that take no value.  An option in neither list is a usage error: a silently ignored
+/// flag is a flag the caller will believe took effect.
+const FLAGS: &[&str] = &[
+    "--json",
+    "--strict",
+    "--sugar",
+    "--cache",
+    "--all",
+    "--one",
+    "--layers",
+    "--vars",
+    "--dry-run",
+    "--recall",
+    "--help",
+    "--version",
 ];
 
 impl Args {
-    fn parse(raw: &[String]) -> Self {
+    fn parse(raw: &[String]) -> Result<Self, String> {
         let mut positional = Vec::new();
         let mut flags = Vec::new();
         let mut options = std::collections::HashMap::new();
@@ -355,27 +370,49 @@ impl Args {
             let item = &raw[index];
             if item.starts_with("--") {
                 if let Some((name, value)) = item.split_once('=') {
+                    if !VALUE_FLAGS.contains(&name) && !FLAGS.contains(&name) {
+                        return Err(format!("unknown option {name}; see --help"));
+                    }
                     options.insert(name.to_string(), value.to_string());
                     index += 1;
                     continue;
                 }
-                if VALUE_FLAGS.contains(&item.as_str()) && index + 1 < raw.len() {
-                    options.insert(item.clone(), raw[index + 1].clone());
+                // `--apply` is two options with one spelling: `fix --apply OUT` names the file to
+                // write, `propose --apply` is a switch.  A following option word means the switch.
+                if item == "--apply" {
+                    let next = raw.get(index + 1);
+                    if next.is_some_and(|value| !value.starts_with("--")) {
+                        options.insert(item.clone(), next.unwrap().clone());
+                        index += 2;
+                    } else {
+                        flags.push(item.clone());
+                        index += 1;
+                    }
+                    continue;
+                }
+                if VALUE_FLAGS.contains(&item.as_str()) {
+                    let Some(value) = raw.get(index + 1) else {
+                        return Err(format!("{item} needs a value; see --help"));
+                    };
+                    options.insert(item.clone(), value.clone());
                     index += 2;
                     continue;
                 }
-                flags.push(item.clone());
-                index += 1;
-                continue;
+                if FLAGS.contains(&item.as_str()) {
+                    flags.push(item.clone());
+                    index += 1;
+                    continue;
+                }
+                return Err(format!("unknown option {item}; see --help"));
             }
             positional.push(item.clone());
             index += 1;
         }
-        Args {
+        Ok(Args {
             positional,
             flags,
             options,
-        }
+        })
     }
 
     fn has(&self, flag: &str) -> bool {
@@ -442,7 +479,13 @@ pub fn run() -> i32 {
         println!("unknown command {}; `tsare help` lists them", raw[0]);
         return 2;
     };
-    let args = Args::parse(&rest);
+    let args = match Args::parse(&rest) {
+        Ok(args) => args,
+        Err(message) => {
+            println!("{message}");
+            return 2;
+        }
+    };
     if command == "mcp" {
         return crate::mcp::serve();
     }

@@ -1,0 +1,5 @@
+command: tsare engine docs/repro/engine-order.tsare --json   (40 times)
+distinct engine --json outputs: 2
+21 "conditional": ["P2", "P1"],
+19 "conditional": ["P1", "P2"],
+distinct engine text outputs: 2

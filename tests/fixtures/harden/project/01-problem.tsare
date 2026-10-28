@@ -1,0 +1,34 @@
+# The problem, split from the decision: what a crash does to an append-only store.
+#
+# This file is one file of a three-file program. It compiles as part of `docs/project`, not alone:
+# the decision in 02 and the open question in 03 both refer to these facts, and a reference across
+# files is the reason a directory can be checked as one program.
+
+fact F_APPEND {
+  claim: "an append of one line is a single write on this platform",
+  evidence: tool("os/append.txt"),
+  attrs: { operation: append, atomic: true }
+}
+
+fact F_KILL_TEST {
+  claim: "a killed writer leaves the previously written lines intact",
+  evidence: tool("crash/append-test.txt"),
+  attrs: { operation: append, atomic: true }
+}
+
+fact F_TRUNCATE {
+  claim: "a rewrite of the store can lose the whole file",
+  evidence: tool("crash/rewrite-test.txt"),
+  attrs: { operation: rewrite, atomic: false }
+}
+
+concept C_SURVIVES_CRASH {
+  name: "an operation that loses at most one case",
+  grounded_by: [F_APPEND, F_KILL_TEST],
+  against: [F_TRUNCATE]
+}
+
+layer L_STORE {
+  name: "the case store",
+  exposes: [F_APPEND, F_KILL_TEST]
+}

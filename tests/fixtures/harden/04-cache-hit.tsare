@@ -1,0 +1,41 @@
+# Decision: a cache hit must replay a diagnostic, not a sketch of one.
+#
+# A content-addressed cache is only sound when the stored record is the whole diagnostic. The
+# observed difference below is not a formatting difference: the `name` field is the key a delta
+# uses, and a hit that drops it makes the same document look like two different programs.
+#
+# We choose to store the full record and bump nothing, because the record shape can gain fields
+# with fallbacks; a cache entry that still answers every field is not stale.
+
+fact F_CACHE_PROBE {
+  claim: "a cache hit reports an empty diagnostic name where a plain check reports P1",
+  evidence: tool("tsare check --cache, twice"),
+  artifact: "docs/artifacts/cache-name.txt",
+  out: "8fe4cd6cd22df3b8f3ad3864abe3b21df47596d5e867a7c6b5d25a43d7d56d19"
+}
+
+proposition P_CACHE_NOT_EQUAL {
+  statement: "check --cache and check do not report the same JSON for the same bytes",
+  from: [F_CACHE_PROBE]
+}
+
+warrant W_CACHE_NOT_EQUAL {
+  claim: "the name field is required by the JSON contract, and the hit prints it empty",
+  from: [F_CACHE_PROBE],
+  to: P_CACHE_NOT_EQUAL,
+  basis: [F_CACHE_PROBE]
+}
+
+hypothesis H_RESTORE_DROPS {
+  assumes: [F_CACHE_PROBE],
+  predicts: "the reader that rebuilds a cached diagnostic ignores the stored name",
+  test: "compare cache::dump with cache::restore field by field",
+  rival: H_CACHE_STALE
+}
+
+hypothesis H_CACHE_STALE {
+  assumes: [F_CACHE_PROBE],
+  predicts: "the cache key is wrong, so the hit is a diagnostic from a different document",
+  test: "check that the hit line and message match the plain run exactly",
+  rival: H_RESTORE_DROPS
+}

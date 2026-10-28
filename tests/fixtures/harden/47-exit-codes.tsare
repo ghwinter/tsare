@@ -1,0 +1,51 @@
+# Decision: a command that prints an error count and then exits 0 cannot be used as a gate.
+#
+# The survey below found six analysis commands that print a count of document errors and still
+# report success. The project uses exit status as the gate, so the two statements contradict each
+# other. The chosen rule is the protocol's: an error in the document is exit 1 for every command
+# that reads the document as a program, and the analysis commands stop lying by returning it.
+
+fact F_EXIT_SURVEY {
+  claim: "six commands print an error count and exit zero",
+  evidence: tool("docs/artifacts/exit-codes.txt"),
+  artifact: "docs/artifacts/exit-codes.txt",
+  out: "9f925a3b9052062c0cb1103d619545816611fc68ba70cacdb597beaf49c3c9fb"
+}
+
+value V_UNREPORTED_ERRORS {
+  metric: "commands_that_print_an_error_and_exit_zero",
+  direction: max,
+  unit: "commands",
+  threshold: 0,
+  measured_by: tool("docs/artifacts/exit-codes.txt")
+}
+
+proposition P_EXIT_MATCHES {
+  statement: "a command's exit status matches the summary it printed",
+  from: [F_EXIT_SURVEY]
+}
+
+warrant W_EXIT_MATCHES {
+  claim: "a gate that reads zero after printing an error is not a gate",
+  from: [F_EXIT_SURVEY],
+  to: P_EXIT_MATCHES,
+  basis: [V_UNREPORTED_ERRORS]
+}
+
+question Q_EXIT_RULE {
+  asks: "does every command that reads a document return its error count, or only check?",
+  answers: ["every command that reads a document", "only the checking commands"],
+  separates: [H_ALL, H_CHECK_ONLY]
+}
+
+hypothesis H_ALL {
+  assumes: [F_EXIT_SURVEY],
+  predicts: "an analysis of a broken program is still a report about a broken program",
+  test: "run each command on the duplicate-name reproducer and compare its status with check"
+}
+
+hypothesis H_CHECK_ONLY {
+  assumes: [F_EXIT_SURVEY],
+  predicts: "analysis commands are exploratory and should not gate",
+  rival: H_ALL
+}

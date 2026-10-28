@@ -176,13 +176,8 @@ pub fn evidence_status(decl: &Decl) -> &'static str {
 
 pub fn support_edges(prog: &Program) -> HashMap<String, Vec<String>> {
     let mut edges: HashMap<String, Vec<String>> = HashMap::new();
-    for warrant in prog.of_kind("warrant") {
-        if let Some(target) = f_id(warrant, "to") {
-            edges
-                .entry(target.to_string())
-                .or_default()
-                .extend(f_ids(warrant, "from"));
-        }
+    for rule in crate::closure::applications(prog.decls) {
+        edges.entry(rule.target).or_default().extend(rule.premises);
     }
     for proposition in prog.of_kind("proposition") {
         edges
@@ -319,10 +314,9 @@ pub fn obligations(prog: &Program, decl: &Decl) -> Vec<String> {
             }
         }
         "proposition" => {
-            let supported = prog
-                .of_kind("warrant")
+            let supported = crate::closure::applications(prog.decls)
                 .iter()
-                .any(|warrant| f_id(warrant, "to") == Some(decl.name.as_str()));
+                .any(|rule| rule.target == decl.name);
             if !supported {
                 out.push("no rule supports it".to_string());
             }
@@ -333,7 +327,12 @@ pub fn obligations(prog: &Program, decl: &Decl) -> Vec<String> {
             }
         }
         "hypothesis" => {
-            if f_str(decl, "test").is_none() {
+            let decided = matches!(f_id(decl, "verdict"), Some("supported") | Some("refuted"));
+            if decided && f_id(decl, "verdict_by").is_some() {
+                // the fact that decided it is the observation, so no test is owed
+            } else if decided {
+                out.push("verdict with no deciding fact".to_string());
+            } else if !f_str(decl, "test").is_some_and(|test| !test.trim().is_empty()) {
                 out.push("no test to run".to_string());
             }
         }

@@ -35,6 +35,7 @@ pub const REF_KEYS: &[&str] = &[
     "elements",
     "of",
     "over",
+    "signature",
 ];
 
 /// Values that name a procedure rather than a declaration.
@@ -87,6 +88,7 @@ pub fn code_of(code: &str) -> &'static str {
 
 const KNOWN_CODES: &[&str] = &[
     "E-EMPTY-DOCUMENT",
+    "E-DUP-FIELD",
     "E-DUP-ID",
     "E-KIND-UNKNOWN",
     "E-FIELD",
@@ -175,6 +177,7 @@ fn check_record(decl: &Decl, out: &mut Vec<Diagnostic>) {
         ));
         return;
     };
+    let mut seen_fields: HashSet<&str> = HashSet::new();
     for (index, (key, value)) in decl.fields.iter().enumerate() {
         let (line, col, end_line, end_col) = decl.field_span.get(index).copied().unwrap_or((
             decl.line,
@@ -182,6 +185,20 @@ fn check_record(decl: &Decl, out: &mut Vec<Diagnostic>) {
             decl.end_line,
             decl.end_col,
         ));
+        if !seen_fields.insert(key.as_str()) {
+            // The readers of a declaration take the first occurrence; a second one is a value no
+            // command will ever see, so it must not compile as if it were the only one.
+            out.push(Diagnostic {
+                code: "E-DUP-FIELD",
+                message: format!("{} carries {key} twice; only the first is read", decl.name),
+                line,
+                col,
+                end_line,
+                end_col,
+                file: decl.file.clone(),
+                witness: Some(decl.name.clone()),
+            });
+        }
         match fields.iter().find(|(name, _, _)| name == key) {
             Some((_, ftype, _)) => {
                 if matches!(value, Val::Hole) {
@@ -403,7 +420,11 @@ fn check_cycles(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     for decl in decls {
         let mut targets = Vec::new();
         for (key, value) in &decl.fields {
-            if REF_KEYS.contains(&key.as_str()) {
+            // `rival` and `attacks` are opposition edges, not justification edges. Two hypotheses
+            // that are each other's rival, or two rules that attack each other, are a live
+            // disagreement the grounded extension is designed to leave undecided; calling that a
+            // dependency cycle would refuse the normal shape of an argument.
+            if REF_KEYS.contains(&key.as_str()) && key != "attacks" && key != "rival" {
                 targets.extend(ids(value));
             }
         }
@@ -508,22 +529,32 @@ pub(crate) fn id_field<'a>(decl: &'a Decl, key: &str) -> Option<&'a str> {
 /// is whether the domain is bound with `over:`.  The cue is deliberately generous on `都`, which is
 /// also an adverb: a false positive here costs one line (`over:` naming the set, or a reword), and
 /// naming the set is the improvement the warning is asking for anyway.
-fn universal_text(text: &str) -> bool {
-    // "at all" is an idiom, not a universal claim
-    let lowered = text.replace("at all", "").replace("after all", "");
-    ["所有", "全部", "每", "都", "always", "every", "all "]
+///
+/// English has spaces, so an English cue is matched as a word and not as a substring: `all ` used
+/// to fire inside `small` and `stall`, while a capitalised `All` did not fire at all.  Chinese has
+/// no such boundary; the character cues stay substring tests.
+pub(crate) fn universal_text(text: &str) -> bool {
+    // "at all" and "after all" are idioms, not universal claims
+    let lowered = text
+        .to_lowercase()
+        .replace("at all", "")
+        .replace("after all", "");
+    if ["所有", "全部", "每", "都"]
         .iter()
         .any(|word| lowered.contains(word))
+    {
+        return true;
+    }
+    lowered
+        .split(|ch: char| !ch.is_alphanumeric())
+        .any(|token| token == "all" || token == "always" || token.starts_with("every"))
 }
 
 fn num_field(decl: &Decl, key: &str) -> Option<f64> {
     decl.fields
         .iter()
         .find(|(name, _)| name == key)
-        .and_then(|(_, value)| match value {
-            Val::Num(text) => text.parse().ok(),
-            _ => None,
-        })
+        .and_then(|(_, value)| crate::program::num_of(value))
 }
 
 fn check_tension(decls: &[Decl], out: &mut Vec<Diagnostic>) {
@@ -576,11 +607,19 @@ fn check_tension(decls: &[Decl], out: &mut Vec<Diagnostic>) {
 /// `layer` names what is hidden and `law` names what is preserved; `refines` is the third
 /// condition, and without it the abstraction is a promise nobody signed.
 fn check_refinements(decls: &[Decl], out: &mut Vec<Diagnostic>) {
+    // A retired law still resolves and no longer holds a position, so it cannot be the signatory
+    // that makes a refinement honest.
+    let gone = crate::closure::retired(decls);
     let refiners: Vec<&Decl> = decls
         .iter()
-        .filter(|decl| decl.kind == "law" && id_field(decl, "refines").is_some())
+        .filter(|decl| {
+            decl.kind == "law" && id_field(decl, "refines").is_some() && !gone.contains(&decl.name)
+        })
         .collect();
-    for decl in decls.iter().filter(|decl| decl.kind == "law") {
+    for decl in decls
+        .iter()
+        .filter(|decl| decl.kind == "law" && !gone.contains(&decl.name))
+    {
         // a law that refines another layer is itself the grounding act: it is anchored to the
         // layer it implements, so it does not need a refiner of its own
         if id_field(decl, "refines").is_some() {
@@ -765,15 +804,14 @@ fn is_incomplete(decl: &Decl) -> bool {
 }
 
 fn check_semantics(decls: &[Decl], out: &mut Vec<Diagnostic>) {
-    let warranty_targets: std::collections::HashSet<String> = decls
-        .iter()
-        .filter(|decl| decl.kind == "warrant" || decl.kind == "proposition")
-        .flat_map(|decl| {
-            decl.fields
-                .iter()
-                .filter(|(key, _)| key == "to")
-                .flat_map(|(_, value)| ids(value))
-        })
+    // A rule connects its premises to a conclusion either by naming it (`to`) or by naming a
+    // class it belongs to (`concludes`).  This is the set the fixpoint uses, so the "nothing
+    // connects them" warning must use it too -- and a retired rule is not a connection.
+    let gone = crate::closure::retired(decls);
+    let warranty_targets: std::collections::HashSet<String> = crate::closure::applications(decls)
+        .into_iter()
+        .filter(|rule| !gone.contains(&rule.warrant))
+        .map(|rule| rule.target)
         .collect();
 
     for decl in decls {
@@ -1060,7 +1098,9 @@ fn check_semantics(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                         continue;
                     };
                     let licensed = match target.kind.as_str() {
-                        "fact" => id_field(target, "evidence") != Some("model"),
+                        // a model's word is not evidence, unless a person confirmed it: the same
+                        // grade E-SELF-VERDICT uses, so the two checks cannot disagree
+                        "fact" => crate::program::grade(target) >= crate::program::Grade::Confirmed,
                         "proposition" => {
                             id_field(target, "status") != Some("open")
                                 && warranty_targets.contains(&target.name)
@@ -1363,13 +1403,15 @@ fn check_remaining(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                     .into_iter()
                     .filter(|key| !decl.fields.iter().any(|(name, _)| name == *key))
                     .collect();
+                // A wrong-typed unit is E-TYPE's business; "lacks unit" is reserved for a unit
+                // that is present and blank.  Counting a number or a hole as blank produced two
+                // diagnostics for one fault, and the second one said something untrue.
                 let blank: Vec<&str> = ["unit"]
                     .into_iter()
                     .filter(|key| {
                         decl.fields.iter().any(|(name, value)| {
                             name == *key
-                                && !matches!(value, Val::Hole)
-                                && !matches!(value, Val::Str(text) if !text.trim().is_empty())
+                                && matches!(value, Val::Str(text) if text.trim().is_empty())
                         })
                     })
                     .collect();

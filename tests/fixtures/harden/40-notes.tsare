@@ -1,0 +1,27 @@
+# Decision: a hunch is written as a note, not as a fact, so that nothing can depend on it.
+#
+# Notes are the only declarations in the language that owe nothing. That is the point: a thought
+# can be recorded before it is judged, and promoting it to a typed declaration is the act that
+# makes it cost something. If a commitment cites a note, the checker refuses with E-NOTE-REF.
+
+fact F_MOTIVATION {
+  claim: "the cache directory is created by the first check that uses it",
+  evidence: code("src/cache.rs")
+}
+
+note N_HUNCH {
+  tag: hunch,
+  text: "the cache probably stops paying once the document exceeds a few hundred declarations, because replay is linear",
+  about: [F_MOTIVATION]
+}
+
+note N_PREFERENCE {
+  tag: preference,
+  text: "we prefer one cache file per working tree over one per user",
+  about: [F_MOTIVATION]
+}
+
+note N_CONJECTURE {
+  tag: conjecture,
+  text: "a future checker may want to key the cache on the artifact hashes as well as the source bytes"
+}

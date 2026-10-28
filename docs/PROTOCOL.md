@@ -143,7 +143,9 @@ of these reports by `(name, code)` and says what went and what arrived.
 {
   "suggestions": [
     {"applicability": "MachineApplicable", "message": "drop the duplicate",
-     "file": "a.tsare", "line": 19, "replacement": "..."}
+     "file": "a.tsare",
+     "span": {"line": 19, "col": 1, "end_line": 19, "end_col": 42},
+     "replacement": ""}
   ]
 }
 ```
@@ -151,9 +153,12 @@ of these reports by `(name, code)` and says what went and what arrived.
 Applicability is one of `MachineApplicable`, `MaybeIncorrect`, `HasPlaceholders`,
 `Unspecified` (order is strictness).
 
-A suggestion names a `span` and a `replacement` for exactly that span. A deletion is an empty
-replacement over the removed declaration. `span` may be `null` when the repair inserts
-something with no existing declaration to replace.
+A suggestion names a `span` and a `replacement` for exactly that span. `file` is always the
+document the span indexes: for a single-file invocation it is the path the command was given,
+and for a directory it is the file name inside it. `span` is an object with `line`, `col`,
+`end_line` and `end_col`; it is never `null`, and a repair that inserts rather than replaces
+uses a zero-width span at the insertion point. A deletion is an empty replacement over the
+removed declaration.
 
 ### `delta --json BEFORE AFTER`
 
@@ -210,8 +215,10 @@ instead of losing the memory around it. Nothing writes `.tsare/cases.jsonl` unle
 handed `--record`.
 
 `mem --store FILE` audits a store: `expired` (written by another checker), `conflicting` (the same
-situation and action, opposite outcome), `no-op`, `unchanged`, and `orphans` (the document is gone;
-a relative `doc` is resolved from the store's directory, not from the shell). `mem --recall CODE...`
+situation and action, opposite outcome), `regressed` (the counts changed but did not improve),
+`unchanged` (the counts are identical), and `orphans` (the document is gone; a relative `doc` is
+resolved from the store's directory, not from the shell). `regressed` used to be printed as
+`no-op`, which was the opposite of what the filter tests: a no-op is `unchanged`. `mem --recall CODE...`
 ranks cases by how much of their code set overlaps the one given, improved cases first.
 
 ## The prelude
@@ -272,6 +279,7 @@ checked against what was declared.
 | code | what it compares |
 | --- | --- |
 | `E-TYPE` on list elements | every element must have the element type, not just be inside a list |
+| `E-DUP-FIELD` | a field written twice: every reader takes the first, so the second is a claim the checker never sees |
 | `W-EXAMPLE-SHAPE` | an example must share a recorded attribute with the concept's positives, or it cannot be compared with them |
 | `W-BY-MISMATCH` | an inference type is derived from structure — a warrant makes deduction, concepts without a rule make induction — and a declaration that disagrees is contradicted |
 | `W-CONFIDENCE-INFLATED` | a declared number is bounded by the weakest link: the rule's premises, or the premises a rule-less proposition cites |
@@ -421,3 +429,5 @@ the exact text of every command on six fixture documents. `UPDATE_GOLDEN=1 cargo
 them; read the diff first.
 
 
+The content-addressed cache is bypassed for a document that names an `artifact:` or `out:` field: the
+artifact's bytes are part of the answer, and the cache key is only the source text.

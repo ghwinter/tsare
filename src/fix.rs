@@ -151,7 +151,7 @@ pub fn from_diagnostics(decls: &[Decl]) -> Vec<Suggestion> {
             continue;
         };
         let owner = &message[..dot];
-        // A quoted name can contain  expects , which puts the marker before the dot; slicing
+        // A quoted name can contain ` expects `, which puts the marker before the dot; slicing
         // then panics on a range whose start is after its end.  The repair needs the three parts
         // in order, so a message that does not have them is simply not this repair.
         let Some(key) = message.get(dot + 1..space) else {
@@ -333,18 +333,6 @@ pub fn candidates(decls: &[Decl]) -> Vec<(String, Vec<Decl>)> {
                 format!("{}: add a warrant over its premises", decl.name),
                 add_warrant(decls, decl),
             ));
-        }
-        if decl.kind == "fact" {
-            let claim = crate::program::f_str(decl, "claim").unwrap_or("");
-            let universal = ["所有", "都", "全部", "always", "every", "all "];
-            if universal.iter().any(|word| claim.contains(word))
-                && !decl.fields.iter().any(|(key, _)| key == "scope")
-            {
-                out.push((
-                    format!("{}: add `scope: ?`", decl.name),
-                    add_field(decls, &decl.name, "scope", Val::Hole),
-                ));
-            }
         }
     }
     out

@@ -1,0 +1,73 @@
+# Decision: only the loop-facing questions get a JSON envelope; everything else is text.
+#
+# The alternative was JSON on every command. It was rejected because a machine contract is a
+# promise to keep field names stable, and most commands answer a question a reader asks once.
+# The four commands below are the ones a loop calls; the partition says so and names the
+# protocol section that decides it.
+
+fact F_CHECK_JSON {
+  claim: "check answers a diagnostics envelope",
+  evidence: tool("tsare check --json"),
+  attrs: { json: true, surface: check }
+}
+
+fact F_ENGINE_JSON {
+  claim: "engine answers held, conditional, blocked, chains and gates",
+  evidence: tool("tsare engine --json"),
+  attrs: { json: true, surface: engine }
+}
+
+fact F_NEXT_JSON {
+  claim: "next answers a ranked decision list",
+  evidence: tool("tsare next --json"),
+  attrs: { json: true, surface: next }
+}
+
+fact F_ASK_JSON {
+  claim: "ask answers a ranked question list",
+  evidence: tool("tsare ask --json"),
+  attrs: { json: true, surface: ask }
+}
+
+fact F_TEXT_ONLY {
+  claim: "outline is prose and has no JSON form",
+  evidence: doc("tsare outline --help"),
+  attrs: { json: false, surface: outline }
+}
+
+fact F_PROTOCOL_JSON {
+  claim: "the protocol names the commands that carry a machine contract",
+  evidence: doc("docs/PROTOCOL.md")
+}
+
+concept C_JSON_SURFACE {
+  name: "a command a loop can call by field name",
+  grounded_by: [F_CHECK_JSON, F_ENGINE_JSON, F_NEXT_JSON, F_ASK_JSON],
+  against: [F_TEXT_ONLY]
+}
+
+question Q_SURFACE {
+  asks: "which commands carry a JSON envelope?",
+  answers: ["the loop-facing ones only", "every command", "none: text is the only interface"],
+  separates: [H_FOUR, H_ALL]
+}
+
+hypothesis H_FOUR {
+  assumes: [F_CHECK_JSON, F_ENGINE_JSON],
+  predicts: "four commands carry the envelope",
+  test: "grep the protocol table for a JSON column with a yes"
+}
+
+hypothesis H_ALL {
+  assumes: [F_TEXT_ONLY],
+  predicts: "every command carries the envelope",
+  rival: H_FOUR
+}
+
+partition E_JSON_SURFACE {
+  of: Q_SURFACE,
+  dimension: C_JSON_SURFACE,
+  elements: [F_CHECK_JSON, F_ENGINE_JSON, F_NEXT_JSON, F_ASK_JSON],
+  closure: closed,
+  basis: [F_PROTOCOL_JSON]
+}

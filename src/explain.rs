@@ -9,6 +9,7 @@ pub const CODES: &[&str] = &[
     "E-CONTRADICTION",
     "E-CYCLE",
     "E-DUP-ID",
+    "E-DUP-FIELD",
     "E-EMPTY",
     "E-EMPTY-DOCUMENT",
     "E-FALSE-BLINDSPOT",
@@ -96,6 +97,10 @@ pub fn explain(code: &str) -> Option<&'static str> {
             Fix: cut one edge and ground the rest in a fact.",
         "E-DUP-ID" => "One name is declared twice. Names are global within a project.\n\
             Fix: give one a distinct name, or delete it if it is a duplicate.",
+        "E-DUP-FIELD" => "A declaration writes the same field twice. The first value is the one \
+            every reader uses, so the second is a claim the document makes and the checker never \
+            sees: two facts, one of them invisible.\n\
+            Fix: delete one of the values, or merge them into a single field.",
         "E-EMPTY" => "A required string is present but blank.\n\
             Fix: write the text, or turn the field into a hole with `?` if it is not known yet.",
         "E-EMPTY-DOCUMENT" => "The document declares nothing, so there is nothing to check.\n\
@@ -187,7 +192,8 @@ pub fn explain(code: &str) -> Option<&'static str> {
         "E-VERSION" => "The first line declares a document format this build cannot read.\n\
             The document is not broken; the compiler is behind it.  A file with no such line is\n\
             format 1, which is what every document written before the line existed is.\n\
-            Fix: use a build that speaks that format, or the format's migration command.",
+            Fix: use a build that speaks that format. No migration command exists: the format has
+            not moved since 1, and the number moves only with a migration.",
         "E-WARRANT-MODE" => "A warrant must conclude exactly one of a named proposition or a class of them.\n\
             Fix: use `to:` for one conclusion, or `concludes:` for every match.",
         "E-WITNESS" => "A blind spot needs exactly two witnesses.\n\
@@ -231,8 +237,11 @@ pub fn explain(code: &str) -> Option<&'static str> {
         "W-OUT-UNVERIFIED" => "A fact records a hash with nothing to compare it against: no artifact named, or the artifact cannot be read.\n\
             An unverifiable claim is not a false one, but it is not evidence either.\n\
             Fix: name `artifact`, or drop `out` and accept that the evidence is a name.",
-        "W-OVERCLAIM" => "A claim is universal and names no scope.\n\
-            Fix: say who or what was sampled, with `scope:`.",
+        "W-OVERCLAIM" => "A claim is universal and binds no enumerable domain.\n\
+            `scope:` is prose and cannot be enumerated; the check reads `over:`. A concept's extent,\n\
+            a closed partition's elements and a layer's declarations are the domains the engine can\n\
+            list.\n\
+            Fix: add `over:` naming one of those, or weaken the sentence so it is not universal.",
         "W-PARTITION-CLOSED-UNJUSTIFIED" => "A list claims to be closed without a reason.\n\
             Fix: add basis naming why nothing else qualifies.",
         "W-PARTITION-OPEN-USED" => "An open list is used as a premise, so the conclusion rests on a list known to be incomplete.\n\

@@ -1,0 +1,36 @@
+# Decision: a confidence on a derived proposition is a claim about the weakest link, and this
+# document states it honestly: the rule's 0.85 is the floor, and the proposition claims exactly
+# that, not the fact's 0.9.
+#
+# The number is not a probability. It is the largest value a min/max propagation can support, so
+# a declared number above it is refused rather than discussed.
+
+fact F_TRACE {
+  claim: "the trace contains 200 frames and no missed deadline",
+  evidence: tool("trace/frames.json"),
+  confidence: 0.9
+}
+
+proposition P_WITHIN_BUDGET {
+  statement: "the scroll stays inside the frame budget",
+  from: [F_TRACE],
+  confidence: 0.85
+}
+
+value V_FRAME {
+  metric: "frame_ms",
+  direction: max,
+  unit: "ms",
+  threshold: 16,
+  measured_by: tool("trace/frames.json")
+}
+
+warrant W_WITHIN_BUDGET {
+  claim: "a clean 200-frame trace bounds the frame time at 14ms",
+  from: [F_TRACE],
+  to: P_WITHIN_BUDGET,
+  basis: [F_TRACE, V_FRAME],
+  confidence: 0.85
+}
+
+

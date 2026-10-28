@@ -1,0 +1,171 @@
+== documents
+document                               exit strict warn  codes
+docs/01-release-budget.tsare              0      0    0  
+docs/02-renderer-contract.tsare           0      0    0  
+docs/03-engine-order.tsare                0      0    0  
+docs/04-cache-hit.tsare                   1      1    0  E-CYCLE
+docs/05-json-surface.tsare                0      0    0  
+docs/06-layer-split.tsare                 0      0    0  
+docs/07-priority.tsare                    0      0    0  
+docs/08-tension-unresolved.tsare          1      1    0  E-TENSION
+docs/09-supersede.tsare                   0      0    0  
+docs/10-universal-bound.tsare             0      0    0  
+docs/11-universal-unbound.tsare           0      1    1  W-OVERCLAIM
+docs/12-blindspot.tsare                   0      0    0  
+docs/13-question.tsare                    0      0    0  
+docs/14-rejected-alternatives.tsare       0      0    0  
+docs/15-model-confirmed.tsare             0      0    0  
+docs/16-confidence-honest.tsare           0      0    0  
+docs/17-confidence-inflated.tsare         0      1    3  W-UNWARRANTED W-CONFIDENCE-ASSERTED W-CONFIDENCE-INFLATED
+docs/18-cycle.tsare                       1      1    2  W-UNWARRANTED E-CYCLE W-UNWARRANTED
+docs/19-collapse.tsare                    1      1    3  W-UNCONFIRMED W-UNCONFIRMED W-UNCONFIRMED E-COLLAPSE
+docs/20-collide.tsare                     0      1    2  W-COLLIDE W-COLLIDE
+docs/21-unread-value.tsare                0      1    2  W-UNREAD W-UNWARRANTED
+docs/22-bare-number.tsare                 0      1    2  W-BARE-NUMBER W-UNWARRANTED
+docs/23-overclaim-small.tsare             0      1    2  W-OVERCLAIM W-OVERCLAIM
+docs/24-example-shape.tsare               0      1    1  W-EXAMPLE-SHAPE
+docs/25-partition-open-used.tsare         0      1    2  W-PARTITION-OPEN-USED W-UNWARRANTED
+docs/26-partition-closed-contradicted.tsare    1      1    1  W-UNTESTED E-PARTITION-CLOSED-CONTRADICTED
+docs/27-partition-pile.tsare              0      1    5  W-UNCONFIRMED W-UNCONFIRMED W-UNCONFIRMED W-UNCONFIRMED W-PARTITION-UNKNOWN
+docs/28-value-incommensurable.tsare       1      1    0  E-INCOMMENSURABLE
+docs/29-out-mismatch.tsare                1      1    0  E-OUT-MISMATCH
+docs/30-self-verdict.tsare                1      1    1  W-UNCONFIRMED E-SELF-VERDICT
+docs/31-hierarchy.tsare                   1      1    0  E-HIERARCHY
+docs/32-layer-leak.tsare                  1      1    1  E-LAYER-LEAK W-UNWARRANTED
+docs/33-unsatisfied.tsare                 0      1    1  W-UNSATISFIED
+docs/34-retired-unbased.tsare             0      1    5  W-RETIRED-UNBASED W-CONDITIONAL W-RETIRED W-BARE-NUMBER W-RETIRED
+docs/35-scope-unbounded.tsare             1      1    0  E-SCOPE-UNBOUNDED
+docs/36-artifact-unverified.tsare         0      1    1  W-OUT-UNVERIFIED
+docs/37-terse.tsare                       0      0    0  
+docs/38-verbose.tsare                     0      0    0  
+docs/39-header.tsare                      0      0    0  
+docs/40-notes.tsare                       0      0    0  
+docs/41-research-question.tsare           0      0    0  
+docs/42-multi-layer-fibre.tsare           0      0    0  
+docs/43-model-settled.tsare               0      1    1  W-BASIS-NO-CRITERION
+docs/44-causal.tsare                      0      0    0  
+docs/45-bilingual.tsare                   0      1    1  W-OVERCLAIM
+docs/46-suggest-contract.tsare            0      0    0  
+docs/47-exit-codes.tsare                  0      0    0  
+docs/48-concludes.tsare                   0      1    2  W-UNWARRANTED W-UNWARRANTED
+docs/49-engine-order-repro.tsare          0      1    5  W-UNCONFIRMED W-CONDITIONAL W-CONDITIONAL W-CONDITIONAL W-CONDITIONAL
+docs/REPO.tsare                           0      1    5  W-OVERCLAIM W-OVERCLAIM W-OVERCLAIM W-UNREFINED W-UNREAD
+
+== diagnostic codes over the corpus
+W-UNCONFIRMED                         9 occurrences in   4 document(s)
+    fact F_NO_PROOF was supplied by a model, not by the user or a tool
+W-UNWARRANTED                         9 occurrences in   7 document(s)
+    proposition P_CONFIDENT cites premises, but no rule connects them to it
+W-OVERCLAIM                           7 occurrences in   4 document(s)
+    fact F_ALL_SUCCEED is universal and binds no domain: `scope:` is prose, so it cannot be enumerated; bind it with `over:`
+W-CONDITIONAL                         5 occurrences in   2 document(s)
+    P_WITHIN is supported only through an ungrounded premise: W_WITHIN needs F_OLD_THRESHOLD (retired)
+E-CYCLE                               2 occurrences in   2 document(s)
+    dependency cycle: H_RESTORE_DROPS -> H_CACHE_STALE -> H_RESTORE_DROPS
+W-BARE-NUMBER                         2 occurrences in   2 document(s)
+    P_IMPROVED states a number and cites no measured value: nothing here says what produced it
+W-COLLIDE                             2 occurrences in   1 document(s)
+    F_DARK_COUNT and F_DARK_FRACTION record the same evidence and the same attributes, so this vocabulary cannot tell them apart
+W-RETIRED                             2 occurrences in   1 document(s)
+    P_WITHIN cites F_OLD_THRESHOLD, which is retired: the reference resolves, the ground does not
+W-UNREAD                              2 occurrences in   2 document(s)
+    value V_FRAME_BUDGET declares a bound that no rule reads, so it cannot change a decision
+E-COLLAPSE                            1 occurrences in   1 document(s)
+    concepts C_REFUSE_NOW and C_WAIT_NOW have the same extent, so they are one concept with two names
+E-HIERARCHY                           1 occurrences in   1 document(s)
+    C_CHILD is declared under C_PARENT, but ['F_OPTIMISED_CASE'] lie outside C_PARENT
+E-INCOMMENSURABLE                     1 occurrences in   1 document(s)
+    value V_STARTUP lacks threshold, so it cannot be compared with anything
+E-LAYER-LEAK                          1 occurrences in   1 document(s)
+    P_FRONT in L_FRONT reaches F_PARSE_INTERNAL, which L_CORE does not expose
+E-OUT-MISMATCH                        1 occurrences in   1 document(s)
+    fact F_BINARY_STALE records 0000000000000000000000000000000000000000000000000000000000000000, but docs/artifacts/binary-size.txt hashes to ab330a39ff01d6dea1cddc40376a6bbf2c48a296e58ea86e7748aa7371b227cc: the artifact is not what the document says it is
+E-PARTITION-CLOSED-CONTRADICTED       1 occurrences in   1 document(s)
+    C_REFUSED also holds of F_NO_ADVICE, which the closed list omits
+E-SCOPE-UNBOUNDED                     1 occurrences in   1 document(s)
+    F_ALL_RUNS ranges over F_RUN_ONE, whose extent cannot be enumerated: only a concept, a closed partition or a layer can be a domain
+E-SELF-VERDICT                        1 occurrences in   1 document(s)
+    hypothesis H_FASTER is marked supported, but F_MODEL_GUESS is unconfirmed: a witness graded below confirmed cannot settle it
+E-TENSION                             1 occurrences in   1 document(s)
+    V_BYTES and V_STARTUP constrain 'artifact_weight' in opposite directions (max vs min) and neither has a priority
+W-BASIS-NO-CRITERION                  1 occurrences in   1 document(s)
+    warrant W_CONSUMERS rests on F_PROPOSAL, but a fact is not a licence here: a model's opinion is not evidence anyone else can check
+W-CONFIDENCE-ASSERTED                 1 occurrences in   1 document(s)
+    proposition P_CONFIDENT carries a confidence but no rule computes it
+W-CONFIDENCE-INFLATED                 1 occurrences in   1 document(s)
+    proposition P_CONFIDENT declares confidence 0.9 with no rule, above its weakest premise 0.5
+W-EXAMPLE-SHAPE                       1 occurrences in   1 document(s)
+    concept C_READABLE: F_THEME_TIMING shares no recorded attribute with the positives, so it cannot be compared with them
+W-OUT-UNVERIFIED                      1 occurrences in   1 document(s)
+    fact F_MEASURED_ELSEWHERE names artifact docs/artifacts/profiler-heap.log, which cannot be read from here
+W-PARTITION-OPEN-USED                 1 occurrences in   1 document(s)
+    partition E_SUPPORTED is open but used as a premise; the conclusion rests on a list known to be incomplete
+W-PARTITION-UNKNOWN                   1 occurrences in   1 document(s)
+    partition E_GOAL_READINGS is a pile with no type yet; the question it names is how the type will be found
+W-RETIRED-UNBASED                     1 occurrences in   1 document(s)
+    F_NEW_THRESHOLD withdraws a declaration and gives no reason: `because:` names what makes the withdrawal right
+W-UNREFINED                           1 occurrences in   1 document(s)
+    law L_REPO_HONEST holds in L_REPO, but no law at another layer refines L_REPO: the detail the layer hides is not claimed to be implemented
+W-UNSATISFIED                         1 occurrences in   1 document(s)
+    W_FRAME_OK cites law K_INSTRUMENT, which requires measured_by, and declares no measured_by
+W-UNTESTED                            1 occurrences in   1 document(s)
+    concept C_REFUSED is never contrasted with a counterexample
+
+== exit status of commands that name a document with errors
+abstract               on error documents: exit 0 in 11, exit 1 in  0
+apply-dry              on error documents: exit 0 in 11, exit 1 in  0
+argue                  on error documents: exit 0 in 11, exit 1 in  0
+argue-against          on error documents: exit 0 in 11, exit 1 in  0
+ask                    on error documents: exit 0 in 11, exit 1 in  0
+ask-json-one           on error documents: exit 0 in 11, exit 1 in  0
+ask-one                on error documents: exit 0 in 11, exit 1 in  0
+assumptions            on error documents: exit 0 in 11, exit 1 in  0
+audit                  on error documents: exit 0 in 11, exit 1 in  0
+build                  on error documents: exit 0 in  0, exit 1 in 11
+cat                    on error documents: exit 0 in 11, exit 1 in  0
+check                  on error documents: exit 0 in  0, exit 1 in 11
+check-against          on error documents: exit 0 in  0, exit 1 in 11
+check-json             on error documents: exit 0 in  0, exit 1 in 11
+check-strict           on error documents: exit 0 in  0, exit 1 in 11
+check-strict-json      on error documents: exit 0 in  0, exit 1 in 11
+confront               on error documents: exit 0 in 10, exit 1 in  0
+cost                   on error documents: exit 0 in 11, exit 1 in  0
+cost-json              on error documents: exit 0 in 11, exit 1 in  0
+debt                   on error documents: exit 0 in 11, exit 1 in  0
+debt-all               on error documents: exit 0 in 11, exit 1 in  0
+delta-identity         on error documents: exit 0 in 11, exit 1 in  0
+delta-json             on error documents: exit 0 in 11, exit 1 in  0
+delta-vs-fixed         on error documents: exit 0 in 11, exit 1 in  0
+derive                 on error documents: exit 0 in 11, exit 1 in  0
+egraph                 on error documents: exit 0 in 11, exit 1 in  0
+engine                 on error documents: exit 0 in 11, exit 1 in  0
+engine-json            on error documents: exit 0 in 11, exit 1 in  0
+fca                    on error documents: exit 0 in 11, exit 1 in  0
+fix                    on error documents: exit 0 in 11, exit 1 in  0
+graph                  on error documents: exit 0 in 11, exit 1 in  0
+impact                 on error documents: exit 0 in 11, exit 1 in  0
+imply                  on error documents: exit 0 in 11, exit 1 in  0
+map                    on error documents: exit 0 in 11, exit 1 in  0
+meet                   on error documents: exit 0 in  6, exit 1 in  4
+mem-empty              on error documents: exit 0 in 11, exit 1 in  0
+moves                  on error documents: exit 0 in 11, exit 1 in  0
+next                   on error documents: exit 0 in 11, exit 1 in  0
+next-json              on error documents: exit 0 in 11, exit 1 in  0
+novel                  on error documents: exit 0 in 11, exit 1 in  0
+outline                on error documents: exit 0 in 11, exit 1 in  0
+pattern                on error documents: exit 0 in  3, exit 1 in  0
+project                on error documents: exit 0 in  0, exit 1 in 11
+propose                on error documents: exit 0 in  1, exit 1 in  0
+shape                  on error documents: exit 0 in 11, exit 1 in  0
+shape-against          on error documents: exit 0 in 11, exit 1 in  0
+shape-json             on error documents: exit 0 in 11, exit 1 in  0
+shape-layers           on error documents: exit 0 in 11, exit 1 in  0
+suggest                on error documents: exit 0 in 11, exit 1 in  0
+suggest-json           on error documents: exit 0 in 11, exit 1 in  0
+weigh                  on error documents: exit 0 in 11, exit 1 in  0
+whatif                 on error documents: exit 0 in  4, exit 1 in  0
+
+== nondeterministic commands (4 runs)
+  docs/49-engine-order-repro.tsare engine exits 0/0
+  docs/49-engine-order-repro.tsare engine-json exits 0/0
+  docs/49-engine-order-repro.tsare project exits 0/0

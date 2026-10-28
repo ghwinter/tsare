@@ -36,6 +36,11 @@
 !/docs/PROTOCOL.md
 !/docs/REPO.tsare
 
+
+# The corpus harness: two scripts that say how the measurements under tests/fixtures/harden were taken.
+!/scripts
+!/scripts/*
+
 # The prelude: what this project admits, compiled and tested.  Provisional, not decorative --
 # `tests/prelude.rs` fails if the kernel stops refusing the document that violates it.
 !/prelude
@@ -69,6 +74,8 @@ Thumbs.db
 !/dsh/tsare-gate/verify-real.mjs
 !/dsh/tsare-gate/fake-tsare.mjs
 !/dsh/tsare-gate/README.md
+# Regenerable: one line per command invocation, rebuilt by scripts/matrix.py.
+/tests/fixtures/harden/artifacts/matrix.jsonl
 !/dsh/tsare-gate/cordis.patch.yml
 # The hook and the rule it enforces are part of the repository, not of one clone.
 !/.githooks

@@ -1,0 +1,43 @@
+# Research note: a deterministic checker whose output order depends on a hash map is not
+# deterministic. The experiment below ran `engine --json` twenty times over the same bytes.
+#
+# This is a decision about what the property means: determinism is byte equality over repeated
+# runs, not "the same conclusions in some order". The measurement is an artifact so a later
+# revision can be compared with it.
+
+fact F_ORDER_EXPERIMENT {
+  claim: "twenty runs of engine --json produced fifteen distinct byte sequences",
+  evidence: tool("python subprocess, 20 runs"),
+  artifact: "docs/artifacts/engine-order.txt",
+  out: "c7a66ed3fd296a2e4c0e6f7af39822351405f4ba92ac25308170e65543236770"
+}
+
+value V_DISTINCT_OUTPUTS {
+  metric: "distinct_engine_outputs_per_20_runs",
+  direction: max,
+  unit: "outputs",
+  threshold: 1,
+  measured_by: tool("python subprocess, 20 runs")
+}
+
+proposition P_DETERMINISTIC {
+  statement: "engine prints the same bytes for the same document on repeated runs",
+  from: [F_ORDER_EXPERIMENT]
+}
+
+warrant W_DETERMINISTIC {
+  claim: "fifteen distinct outputs in twenty runs is not one output",
+  from: [F_ORDER_EXPERIMENT],
+  to: P_DETERMINISTIC,
+  basis: [V_DISTINCT_OUTPUTS],
+  confidence: 0.95
+}
+
+hypothesis H_FAILED_ORDER {
+  assumes: [F_ORDER_EXPERIMENT],
+  predicts: "the conditional list is built by iterating a HashMap, so its order follows the hasher seed",
+  test: "print the declaration order of every conditional row and compare it with name order",
+  verdict: supported,
+  verdict_by: F_ORDER_EXPERIMENT
+}
+

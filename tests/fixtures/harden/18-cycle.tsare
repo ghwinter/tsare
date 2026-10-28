@@ -1,0 +1,16 @@
+# Decision recorded as a refused design: two propositions were written as each other's premise.
+#
+# The hope was that each would make the other checkable. It does not: a justification circle
+# grounds nothing, and the checker refuses the file with E-CYCLE. The alternative -- adding a fact
+# under one of them -- is the only repair that costs something, so the circular draft is kept here
+# as the record of why it was abandoned.
+
+proposition P_FIRST {
+  statement: "the retry loop is safe because the update is idempotent",
+  from: [P_SECOND]
+}
+
+proposition P_SECOND {
+  statement: "the update is idempotent because the retry loop is safe",
+  from: [P_FIRST]
+}

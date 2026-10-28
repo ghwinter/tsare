@@ -1,0 +1,18 @@
+# Decision: the survey answer was recorded twice, once as a count and once as a percentage, and
+# the attribute table cannot tell the two observations apart.
+#
+# This is not a duplicate declaration: the sentences differ and both were genuinely observed. It is
+# a vocabulary failure. The checker reports W-COLLIDE on both, and the repair is to record an
+# attribute only one of them has rather than to delete an observation.
+
+fact F_DARK_COUNT {
+  claim: "32 of 40 respondents asked for dark mode",
+  evidence: tool("survey/raw.csv"),
+  attrs: { asked: 32, total: 40 }
+}
+
+fact F_DARK_FRACTION {
+  claim: "the same 32 respondents are 80 percent of the sample",
+  evidence: tool("survey/raw.csv"),
+  attrs: { asked: 32, total: 40 }
+}

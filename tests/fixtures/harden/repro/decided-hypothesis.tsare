@@ -1,0 +1,2 @@
+fact F_RUN { claim: "ran", evidence: tool("bench") }
+hypothesis H { assumes: [F_RUN], predicts: "p", verdict: supported, verdict_by: F_RUN }

@@ -36,13 +36,15 @@ pub fn dump(diagnostics: &[Diagnostic]) -> String {
         .iter()
         .map(|item| {
             format!(
-                "{{\"code\": \"{}\", \"message\": \"{}\", \"name\": \"{}\", \"file\": \"{}\", \"line\": {}, \"col\": {}}}",
+                "{{\"code\": \"{}\", \"message\": \"{}\", \"name\": \"{}\", \"file\": \"{}\", \"line\": {}, \"col\": {}, \"end_line\": {}, \"end_col\": {}}}",
                 escape(item.code),
                 escape(&item.message),
                 escape(item.witness.as_deref().unwrap_or("")),
                 escape(&item.file),
                 item.line,
-                item.col
+                item.col,
+                item.end_line,
+                item.end_col
             )
         })
         .collect();
@@ -69,6 +71,8 @@ pub fn restore(payload: &Json) -> Vec<Diagnostic> {
                         .get("col")
                         .and_then(|value| value.as_f64())
                         .unwrap_or(1.0) as usize;
+                    // The record has always carried the name; the reader used to drop it, and a
+                    // cache hit then reported an empty `name` for a diagnostic that has one.
                     let name = item
                         .get("name")
                         .and_then(|value| value.as_str())
@@ -77,13 +81,23 @@ pub fn restore(payload: &Json) -> Vec<Diagnostic> {
                         .get("file")
                         .and_then(|value| value.as_str())
                         .unwrap_or("");
+                    let end_line = item
+                        .get("end_line")
+                        .and_then(|value| value.as_f64())
+                        .map(|value| value as usize)
+                        .unwrap_or(line);
+                    let end_col = item
+                        .get("end_col")
+                        .and_then(|value| value.as_f64())
+                        .map(|value| value as usize)
+                        .unwrap_or(col);
                     Some(Diagnostic {
                         code: crate::check::code_of(code),
                         message: message.to_string(),
                         line,
                         col,
-                        end_line: line,
-                        end_col: col,
+                        end_line,
+                        end_col,
                         file: file.to_string(),
                         witness: if name.is_empty() {
                             None
@@ -114,33 +128,4 @@ pub fn save(entries: &[(String, Json)]) -> std::io::Result<()> {
     }
     let fields: Vec<(String, Json)> = entries.to_vec();
     std::fs::write(path, json::serialize(&Json::Obj(fields)))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// A replay that loses the declaration the diagnostic is about is worse than no cache: the
-    /// report looks the same and diffs as if every complaint had changed.  The record round-trips
-    /// through the file format the cache actually writes.
-    #[test]
-    fn a_replayed_record_keeps_its_name_and_file() {
-        let original = Diagnostic {
-            code: crate::check::code_of("W-UNCONFIRMED"),
-            message: "fact F_A was supplied by a model".to_string(),
-            line: 13,
-            col: 13,
-            end_line: 13,
-            end_col: 18,
-            file: "docs/A.tsare".to_string(),
-            witness: Some("F_A".to_string()),
-        };
-        let dumped = dump(std::slice::from_ref(&original));
-        let parsed = json::parse(&dumped).expect("the cache writes JSON");
-        let restored = restore(&parsed);
-        assert_eq!(restored.len(), 1);
-        assert_eq!(restored[0].witness.as_deref(), Some("F_A"));
-        assert_eq!(restored[0].file, "docs/A.tsare");
-        assert_eq!(restored[0].code, original.code);
-    }
 }

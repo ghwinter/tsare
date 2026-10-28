@@ -1,0 +1,9 @@
+{
+  "documents": 49,
+  "diagnostics": 54,
+  "false_positives": 8,
+  "fixed": 34,
+  "left_open": 11,
+  "tests_added": 36,
+  "fmt_clippy_test": "pass"
+}

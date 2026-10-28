@@ -1,0 +1,54 @@
+# Decision: a law may charge for being cited. This law is about instruments, and the warrant below
+# cites it without carrying the field the law requires. The citation resolves, so without the
+# requirement it would cost nothing; with it, the document is told that pointing at the principle
+# is not the same as satisfying it.
+#
+# The repair is to write the instrument down, not to stop citing the law.
+
+layer L_TOP {
+  name: "the stated policy",
+  exposes: [F_POLICY]
+}
+
+layer L_DOWN {
+  name: "the implementation",
+  exposes: []
+}
+
+fact F_POLICY {
+  claim: "the policy is that a stated number names its instrument",
+  evidence: doc("docs/PROTOCOL.md"),
+  layer: L_TOP
+}
+
+fact F_MEASURED {
+  claim: "the trace records 14ms frames",
+  evidence: tool("trace.json"),
+  layer: L_TOP
+}
+
+law K_INSTRUMENT {
+  statement: "a number without an instrument is an estimate",
+  holds_in: L_TOP,
+  checked_by: [F_POLICY],
+  requires: ["measured_by"]
+}
+
+law K_INSTRUMENT_DOWN {
+  statement: "the implementation carries the instrument as a field",
+  holds_in: L_DOWN,
+  checked_by: [F_MEASURED],
+  refines: L_TOP
+}
+
+proposition P_FRAME_OK {
+  statement: "the frame stays inside the budget",
+  from: [F_MEASURED]
+}
+
+warrant W_FRAME_OK {
+  claim: "the trace is the instrument behind the claim",
+  from: [F_MEASURED],
+  to: P_FRAME_OK,
+  basis: [K_INSTRUMENT]
+}

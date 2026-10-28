@@ -1,0 +1,1 @@
+fact F_SMALL { claim: "the small cache cut latency", evidence: user }

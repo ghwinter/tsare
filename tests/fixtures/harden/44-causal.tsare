@@ -1,0 +1,46 @@
+# Research: the stall was caused by a cache miss on the hot path, not by the parser.
+#
+# The explanation is a hypothesis with a refuting observation, and the observation is a measured
+# fact rather than a second story. The rival explanation is written down so the pair can be told
+# apart: if the parser were the cause, the stall would move when the cache is warm.
+
+fact F_STALL_TRACE {
+  claim: "the pause appears once per cold cache, before the parse completes",
+  evidence: tool("trace/stall.json")
+}
+
+fact F_WARM_RUN {
+  claim: "the warm run has the same parse time and no stall",
+  evidence: tool("trace/warm.json")
+}
+
+fact F_PARSE_TIME {
+  claim: "the parser takes 3ms in both runs",
+  evidence: tool("trace/parse.json")
+}
+
+hypothesis H_CACHE_MISS {
+  assumes: [F_STALL_TRACE, F_WARM_RUN],
+  predicts: "the stall tracks the cold cache, not the parser",
+  test: "preload the cache and re-run the same trace",
+  verdict: supported,
+  verdict_by: F_WARM_RUN
+}
+
+hypothesis H_PARSER {
+  assumes: [F_PARSE_TIME, F_STALL_TRACE],
+  predicts: "the parser is the slow step and the cache is irrelevant",
+  rival: H_CACHE_MISS
+}
+
+proposition P_CAUSE {
+  statement: "the cache miss, not the parser, explains the stall",
+  from: [F_STALL_TRACE, F_WARM_RUN, F_PARSE_TIME]
+}
+
+warrant W_CAUSE {
+  claim: "a common cause would have to explain the warm run too, and the parser is equally fast there",
+  from: [F_STALL_TRACE, F_WARM_RUN],
+  to: P_CAUSE,
+  basis: [F_PARSE_TIME]
+}

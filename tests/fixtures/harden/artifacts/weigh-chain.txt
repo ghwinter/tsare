@@ -1,0 +1,15 @@
+command: tsare weigh docs/repro/confidence-chain.tsare
+threshold 0.7
+  P1                0.90  derived  ok    W1=0.90
+  P2                1.00  derived  ok    W2=1.00
+
+command: tsare check docs/repro/confidence-chain.tsare
+docs\repro\confidence-chain.tsare:3:1: warning[W-UNWARRANTED-BASIS]: warrant W1 states a rule, but nothing makes the rule acceptable
+ 3 | warrant W1 { claim: "w1", from: [F], to: P1 }
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+docs\repro\confidence-chain.tsare:5:1: warning[W-UNWARRANTED-BASIS]: warrant W2 states a rule, but nothing makes the rule acceptable
+ 5 | warrant W2 { claim: "w2", from: [P1], to: P2 }
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+0 error(s), 2 warning(s)

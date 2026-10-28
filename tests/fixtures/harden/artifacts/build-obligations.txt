@@ -1,0 +1,24 @@
+command: tsare build docs/repro/decided-hypothesis.tsare --out tmp/art/decided
+0 error(s), 0 warning(s)
+emitted tmp\art\decided\OBLIGATIONS.md
+emitted tmp\art\decided\LEARNED.md
+emitted tmp\art\decided\OPEN.md
+emitted tmp\art\decided\NOTES.md
+emitted tmp\art\decided\predicates.py
+predicates: 0 attribute + 0 structural, verified on every example
+| H | hypothesis | test | done | supported by F_RUN |
+
+command: tsare build docs/repro/build-hole-evidence.tsare --out tmp/art/hole
+docs\repro\build-hole-evidence.tsare:1:37: warning[W-HOLE]: F_HOLE.evidence is a hole: it compiles, but nothing can check it yet
+ 1 | fact F_HOLE { claim: "x", evidence: ? }
+   |                                     ^
+
+0 error(s), 1 warning(s)
+holes: 1 unknown value(s), listed in OPEN.md after a build
+emitted tmp\art\hole\OBLIGATIONS.md
+emitted tmp\art\hole\LEARNED.md
+emitted tmp\art\hole\OPEN.md
+emitted tmp\art\hole\NOTES.md
+emitted tmp\art\hole\predicates.py
+predicates: 0 attribute + 0 structural, verified on every example
+| F_HOLE | fact | check | ready | evidence: tool |

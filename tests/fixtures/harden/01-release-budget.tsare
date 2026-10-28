@@ -1,0 +1,34 @@
+# Decision: the release binary stays under eight megabytes so a CI runner can keep it
+# as a cached artifact without a second storage tier.
+#
+# The measurement is recorded as an artifact, not as prose: the fact names the file and the
+# hash of its bytes, so the checker can tell whether this document still describes the build
+# it was written against (E-OUT-MISMATCH) or has nothing to compare against
+# (W-OUT-UNVERIFIED).
+
+fact F_BINARY {
+  claim: "the 0.4.0 release binary is 2435072 bytes",
+  evidence: tool("target/release/tsare.exe"),
+  artifact: "docs/artifacts/binary-size.txt",
+  out: "ab330a39ff01d6dea1cddc40376a6bbf2c48a296e58ea86e7748aa7371b227cc"
+}
+
+value V_BINARY {
+  metric: "release_binary_bytes",
+  direction: max,
+  unit: "bytes",
+  threshold: 8000000,
+  measured_by: tool("Get-Item target/release/tsare.exe")
+}
+
+proposition P_BUDGET {
+  statement: "the release binary fits the artifact-cache budget",
+  from: [F_BINARY]
+}
+
+warrant W_BUDGET {
+  claim: "2435072 bytes is below the 8000000-byte budget",
+  from: [F_BINARY],
+  to: P_BUDGET,
+  basis: [V_BINARY]
+}

@@ -170,13 +170,13 @@ pub fn grounded_sets(decls: &[Decl]) -> (HashSet<String>, HashSet<String>) {
 
 pub fn statuses(decls: &[Decl], inside: &HashSet<String>) -> HashMap<String, String> {
     let mut by_conclusion: HashMap<String, Vec<String>> = HashMap::new();
-    for decl in decls.iter().filter(|decl| decl.kind == "warrant") {
-        if let Some(target) = id_field(decl, "to") {
-            by_conclusion
-                .entry(target.to_string())
-                .or_default()
-                .push(decl.name.clone());
-        }
+    // `concludes:` is a rule about a class, not a rule about one name; the class members are
+    // applications too, so this must read the same list the fixpoint reads.
+    for rule in applications(decls) {
+        by_conclusion
+            .entry(rule.target)
+            .or_default()
+            .push(rule.warrant);
     }
     let mut out = HashMap::new();
     for decl in decls.iter().filter(|decl| decl.kind == "proposition") {
@@ -189,6 +189,28 @@ pub fn statuses(decls: &[Decl], inside: &HashSet<String>) -> HashMap<String, Str
         out.insert(decl.name.clone(), state.to_string());
     }
     out
+}
+
+/// The word a reason uses for a premise: a proposition's status, "retired" for a withdrawn
+/// declaration, or the declaration's kind for anything else.  The state map only holds
+/// propositions, so falling back to "fact" for everything else called a hypothesis a fact.
+fn premise_label(
+    decls: &[Decl],
+    state: &HashMap<String, String>,
+    gone: &HashSet<String>,
+    premise: &str,
+) -> String {
+    if gone.contains(premise) {
+        return "retired".to_string();
+    }
+    if let Some(status) = state.get(premise) {
+        return status.clone();
+    }
+    decls
+        .iter()
+        .find(|decl| decl.name == premise)
+        .map(|decl| decl.kind.clone())
+        .unwrap_or_else(|| "unknown".to_string())
 }
 
 pub struct Closure {
@@ -236,19 +258,7 @@ pub fn closure(decls: &[Decl]) -> Closure {
         for rule in rules.iter().filter(|rule| &rule.target == name) {
             for premise in &rule.premises {
                 if !held.contains(premise) {
-                    let premise_state = if gone.contains(premise) {
-                        "retired".to_string()
-                    } else {
-                        state
-                            .get(premise)
-                            .cloned()
-                            .unwrap_or_else(|| "fact".to_string())
-                    };
-                    let label = if premise_state == "defeated" {
-                        "defeated".to_string()
-                    } else {
-                        premise_state
-                    };
+                    let label = premise_label(decls, &state, &gone, premise);
                     reasons.push(format!("{} needs {premise} ({label})", rule.warrant));
                 }
             }
@@ -256,9 +266,21 @@ pub fn closure(decls: &[Decl]) -> Closure {
         if reasons.is_empty() {
             reasons.push("no live rule reached a fact".to_string());
         }
+        let hidden = reasons.len().saturating_sub(2);
         reasons.truncate(2);
-        conditional.push((name.clone(), reasons.join("; ")));
+        let joined = reasons.join("; ");
+        conditional.push((
+            name.clone(),
+            if hidden > 0 {
+                format!("{joined}; … {hidden} more")
+            } else {
+                joined
+            },
+        ));
     }
+    // `state` is a HashMap; a report whose rows follow its iteration order differs between runs.
+    // The conclusion set is the same, but a byte-for-byte comparison cannot see that.
+    conditional.sort_by(|left, right| left.0.cmp(&right.0));
     Closure {
         facts,
         held,
@@ -276,16 +298,11 @@ pub struct EngineResult {
 
 fn support_edges(decls: &[Decl]) -> HashMap<String, Vec<String>> {
     let mut edges: HashMap<String, Vec<String>> = HashMap::new();
+    for rule in applications(decls) {
+        edges.entry(rule.target).or_default().extend(rule.premises);
+    }
     for decl in decls {
         match decl.kind.as_str() {
-            "warrant" => {
-                if let Some(target) = id_field(decl, "to") {
-                    edges
-                        .entry(target.to_string())
-                        .or_default()
-                        .extend(field_ids(decl, "from"));
-                }
-            }
             "proposition" => {
                 edges
                     .entry(decl.name.clone())
@@ -354,19 +371,7 @@ pub fn engine(decls: &[Decl]) -> EngineResult {
         for rule in rules.iter().filter(|rule| &rule.target == name) {
             for premise in &rule.premises {
                 if !held.contains(premise) {
-                    let premise_state = if gone.contains(premise) {
-                        "retired".to_string()
-                    } else {
-                        state
-                            .get(premise)
-                            .cloned()
-                            .unwrap_or_else(|| "fact".to_string())
-                    };
-                    let label = if premise_state == "defeated" {
-                        "defeated".to_string()
-                    } else {
-                        premise_state
-                    };
+                    let label = premise_label(decls, &state, &gone, premise);
                     reasons.push(format!("{} needs {premise} ({label})", rule.warrant));
                 }
             }
@@ -376,8 +381,6 @@ pub fn engine(decls: &[Decl]) -> EngineResult {
         }
         conditional.push((name.clone(), reasons));
     }
-    // state is a HashMap: two runs of the same document must not disagree about the order of
-    // the conditional conclusions.
     conditional.sort_by(|left, right| left.0.cmp(&right.0));
 
     let mut blocked = Vec::new();

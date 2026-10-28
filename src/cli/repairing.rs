@@ -21,11 +21,18 @@ pub(crate) fn cmd_suggest(path: &Path, json: bool) -> i32 {
     let rendered: Vec<String> = items
         .iter()
         .map(|item| {
+            // A single-file load leaves decl.file empty; the command knows the document it read,
+            // and a span without a file is not a location a caller can apply.
+            let file = if item.file.is_empty() {
+                path.display().to_string()
+            } else {
+                item.file.clone()
+            };
             format!(
                 "{{\"applicability\": \"{}\", \"message\": \"{}\", \"file\": \"{}\", \"span\": {{\"line\": {}, \"col\": {}, \"end_line\": {}, \"end_col\": {}}}, \"replacement\": \"{}\"}}",
                 item.applicability,
                 escape(&item.message),
-                escape(&item.file),
+                escape(&file),
                 item.line,
                 item.col,
                 item.end_line,
@@ -64,6 +71,10 @@ const NO_REPAIR: &[(&str, &str)] = &[
     (
         "W-EXAMPLE-SHAPE",
         "needs an attribute the examples share; only the author knows one",
+    ),
+    (
+        "W-OVERCLAIM",
+        "needs `over:` naming a set the engine can enumerate; that is content",
     ),
     (
         "E-CYCLE",
@@ -154,7 +165,9 @@ pub(crate) fn cmd_fix(path: &Path, apply: Option<&str>) -> i32 {
             rounds += 1;
         }
         let (after_e, after_w) = crate::fix::score_without_holes(&current);
-        fs::write(out, crate::fix::render(&current)).expect("write file");
+        if let Err(error) = fs::write(out, crate::fix::render(&current)) {
+            return fail(format!("{out}: {error}"));
+        }
         println!("applied {rounds} fix(es) -> {out} ({after_e} errors, {after_w} warnings)");
     }
     0

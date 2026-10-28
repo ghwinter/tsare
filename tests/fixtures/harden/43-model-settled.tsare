@@ -1,0 +1,30 @@
+# Decision: a hypothesis may be settled by a person's confirmation of a model's proposal, and the
+# confirmation is evidence of a grade above the model's own word.
+#
+# The alternative was to reclassify the evidence as `user`, which erases that the sentence started
+# as a proposal. The grade ladder Confirmed >= Confirmed is what lets the verdict stand.
+
+fact F_PROPOSAL {
+  claim: "the JSON field order is stable in release 0.4.0",
+  evidence: model,
+  confirmed_by: "release manager, after diffing two releases"
+}
+
+hypothesis H_STABLE {
+  assumes: [F_PROPOSAL],
+  predicts: "consumers may parse diagnostics by field name",
+  verdict: supported,
+  verdict_by: F_PROPOSAL
+}
+
+proposition P_CONSUMERS {
+  statement: "consumers may rely on the diagnostic field names",
+  from: [F_PROPOSAL]
+}
+
+warrant W_CONSUMERS {
+  claim: "a confirmed release note is enough for a field-name promise",
+  from: [F_PROPOSAL],
+  to: P_CONSUMERS,
+  basis: [F_PROPOSAL]
+}

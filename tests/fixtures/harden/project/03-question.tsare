@@ -1,0 +1,22 @@
+# The open question the decision leaves: text is inspectable and binary is compact.
+#
+# This file cites facts from 01-problem.tsare and the question the partition in 02-decision.tsare
+# names. Alone it has unresolved references; as part of the directory it is one program.
+
+question Q_STORE {
+  asks: "should the case store be text or binary?",
+  answers: ["append-only text lines", "a compact binary log"],
+  separates: [H_TEXT, H_BINARY]
+}
+
+hypothesis H_TEXT {
+  assumes: [F_APPEND, F_KILL_TEST],
+  predicts: "a text line survives a partial write and a reader can skip it",
+  test: "kill the writer mid-line and read the store back"
+}
+
+hypothesis H_BINARY {
+  assumes: [F_TRUNCATE],
+  predicts: "a binary log is compact enough to pay for the reader",
+  rival: H_TEXT
+}

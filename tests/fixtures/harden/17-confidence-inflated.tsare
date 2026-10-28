@@ -1,0 +1,19 @@
+# Decision recorded as a fault: this number was written before the evidence was. The fact's
+# measured confidence is 0.5; the proposition claims 0.9 and no rule computes it.
+#
+# The checker refuses the gap in two ways: the proposition carries a confidence nothing derives
+# (W-CONFIDENCE-ASSERTED) and the number exceeds its weakest premise (W-CONFIDENCE-INFLATED). The
+# decision is to leave the file as the recorded state and lower the number in the next revision,
+# not to weaken the check.
+
+fact F_SUPPORT {
+  claim: "the sample contains 40 sessions",
+  evidence: tool("sessions.csv"),
+  confidence: 0.5
+}
+
+proposition P_CONFIDENT {
+  statement: "the change reduces time to first paint",
+  from: [F_SUPPORT],
+  confidence: 0.9
+}

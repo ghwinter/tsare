@@ -1,0 +1,29 @@
+# Decision recorded as a broken hierarchy: the child concept was declared under a parent, but one
+# of its examples is not in the parent's extent. Ext is a functor only when every child extent sits
+# inside its parent's, so this file is refused with E-HIERARCHY.
+#
+# The repair is either to add the example to the parent or to drop the parent link; both change what
+# the document claims, which is why the checker does not choose.
+
+fact F_BASE_CASE {
+  claim: "the base case returns the accumulator",
+  evidence: tool("tests/base.txt")
+}
+
+fact F_OPTIMISED_CASE {
+  claim: "the optimised case returns the accumulator",
+  evidence: tool("tests/optimised.txt")
+}
+
+concept C_PARENT {
+  name: "the recursive path",
+  grounded_by: [F_BASE_CASE],
+  against: [F_OPTIMISED_CASE]
+}
+
+concept C_CHILD {
+  name: "the optimised path",
+  grounded_by: [F_OPTIMISED_CASE],
+  against: [F_BASE_CASE],
+  parent: C_PARENT
+}

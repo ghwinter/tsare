@@ -54,22 +54,28 @@ pub struct Obligation {
 
 pub fn obligation(
     decl: &Decl,
-    _prog: &Program,
+    prog: &Program,
     learnings: &HashMap<String, Learning>,
 ) -> Obligation {
     let action = action_of(&decl.kind);
     match decl.kind.as_str() {
         "fact" => {
             let confirmed = f_str(decl, "confirmed_by");
-            let name = evidence_name(decl);
-            if name.as_deref() == Some("model") && confirmed.is_none() {
+            let Some(name) = evidence_name(decl) else {
+                return Obligation {
+                    action,
+                    state: "blocked",
+                    note: "no evidence: the field is a hole or absent".to_string(),
+                };
+            };
+            if name == "model" && confirmed.is_none() {
                 return Obligation {
                     action,
                     state: "blocked",
                     note: "model-supplied, not confirmed".to_string(),
                 };
             }
-            if name.as_deref() == Some("model") {
+            if name == "model" {
                 return Obligation {
                     action,
                     state: "ready",
@@ -79,7 +85,7 @@ pub fn obligation(
             Obligation {
                 action,
                 state: "ready",
-                note: format!("evidence: {}", name.unwrap_or_else(|| "tool".to_string())),
+                note: format!("evidence: {name}"),
             }
         }
         "concept" => {
@@ -112,10 +118,21 @@ pub fn obligation(
         }
         "proposition" => {
             if !f_ids(decl, "from").is_empty() {
-                Obligation {
-                    action,
-                    state: "ready",
-                    note: "premises given".to_string(),
+                let connected = crate::closure::applications(prog.decls)
+                    .iter()
+                    .any(|rule| rule.target == decl.name);
+                if connected {
+                    Obligation {
+                        action,
+                        state: "ready",
+                        note: "premises given".to_string(),
+                    }
+                } else {
+                    Obligation {
+                        action,
+                        state: "blocked",
+                        note: "no rule supports it".to_string(),
+                    }
                 }
             } else {
                 Obligation {

@@ -1,0 +1,2 @@
+fact F_A { claim: "a", evidence: user }
+partition P { dimension: C_NOPE, elements: [F_A], closure: open }

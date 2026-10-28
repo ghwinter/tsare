@@ -1,0 +1,43 @@
+# Decision: latency wins over throughput when the two conflict during a scroll.
+#
+# Two bounds on nearly the same quantity point in opposite directions. The language refuses the
+# pair unless one of them outranks the other, so the decision is written as a priority instead of
+# a paragraph. Latency is priority 2; throughput is priority 1.
+
+fact F_TRACE {
+  claim: "the scroll trace records 14ms p99 frame time and 55 fps",
+  evidence: tool("trace/scroll.json"),
+  attrs: { p99_ms: 14, fps: 55 }
+}
+
+value V_LATENCY {
+  metric: "frame_latency_ms",
+  direction: max,
+  unit: "ms",
+  threshold: 16,
+  priority: 2,
+  measured_by: tool("trace/scroll.json")
+}
+
+value V_THROUGHPUT {
+  metric: "frame_latency_ms",
+  direction: min,
+  unit: "ms",
+  threshold: 8,
+  priority: 1,
+  measured_by: tool("trace/scroll.json")
+}
+
+proposition P_SCROLL_OK {
+  statement: "the scroll stays under the latency budget at priority 2",
+  from: [F_TRACE]
+}
+
+warrant W_SCROLL_OK {
+  claim: "14ms is under the latency bound, and latency outranks throughput",
+  from: [F_TRACE],
+  to: P_SCROLL_OK,
+  basis: [V_LATENCY, V_THROUGHPUT],
+  confidence: 0.9
+}
+

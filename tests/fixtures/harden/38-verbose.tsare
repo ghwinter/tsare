@@ -1,0 +1,139 @@
+# Decision: the frame-budget subsystem keeps its own layers, values, examples and questions in one
+# document so a reader can see the whole argument at once. This is the verbose style on purpose:
+# every claim carries the field that makes it checkable, and the cost is length.
+#
+# Nothing here is a summary of another file; the numbers are attached to the instrument that
+# produced them, and the closed list names the analysis that closed it.
+
+layer L_MEASURED {
+  name: "what the trace measures",
+  exposes: [F_TRACE, F_SAMPLE, P_FRAME_FAST, V_FRAME]
+}
+
+layer L_DECIDED {
+  name: "what the release commits to",
+  exposes: [P_RELEASE_OK]
+}
+
+fact F_TRACE {
+  claim: "the scroll trace contains 200 frames at 8ms and 10ms",
+  evidence: tool("trace/scroll.json"),
+  layer: L_MEASURED,
+  attrs: { frame_ms: 8, mode: fast }
+}
+
+fact F_TRACE_SLOW {
+  claim: "one frame in the trace takes 40ms",
+  evidence: tool("trace/scroll.json"),
+  layer: L_MEASURED,
+  attrs: { frame_ms: 40, mode: slow }
+}
+
+fact F_SAMPLE {
+  claim: "the trace covers 200 frames",
+  evidence: tool("trace/scroll.json"),
+  layer: L_MEASURED
+}
+
+fact F_SLOW_FRAME {
+  claim: "the 40ms frame happened during a devtools snapshot",
+  evidence: tool("trace/note.txt"),
+  layer: L_MEASURED
+}
+
+fact F_ANALYSIS {
+  claim: "the analysis enumerated the fast frames as the committed set",
+  evidence: tool("analysis/frames.md"),
+  layer: L_MEASURED
+}
+
+value V_FRAME {
+  metric: "frame_ms",
+  direction: max,
+  unit: "ms",
+  threshold: 16,
+  measured_by: tool("trace/scroll.json")
+}
+
+concept C_FAST_FRAMES {
+  name: "a frame inside the budget",
+  grounded_by: [F_TRACE],
+  against: [F_TRACE_SLOW],
+  layer: L_MEASURED
+}
+
+partition E_FAST_FRAMES {
+  of: Q_FRAME,
+  dimension: C_FAST_FRAMES,
+  elements: [F_TRACE],
+  closure: closed,
+  basis: [F_ANALYSIS],
+  layer: L_MEASURED
+}
+
+proposition P_FRAME_FAST {
+  statement: "the traced frames land inside the frame budget",
+  from: [F_TRACE],
+  layer: L_MEASURED,
+  confidence: 0.85
+}
+
+warrant W_FRAME_FAST {
+  claim: "8ms and 10ms are inside the 16ms bound",
+  from: [F_TRACE],
+  to: P_FRAME_FAST,
+  basis: [V_FRAME],
+  layer: L_MEASURED,
+  confidence: 0.85
+}
+
+proposition P_RELEASE_OK {
+  statement: "the release may claim the scroll stays inside the budget",
+  from: [P_FRAME_FAST, F_SAMPLE],
+  layer: L_DECIDED
+}
+
+warrant W_RELEASE_OK {
+  claim: "a measured sample and a concluded budget are enough to ship the claim",
+  from: [P_FRAME_FAST, F_SAMPLE],
+  to: P_RELEASE_OK,
+  basis: [V_FRAME],
+  layer: L_DECIDED
+}
+
+question Q_FRAME {
+  asks: "is the 40ms snapshot frame part of the steady-state sample?",
+  answers: ["exclude it: it is a devtools artefact", "keep it: the user can see it"],
+  separates: [H_EXCLUDE, H_KEEP]
+}
+
+hypothesis H_EXCLUDE {
+  assumes: [F_SLOW_FRAME],
+  predicts: "the 40ms frame is not part of the committed trace",
+  test: "re-run the trace without devtools open and compare the p99"
+}
+
+hypothesis H_KEEP {
+  assumes: [F_TRACE_SLOW],
+  predicts: "the slow frame is visible to users and belongs in the sample",
+  rival: H_EXCLUDE
+}
+
+law K_FRAME_MEASURED {
+  statement: "every committed frame number names the trace that produced it",
+  holds_in: L_MEASURED,
+  checked_by: [F_TRACE]
+}
+
+law K_FRAME_DECIDED {
+  statement: "the release claim stands on the measured layer",
+  holds_in: L_DECIDED,
+  checked_by: [F_ANALYSIS],
+  refines: L_MEASURED
+}
+
+note N_REVIEW {
+  tag: conjecture,
+  text: "the 40ms frame was probably the devtools overlay, not the application",
+  about: [F_TRACE_SLOW, F_SLOW_FRAME]
+}

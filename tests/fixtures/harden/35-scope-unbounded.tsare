@@ -1,0 +1,16 @@
+# Decision recorded as a binding mistake: "all of the sampled runs" was bound to a single fact
+# instead of the concept whose extent is the sample. A fact has no extent, so the universal claim
+# quantifies over something the engine cannot list.
+#
+# The repair is to bind `over:` to a concept, a closed partition, or a layer.
+
+fact F_RUN_ONE {
+  claim: "run one passed",
+  evidence: tool("runs/1.log")
+}
+
+fact F_ALL_RUNS {
+  claim: "all of the sampled runs passed",
+  evidence: tool("runs/summary.json"),
+  over: [F_RUN_ONE]
+}

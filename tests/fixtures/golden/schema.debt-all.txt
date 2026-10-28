@@ -1,2 +1,2 @@
-P_SMOOTH             clear        gates 0/0 facts
-P_STABLE             clear        gates 0/0 facts
+P_SMOOTH             clear        gates 0/1 facts
+P_STABLE             clear        gates 0/1 facts

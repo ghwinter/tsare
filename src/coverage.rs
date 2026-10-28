@@ -111,7 +111,7 @@ pub fn diagnostics(goals: &[Goal]) -> Vec<Diagnostic> {
     vec![Diagnostic {
         code: "E-UNCOVERED",
         message: format!(
-            "{} of {} goals are addressed by no value or question: {}",
+            "{} of {} goals are addressed by no commitment (value, question, hypothesis, concept, proposition or blind spot): {}",
             missing.len(),
             goals.len(),
             missing.join(", ")

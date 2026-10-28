@@ -2,6 +2,12 @@
 
 use super::*;
 
+/// Write an output file and report the filesystem error; a path that cannot be written is a
+/// file problem, not a panic.
+fn write_file(path: &Path, text: &str) -> Result<(), String> {
+    fs::write(path, text).map_err(|error| format!("{}: {error}", path.display()))
+}
+
 pub(crate) fn cmd_audit(path: &Path) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
@@ -58,7 +64,9 @@ pub(crate) fn cmd_egraph(path: &Path, write: Option<&str>) -> i32 {
     if let Some(out) = write {
         let mapping = crate::egraph::canonical_map(&mut uf);
         let new_decls = crate::egraph::rewrite(&loaded.decls, &mapping);
-        fs::write(out, crate::fix::render(&new_decls)).expect("write file");
+        if let Err(error) = write_file(Path::new(out), &crate::fix::render(&new_decls)) {
+            return fail(error);
+        }
         let reloaded = match load(Path::new(out)) {
             Ok(reloaded) => reloaded,
             Err(error) => {
@@ -92,15 +100,19 @@ pub(crate) fn cmd_graph(path: &Path, out: Option<&str>) -> i32 {
         Some(target) => PathBuf::from(target),
         None => path.with_extension("net.mmd"),
     };
-    fs::write(&destination, text).expect("write graph");
+    if let Err(error) = write_file(&destination, &text) {
+        return fail(error);
+    }
     let (nodes, edges) = crate::graph::summary(&program);
     println!("{nodes} nodes, {edges} edges -> {}", destination.display());
     let diagnostics = crate::check::check(&loaded.decls);
     let errors = error_count(&diagnostics);
     if errors > 0 {
         println!("note: {errors} error(s); dangling edges are part of the picture");
+        1
+    } else {
+        0
     }
-    0
 }
 
 pub(crate) fn cmd_map(left: &Path, right: &Path, top: usize) -> i32 {
@@ -188,7 +200,11 @@ pub(crate) fn cmd_induce(path: &Path) -> i32 {
             println!("    {}. {answer}", index + 1);
         }
     }
-    0
+    if errors > 0 {
+        1
+    } else {
+        0
+    }
 }
 
 pub(crate) fn cmd_pattern(path: &Path, name: &str, with_vars: bool) -> i32 {
@@ -282,31 +298,12 @@ pub(crate) fn cmd_build(path: &Path, out: &str, goals_path: Option<&str>) -> i32
     if let Err(error) = fs::create_dir_all(&out_dir) {
         return fail(format!("{}: {error}", out_dir.display()));
     }
-    if path.is_dir() {
-        let learnings = crate::build::learnings_of(&program);
-        fs::write(
-            out_dir.join("OBLIGATIONS.md"),
-            crate::build::render_obligations(&program, &learning_map(&learnings)),
-        )
-        .expect("write");
-        fs::write(
-            out_dir.join("LEARNED.md"),
-            crate::build::render_learned(&learnings, &[]),
-        )
-        .expect("write");
-        println!(
-            "project {}: {} declarations, emitted {}",
-            path.display(),
-            program.decls.len(),
-            out_dir.display()
-        );
-        return 0;
-    }
 
     let diagnostics = crate::check::check(&loaded.decls);
     {
-        let mut session =
-            crate::session::Session::new(path.display().to_string()).with_source(&loaded.text);
+        let mut session = crate::session::Session::new(path.display().to_string())
+            .with_source(&loaded.text)
+            .with_sources(&loaded.sources);
         session.extend(diagnostics.clone());
         print!("{}", session.text());
         println!("{}", session.summary());
@@ -347,26 +344,6 @@ pub(crate) fn cmd_build(path: &Path, out: &str, goals_path: Option<&str>) -> i32
         structurals.push((concept.name.clone(), rule));
     }
     let mapping = learning_map(&learnings);
-    fs::write(
-        out_dir.join("OBLIGATIONS.md"),
-        crate::build::render_obligations(&program, &mapping),
-    )
-    .expect("write");
-    fs::write(
-        out_dir.join("LEARNED.md"),
-        crate::build::render_learned(&learnings, &structurals),
-    )
-    .expect("write");
-    fs::write(
-        out_dir.join("OPEN.md"),
-        crate::build::render_open(&program, &learnings, &holes),
-    )
-    .expect("write");
-    fs::write(
-        out_dir.join("NOTES.md"),
-        crate::build::render_notes(&program),
-    )
-    .expect("write");
     let source = crate::build::predicates_source(
         &program,
         &mapping,
@@ -376,14 +353,38 @@ pub(crate) fn cmd_build(path: &Path, out: &str, goals_path: Option<&str>) -> i32
             .map(|name| name.to_string_lossy().to_string())
             .unwrap_or_default(),
     );
-    fs::write(out_dir.join("predicates.py"), &source).expect("write");
-    for name in [
-        "OBLIGATIONS.md",
-        "LEARNED.md",
-        "OPEN.md",
-        "NOTES.md",
-        "predicates.py",
-    ] {
+    let files: Vec<(&str, String)> = vec![
+        (
+            "OBLIGATIONS.md",
+            crate::build::render_obligations(&program, &mapping),
+        ),
+        (
+            "LEARNED.md",
+            crate::build::render_learned(&learnings, &structurals),
+        ),
+        (
+            "OPEN.md",
+            crate::build::render_open(&program, &learnings, &holes),
+        ),
+        ("NOTES.md", crate::build::render_notes(&program)),
+        ("predicates.py", source),
+    ];
+    for (name, text) in &files {
+        if let Err(error) = write_file(&out_dir.join(name), text) {
+            return fail(error);
+        }
+    }
+    // A directory is one program, so it emits the same five artifacts as a file; the old branch
+    // stopped after two and called that "emitted", with no obligation to say which two.
+    if path.is_dir() {
+        println!(
+            "project {}: {} declarations, emitted {}",
+            path.display(),
+            program.decls.len(),
+            out_dir.display()
+        );
+    }
+    for (name, _) in &files {
         println!("emitted {}", out_dir.join(name).display());
     }
     let defined = learnings
@@ -406,11 +407,10 @@ pub(crate) fn cmd_build(path: &Path, out: &str, goals_path: Option<&str>) -> i32
         "predicates: {defined} attribute + {structured} structural, verified on every example"
     );
     if let Some(report) = &goals {
-        fs::write(
-            out_dir.join("COVERAGE.md"),
-            crate::build::render_coverage(report),
-        )
-        .expect("write");
+        let text = crate::build::render_coverage(report);
+        if let Err(error) = write_file(&out_dir.join("COVERAGE.md"), &text) {
+            return fail(error);
+        }
         println!("emitted {}", out_dir.join("COVERAGE.md").display());
     }
     0
@@ -482,7 +482,10 @@ pub(crate) fn cmd_mem(store: &Path, recall: Option<&[String]>, k: usize) -> i32 
         "conflicting: {}  (same situation and action, opposite outcome)",
         report.conflicting
     );
-    println!("no-op:       {}  (changed nothing either way)", report.noop);
+    println!(
+        "regressed:   {}  (the counts changed, not for the better)",
+        report.regressed
+    );
     println!("unchanged:   {}", report.unchanged);
     println!(
         "orphans:     {}  (document no longer exists)",

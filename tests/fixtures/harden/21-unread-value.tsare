@@ -1,0 +1,23 @@
+# Decision: the frame budget was measured but never wired into a rule, so it cannot change a
+# decision. The alternative was to cite it from a warrant that does not read it; that would silence
+# the warning without making the number load-bearing, which is worse.
+#
+# The value stays in the file until the rule that consumes it exists. W-UNREAD is the reminder.
+
+fact F_TRACE {
+  claim: "the trace records 16ms frames",
+  evidence: tool("trace.json")
+}
+
+value V_FRAME_BUDGET {
+  metric: "frame_ms",
+  direction: max,
+  unit: "ms",
+  threshold: 16,
+  measured_by: tool("trace.json")
+}
+
+proposition P_TRACE_CLEAN {
+  statement: "the trace stays inside the budget",
+  from: [F_TRACE]
+}

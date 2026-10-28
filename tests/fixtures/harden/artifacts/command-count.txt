@@ -1,0 +1,3 @@
+commands listed in --help: 37
+names: check, project, engine, argue, confront, derive, debt, impact, next, ask, novel, meet, shape, imply, abstract, cost, weigh, fca, cat, moves, assumptions, delta, whatif, kinds, fix, suggest, apply, propose, outline, build, graph, map, induce, pattern, audit, egraph, mem
+kinds: 12

@@ -1,0 +1,58 @@
+== diagnostic counts, baseline -> after
+E-COLLAPSE                           1 ->   1   (1 -> 1 documents)
+E-CYCLE                              2 ->   1   (2 -> 1 documents)
+E-HIERARCHY                          1 ->   1   (1 -> 1 documents)
+E-INCOMMENSURABLE                    1 ->   1   (1 -> 1 documents)
+E-LAYER-LEAK                         1 ->   1   (1 -> 1 documents)
+E-OUT-MISMATCH                       1 ->   1   (1 -> 1 documents)
+E-PARTITION-CLOSED-CONTRADICTED      1 ->   1   (1 -> 1 documents)
+E-SCOPE-UNBOUNDED                    1 ->   1   (1 -> 1 documents)
+E-SELF-VERDICT                       1 ->   1   (1 -> 1 documents)
+E-TENSION                            1 ->   1   (1 -> 1 documents)
+W-BARE-NUMBER                        2 ->   2   (2 -> 2 documents)
+W-BASIS-NO-CRITERION                 1 ->   0   (1 -> 0 documents)
+W-COLLIDE                            2 ->   2   (1 -> 1 documents)
+W-CONDITIONAL                        5 ->   5   (2 -> 2 documents)
+W-CONFIDENCE-ASSERTED                1 ->   1   (1 -> 1 documents)
+W-CONFIDENCE-INFLATED                1 ->   1   (1 -> 1 documents)
+W-EXAMPLE-SHAPE                      1 ->   1   (1 -> 1 documents)
+W-OUT-UNVERIFIED                     1 ->   1   (1 -> 1 documents)
+W-OVERCLAIM                          7 ->   5   (4 -> 3 documents)
+W-PARTITION-OPEN-USED                1 ->   1   (1 -> 1 documents)
+W-PARTITION-UNKNOWN                  1 ->   1   (1 -> 1 documents)
+W-RETIRED                            2 ->   2   (1 -> 1 documents)
+W-RETIRED-UNBASED                    1 ->   1   (1 -> 1 documents)
+W-UNCONFIRMED                        9 ->   9   (4 -> 4 documents)
+W-UNREAD                             2 ->   2   (2 -> 2 documents)
+W-UNREFINED                          1 ->   1   (1 -> 1 documents)
+W-UNSATISFIED                        1 ->   1   (1 -> 1 documents)
+W-UNTESTED                           1 ->   1   (1 -> 1 documents)
+W-UNWARRANTED                        9 ->   7   (7 -> 6 documents)
+
+== documents whose diagnostics changed
+docs/04-cache-hit.tsare
+   gone     E-CYCLE x1
+docs/23-overclaim-small.tsare
+   gone     W-OVERCLAIM x2
+docs/43-model-settled.tsare
+   gone     W-BASIS-NO-CRITERION x1
+docs/48-concludes.tsare
+   gone     W-UNWARRANTED x2
+
+== exit status on documents with errors (check-json errors > 0)
+check      before: exit0=0 exit1=11   after: exit0=0 exit1=10
+argue      before: exit0=11 exit1=0   after: exit0=0 exit1=10
+impact     before: exit0=11 exit1=0   after: exit0=0 exit1=10
+weigh      before: exit0=11 exit1=0   after: exit0=0 exit1=10
+cat        before: exit0=11 exit1=0   after: exit0=0 exit1=10
+induce     before: exit0=0 exit1=0   after: exit0=0 exit1=10
+graph      before: exit0=11 exit1=0   after: exit0=0 exit1=10
+project    before: exit0=0 exit1=11   after: exit0=0 exit1=10
+build      before: exit0=0 exit1=11   after: exit0=0 exit1=10
+
+== nondeterministic commands (4 runs)
+before: 3
+   docs/49-engine-order-repro.tsare engine
+   docs/49-engine-order-repro.tsare engine-json
+   docs/49-engine-order-repro.tsare project
+after: 0

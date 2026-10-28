@@ -148,13 +148,25 @@ pub(crate) fn cmd_engine(path: &Path, json: bool) -> i32 {
             String::new()
         } else {
             let shown: Vec<String> = gates.iter().take(3).cloned().collect();
-            format!("  gates: {}", shown.join(", "))
+            let hidden = gates.len() - shown.len();
+            let tail = if hidden > 0 {
+                format!("; … {hidden} more")
+            } else {
+                String::new()
+            };
+            format!("  gates: {}{tail}", shown.join(", "))
         };
         println!("  held {chain}{suffix}");
     }
     for (name, reasons) in &result.conditional {
         let shown: Vec<String> = reasons.iter().take(2).cloned().collect();
-        println!("  conditional {name}: {}", shown.join("; "));
+        let hidden = reasons.len() - shown.len();
+        let tail = if hidden > 0 {
+            format!("; … {hidden} more")
+        } else {
+            String::new()
+        };
+        println!("  conditional {name}: {}{tail}", shown.join("; "));
     }
     for (warrant, missing) in &result.blocked {
         println!("  blocked {warrant} needs {}", missing.join(", "));
@@ -207,8 +219,10 @@ pub(crate) fn cmd_argue(path: &Path, against: Option<&Path>) -> i32 {
             "note: {errors} error(s) in {}; conclusions are computed on the resolved graph",
             path.display()
         );
+        1
+    } else {
+        0
     }
-    0
 }
 
 /// Two documents attacking each other.  The report is the argument, not a verdict: `check
@@ -333,6 +347,9 @@ pub(crate) fn cmd_derive(path: &Path) -> i32 {
             for reason in reasons.iter().take(3) {
                 println!("    {reason}");
             }
+            if reasons.len() > 3 {
+                println!("    … {} more", reasons.len() - 3);
+            }
         }
     }
     0
@@ -360,6 +377,9 @@ pub(crate) fn cmd_debt(path: &Path, all: bool) -> i32 {
         for line in row.lines.iter().take(3) {
             println!("    {line}");
         }
+        if row.lines.len() > 3 {
+            println!("    … {} more", row.lines.len() - 3);
+        }
     }
     0
 }
@@ -384,8 +404,10 @@ pub(crate) fn cmd_impact(path: &Path) -> i32 {
     let errors = error_count(&diagnostics);
     if errors > 0 {
         println!("note: {errors} error(s); analyses ran on the resolved part");
+        1
+    } else {
+        0
     }
-    0
 }
 
 pub(crate) fn cmd_next(path: &Path, json: bool) -> i32 {
@@ -837,7 +859,11 @@ pub(crate) fn cmd_weigh(path: &Path, threshold: f64) -> i32 {
             detail.join("  ")
         );
     }
-    0
+    if errors > 0 {
+        1
+    } else {
+        0
+    }
 }
 
 pub(crate) fn cmd_cat(path: &Path) -> i32 {
@@ -872,6 +898,7 @@ pub(crate) fn cmd_cat(path: &Path) -> i32 {
         }
     }
     println!("checker: {} error(s)", error_count(&diagnostics));
+    let errors = error_count(&diagnostics);
     println!("stages:");
     for stage in crate::cat::stages() {
         println!(
@@ -881,7 +908,11 @@ pub(crate) fn cmd_cat(path: &Path) -> i32 {
             stage.why
         );
     }
-    0
+    if errors > 0 {
+        1
+    } else {
+        0
+    }
 }
 
 pub(crate) fn cmd_moves(path: &Path) -> i32 {

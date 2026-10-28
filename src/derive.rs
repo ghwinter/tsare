@@ -20,9 +20,13 @@ pub struct Analysis {
 
 pub fn analyze(prog: &Program) -> Analysis {
     let inside = grounded(prog.decls);
+    let gone = crate::closure::retired(prog.decls);
+    // A retired fact is still readable and still resolves, but it is not a fact the fixpoint may
+    // start from: closure already refuses to make it held, and derive used to seed it anyway.
     let mut facts: Vec<String> = prog
         .of_kind("fact")
         .iter()
+        .filter(|decl| !gone.contains(&decl.name))
         .map(|decl| decl.name.clone())
         .collect();
     facts.sort();
@@ -79,7 +83,11 @@ pub fn analyze(prog: &Program) -> Analysis {
         for rule in rules.iter().filter(|rule| &rule.target == name) {
             for premise in &rule.premises {
                 if !grounded_names.contains(premise) {
-                    let status = state.get(premise).copied().unwrap_or("fact");
+                    let status = if gone.contains(premise) {
+                        "retired"
+                    } else {
+                        state.get(premise).copied().unwrap_or("fact")
+                    };
                     missing.push(format!("{} needs {premise} ({status})", rule.warrant));
                 }
             }

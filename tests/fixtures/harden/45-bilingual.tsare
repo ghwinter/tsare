@@ -1,0 +1,39 @@
+# 决策：文档保留中英双语，因为检查器按字符计算列号，中文句子的诊断位置必须可读。
+#
+# 下面两条事实是同一个陷阱的两面：第一条是真正的全称句子，绑定到概念上；第二条只是一个普通
+# 名词短语，却被“都”字误伤。检查器的关键词表没有词边界，这个文件就是证据。
+
+fact F_所有构建 {
+  claim: "所有四个样例构建都通过冒烟测试",
+  evidence: tool("ci/zh.summary.json"),
+  over: [C_构建样例]
+}
+
+fact F_首都是北京 {
+  claim: "首都是北京",
+  evidence: doc("docs/zh/geography.md")
+}
+
+fact F_构建_1 {
+  claim: "构建 1 通过",
+  evidence: tool("ci/1.log"),
+  attrs: { build: 1, passed: true }
+}
+
+fact F_构建_2 {
+  claim: "构建 2 通过",
+  evidence: tool("ci/2.log"),
+  attrs: { build: 2, passed: true }
+}
+
+fact F_构建_失败 {
+  claim: "构建 3 失败",
+  evidence: tool("ci/3.log"),
+  attrs: { build: 3, passed: false }
+}
+
+concept C_构建样例 {
+  name: "这次样例里的构建",
+  grounded_by: [F_构建_1, F_构建_2],
+  against: [F_构建_失败]
+}

@@ -1,0 +1,2 @@
+fact F_DUP { claim: "first declaration", evidence: user }
+fact F_DUP { claim: "second declaration", evidence: user }

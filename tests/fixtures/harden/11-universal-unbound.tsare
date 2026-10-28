@@ -1,0 +1,11 @@
+# Decision recorded as a caution: this is the same claim as 10-universal-bound, with the binding
+# left out. It should not compile cleanly. "All requests succeed" looks like a finding and is
+# actually a sentence that ranges over everything and names nothing, so the checker refuses to
+# call it checkable until the author says which requests.
+#
+# This file is kept as the negative example for the rule, not as a claim anyone should rely on.
+
+fact F_ALL_SUCCEED {
+  claim: "all requests succeed",
+  evidence: tool("access/summary.json")
+}

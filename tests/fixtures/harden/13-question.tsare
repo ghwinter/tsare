@@ -1,0 +1,33 @@
+# Decision: the cache stores the full diagnostic rather than a hash of it.
+#
+# The two hypotheses differ on where the cost lands: one says storage is the constraint, the other
+# says the replay path is. The question is the one that would settle it, and it has two answers so
+# each hypothesis has its own.
+
+fact F_STORE_SIZE {
+  claim: "the store is 41 KiB after 300 checks",
+  evidence: tool("ls -l .tsare/check-cache.json")
+}
+
+fact F_REPLAY_COST {
+  claim: "replaying 300 cached records takes 3ms",
+  evidence: tool("cache/replay-bench.txt")
+}
+
+question Q_STORE_SHAPE {
+  asks: "store the whole diagnostic, or only the fields the text renderer needs?",
+  answers: ["the whole record", "only the rendered fields"],
+  separates: [H_FULL, H_RENDERED]
+}
+
+hypothesis H_FULL {
+  assumes: [F_REPLAY_COST],
+  predicts: "the whole record is cheaper to replay than to recompute",
+  test: "time a cache hit against a fresh check on the same 300 documents"
+}
+
+hypothesis H_RENDERED {
+  assumes: [F_STORE_SIZE],
+  predicts: "the rendered fields are enough and the store is smaller",
+  rival: H_FULL
+}

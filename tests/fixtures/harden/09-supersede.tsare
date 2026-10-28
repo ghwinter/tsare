@@ -1,0 +1,35 @@
+# Decision: the benchmark that measured the old path was itself wrong, so the old fact is
+# withdrawn and the new one replaces it. Withdrawal appends: the old declaration stays readable,
+# and the new one names what makes the withdrawal right.
+#
+# The alternative, editing F_OLD in place, was rejected because the diff would then look like the
+# measurement never happened. A reader has to be able to see that a number was replaced.
+
+fact F_OLD {
+  claim: "the old path takes 80ms per frame",
+  evidence: tool("bench/old.txt")
+}
+
+fact F_REASON {
+  claim: "bench/old.txt measured a debug build and a warm cache",
+  evidence: tool("bench/old.log")
+}
+
+fact F_NEW {
+  claim: "the same path takes 140ms per frame in release with a cold cache",
+  evidence: tool("bench/release-cold.txt"),
+  supersedes: [F_OLD],
+  because: [F_REASON]
+}
+
+proposition P_MEASURED_AGAIN {
+  statement: "the release number, not the debug number, is the one to compare",
+  from: [F_NEW]
+}
+
+warrant W_MEASURED_AGAIN {
+  claim: "a debug run and a release run are not the same experiment",
+  from: [F_NEW, F_REASON],
+  to: P_MEASURED_AGAIN,
+  basis: [F_REASON]
+}
