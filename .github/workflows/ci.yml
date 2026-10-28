@@ -61,3 +61,15 @@ jobs:
               exit 1
             fi
           done
+
+      # One line per invocation, with the temp paths of the run: noise and local facts in one
+      # file.  `.gitignore` keeps it out of an ordinary add; this catches a forced add, or a branch
+      # that still tracks it, before a merge puts it back.
+      - name: no regenerable matrix rows
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          if git ls-files 'tests/fixtures/harden/artifacts/*.jsonl' | grep -q .; then
+            git ls-files 'tests/fixtures/harden/artifacts/*.jsonl'
+            echo 'matrix-*.jsonl is regenerable and full of local paths; keep it untracked'
+            exit 1
+          fi
