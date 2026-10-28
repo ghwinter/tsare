@@ -70,3 +70,6 @@ Thumbs.db
 !/dsh/tsare-gate/fake-tsare.mjs
 !/dsh/tsare-gate/README.md
 !/dsh/tsare-gate/cordis.patch.yml
+# The hook and the rule it enforces are part of the repository, not of one clone.
+!/.githooks
+!/.githooks/commit-msg

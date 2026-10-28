@@ -1,0 +1,44 @@
+#!/bin/sh
+# Enforce the message format in CONTRIBUTING.md.  A commit message is written once and read
+# forever, and this is the only moment the rule is cheap to apply; CI repeats it for anything
+# that arrives without the hook installed.
+#
+#   type(scope): subject          <- header, at most 72 characters, no trailing period
+#   <blank>
+#   body                          <- at most 10 lines, each at most 100 characters
+#
+# Exempt: merge commits, reverts, and fixup!/squash! commits git makes for you.
+set -u
+message=$(cat "$1")
+header=$(printf '%s\n' "$message" | head -n 1)
+
+case "$header" in
+  "Merge "*|"Revert "*|"fixup! "*|"squash! "*|"amend! "*) exit 0 ;;
+esac
+
+fail() {
+  printf 'commit-msg: %s\n' "$1" >&2
+  printf '  header: %s\n' "$header" >&2
+  printf '  expected: type(scope): subject  --  see CONTRIBUTING.md\n' >&2
+  exit 1
+}
+
+[ -n "$header" ] || fail "the message is empty"
+
+if ! printf '%s\n' "$header" | grep -Eq '^(feat|fix|docs|test|refactor|perf|build|ci|chore|revert)(\([a-z0-9-]+\))?: .+'; then
+  fail "the header does not match type(scope): subject"
+fi
+
+length=$(printf '%s' "$header" | wc -c | tr -d ' ')
+[ "$length" -le 72 ] || fail "the header is $length characters, the limit is 72"
+
+case "$header" in
+  *.) fail "the header ends with a period" ;;
+esac
+
+body=$(printf '%s\n' "$message" | tail -n +2)
+lines=$(printf '%s\n' "$body" | wc -l | tr -d ' ')
+[ "$lines" -le 11 ] || fail "the body is $lines lines, the limit is 10 (plus the blank line)"
+
+long=$(printf '%s\n' "$body" | awk 'length($0) > 100 { print; exit }')
+[ -z "$long" ] || fail "a body line is longer than 100 characters: $long"
