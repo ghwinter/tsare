@@ -20,7 +20,12 @@ reader will rely on it. Four cases, not every sentence:
 
 ## The loop
 
-Write the claim as declarations in `claim.tsare`:
+Write the claim as declarations in `.tsare/session.tsare` — the file the gate checks at turn
+stopping. One line is enough while a claim is single:
+
+    fact F_TRACE { claim: "the trace shows 14ms", evidence: tool("trace, 200 runs") }
+
+A chain adds the rule that connects it:
 
     fact F_TRACE { claim: "the trace shows 14ms", evidence: tool("trace, 200 runs") }
     value V_BUDGET { metric: "frame_ms", direction: max, unit: "ms", threshold: 16, measured_by: "trace" }
@@ -29,12 +34,12 @@ Write the claim as declarations in `claim.tsare`:
 
 Then:
 
-    tsare check claim.tsare          # errors block; warnings must be reported, not hidden
-    tsare ask claim.tsare --one      # the next question the document needs
-    tsare novel claim.tsare --attribute X --holds F_A,F_B   # is X new, redundant, or a recombination?
-    tsare imply claim.tsare          # the laws the attribute table already holds
-    tsare fix claim.tsare            # the smallest edits that would make it checkable
-    tsare --explain CODE          # what a diagnostic means
+    tsare check .tsare/session.tsare        # errors block; warnings must be reported, not hidden
+    tsare ask .tsare/session.tsare --one    # the next question the document needs
+    tsare novel .tsare/session.tsare --attribute X --holds F_A,F_B   # is X new, redundant, or a recombination?
+    tsare imply .tsare/session.tsare        # the laws the attribute table already holds
+    tsare fix .tsare/session.tsare          # the smallest edits that would make it checkable
+    tsare --explain CODE                    # what a diagnostic means
 
 ## Rules
 
@@ -45,6 +50,9 @@ Then:
   model, not from a tool or a person.
 - Never invent a kind, a field or a code: `tsare kinds`, `tsare --explain`.
 - A number needs an instrument, a universal claim needs a scope, a proposal needs evidence.
+- If a claim cannot be checked, do not delete it to pass: record the gap and say `unchecked` with
+  the reason in the answer. The gate reads the ledger, not the prose, and a thin ledger passes --
+  the escape is honest, the silence is not.
 
 ## Where it is
 
