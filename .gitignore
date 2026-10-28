@@ -76,3 +76,7 @@ Thumbs.db
 !/dsh/tsare-gate/README.md
 # Regenerable: one line per command invocation, rebuilt by scripts/matrix.py.
 /tests/fixtures/harden/artifacts/matrix.jsonl
+!/dsh/tsare-gate/cordis.patch.yml
+# The hook and the rule it enforces are part of the repository, not of one clone.
+!/.githooks
+!/.githooks/commit-msg
