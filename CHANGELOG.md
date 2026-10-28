@@ -65,6 +65,11 @@ All notable changes are recorded here. The format follows
   differ in one attribute went from `_failed_` to `a <= 1 and b <= 1 and c <= 1 and d <= 1`.
   The "impossible" answer now says why in the general case: when the most specific conjunction still
   covers a negative, nothing more general can exclude it either.
+- A retired kernel law stops licensing. The governed set of a layer was built from
+  `kind == "law"` alone, so `supersedes` inside the kernel was a no-op there: a target could stand
+  on a principle the kernel had withdrawn, receive `W-RETIRED`, and still read as licensed.
+  Measured before the fix: citing the retired law produced no `W-UNPRINCIPLED`, while citing
+  nothing did.
 ### Added
 
 - `E-SUPERSEDE-UNDEFINED` — a `supersedes` field that names nothing, or names itself. A withdrawal

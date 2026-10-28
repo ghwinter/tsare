@@ -1426,3 +1426,32 @@ fact F_C { claim: "c", evidence: user, attrs: { x: 1 } }
         learning.reason
     );
 }
+
+/// A retired kernel law stops licensing.  `supersedes` inside the kernel used to be a no-op here:
+/// the layer's law list was built from `kind == "law"` alone, so a target could stand on a
+/// principle the kernel had withdrawn and still read as licensed.
+#[test]
+fn a_retired_kernel_law_stops_grounding() {
+    let kernel = decls(concat!(
+        "fact F_C { claim: \"checked\", evidence: tool(\"t\") }\n",
+        "layer L_X { name: \"x\", exposes: [F_C] }\n",
+        "law K_OLD { statement: \"old principle\", holds_in: L_X, checked_by: [F_C] }\n",
+        "law K_NEW { statement: \"new principle\", holds_in: L_X, checked_by: [F_C], supersedes: [K_OLD], because: [F_C] }\n",
+    ));
+    let target = decls("warrant W_X { claim: \"r\", from: [F_C], basis: [K_OLD], layer: L_X }\n");
+    let found = tsare::kernel::check(&kernel, &target);
+    assert!(
+        found
+            .iter()
+            .any(|item| item.code == "W-UNPRINCIPLED" && item.message.contains("K_NEW")),
+        "the only live law in L_X is K_NEW: {found:#?}"
+    );
+
+    let licensed = decls("warrant W_X { claim: \"r\", from: [F_C], basis: [K_NEW], layer: L_X }\n");
+    assert!(
+        !tsare::kernel::check(&kernel, &licensed)
+            .iter()
+            .any(|item| item.code == "W-UNPRINCIPLED"),
+        "standing on the live law is licensed"
+    );
+}
