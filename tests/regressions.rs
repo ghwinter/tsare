@@ -774,3 +774,16 @@ fn a_cached_check_does_not_outlive_the_artifact_it_read() {
     assert!(cached.contains("E-OUT-MISMATCH"), "{cached}");
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn the_uncovered_message_names_the_kinds_that_count() {
+    // Defect: the message said goals are "addressed by no value or question", while
+    // coverage::CLAIM_KINDS also counts a hypothesis, a concept, a proposition and a blind spot.
+    let goals = tsare::coverage::load_goals("ship\tnothing matches this\n");
+    let decls = parse("fact F { claim: \"x\", evidence: user }\n");
+    let report = tsare::coverage::coverage(&tsare::program::Program::new(&decls), &goals);
+    let diagnostics = tsare::coverage::diagnostics(&report);
+    let message = &diagnostics[0].message;
+    assert!(message.contains("commitment"), "{message}");
+    assert!(!message.contains("value or question"), "{message}");
+}
