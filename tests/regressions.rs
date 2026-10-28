@@ -477,3 +477,14 @@ fn the_overclaim_explanation_says_what_the_diagnostic_reads() {
     assert!(text.contains("`over:`"), "{text}");
     assert!(!text.contains("with `scope:`"), "{text}");
 }
+
+#[test]
+fn the_help_screen_does_not_promise_exit_two_for_a_missing_file() {
+    // Defect: usage() said exit 2 was "a usage problem, or a file could not be read", while
+    // cli::fail returns 1 for an unreadable path and PROTOCOL says 2 is "the invocation is
+    // wrong". The help text described a contract the binary does not implement.
+    let output = Command::new(binary()).arg("--help").output().expect("run");
+    let text = stdout(&output);
+    assert!(text.contains("2  usage problem"), "{text}");
+    assert!(!text.contains("or a file could not be read"), "{text}");
+}

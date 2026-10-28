@@ -96,7 +96,7 @@ Get-Content SELF.tsare | tsare check -  # a document may arrive on stdin
 ```
 
 `check`, `engine` and `suggest` answer `--json` for machines; every other command prints text.
-Exit codes: `0` no errors, `1` errors found or a proposal refused, `2` a usage or file problem.
+Exit codes: `0` no errors, `1` errors found (or a file that is not there), `2` a usage problem.
 
 ## What it can answer
 
@@ -159,6 +159,7 @@ agent integration notes are kept in the working copies, not in git.
 ## License
 
 MIT.
+
 
 
 
