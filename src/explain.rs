@@ -9,6 +9,7 @@ pub const CODES: &[&str] = &[
     "E-CONTRADICTION",
     "E-CYCLE",
     "E-DUP-ID",
+    "E-DUP-FIELD",
     "E-EMPTY",
     "E-EMPTY-DOCUMENT",
     "E-FALSE-BLINDSPOT",
@@ -96,6 +97,10 @@ pub fn explain(code: &str) -> Option<&'static str> {
             Fix: cut one edge and ground the rest in a fact.",
         "E-DUP-ID" => "One name is declared twice. Names are global within a project.\n\
             Fix: give one a distinct name, or delete it if it is a duplicate.",
+        "E-DUP-FIELD" => "A declaration writes the same field twice. The first value is the one \
+            every reader uses, so the second is a claim the document makes and the checker never \
+            sees: two facts, one of them invisible.\n\
+            Fix: delete one of the values, or merge them into a single field.",
         "E-EMPTY" => "A required string is present but blank.\n\
             Fix: write the text, or turn the field into a hole with `?` if it is not known yet.",
         "E-EMPTY-DOCUMENT" => "The document declares nothing, so there is nothing to check.\n\

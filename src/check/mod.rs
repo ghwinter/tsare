@@ -88,6 +88,7 @@ pub fn code_of(code: &str) -> &'static str {
 
 const KNOWN_CODES: &[&str] = &[
     "E-EMPTY-DOCUMENT",
+    "E-DUP-FIELD",
     "E-DUP-ID",
     "E-KIND-UNKNOWN",
     "E-FIELD",
@@ -176,6 +177,7 @@ fn check_record(decl: &Decl, out: &mut Vec<Diagnostic>) {
         ));
         return;
     };
+    let mut seen_fields: HashSet<&str> = HashSet::new();
     for (index, (key, value)) in decl.fields.iter().enumerate() {
         let (line, col, end_line, end_col) = decl.field_span.get(index).copied().unwrap_or((
             decl.line,
@@ -183,6 +185,20 @@ fn check_record(decl: &Decl, out: &mut Vec<Diagnostic>) {
             decl.end_line,
             decl.end_col,
         ));
+        if !seen_fields.insert(key.as_str()) {
+            // The readers of a declaration take the first occurrence; a second one is a value no
+            // command will ever see, so it must not compile as if it were the only one.
+            out.push(Diagnostic {
+                code: "E-DUP-FIELD",
+                message: format!("{} carries {key} twice; only the first is read", decl.name),
+                line,
+                col,
+                end_line,
+                end_col,
+                file: decl.file.clone(),
+                witness: Some(decl.name.clone()),
+            });
+        }
         match fields.iter().find(|(name, _, _)| name == key) {
             Some((_, ftype, _)) => {
                 if matches!(value, Val::Hole) {

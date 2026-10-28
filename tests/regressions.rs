@@ -300,3 +300,17 @@ fn opposition_is_not_a_justification_cycle() {
         .iter()
         .any(|item| item.code == "E-CYCLE"));
 }
+
+#[test]
+fn a_field_written_twice_is_refused() {
+    // Defect: check_record found the first occurrence of a field and ignored later ones, so
+    // `evidence: user, evidence: model` compiled cleanly and every reader (id_field, f_str)
+    // silently used the first value. The document said two things; the checker saw one.
+    let found = tsare::check::check(&parse(include_str!("../docs/repro/duplicate-field.tsare")));
+    assert!(
+        found
+            .iter()
+            .any(|item| item.code == "E-DUP-FIELD" && item.message.contains("evidence")),
+        "{found:#?}"
+    );
+}
