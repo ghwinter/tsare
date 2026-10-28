@@ -27,6 +27,33 @@ cargo run --release --quiet -- check SELF.tsare docs/REPO.tsare
 5. Negative results stay in the repository. If the compiler refuted a hypothesis, the
    refutation is part of the result.
 
+## What never enters the tree
+
+The repository is read on machines it has never seen, so a fact about one machine is wrong
+everywhere else and cannot be checked by anyone who was not there. The tracked set is
+default-deny: a file is admitted only when the build, the tests or the published package need it.
+Nothing else is committed, in particular:
+
+- **a local fact** — a drive letter, an absolute path, a home directory, a hostname, a private IP,
+  a port on one machine, a username, a temp directory, a line number from one checkout; and a
+  sentence whose meaning lives only outside the repository (a private plan, a chat, a machine
+  state), because a reader cannot check what they cannot see;
+- **a secret, or anything shaped like one** — keys, tokens, passwords, private-key blocks,
+  connection strings, `.env` files;
+- **personal data** — an email address, a phone number, a name that is not already the public
+  author of the project;
+- **a record of a run** — `*.jsonl`, `*.log`, dumps, matrices, machine goldens, anything large
+  enough to be an artifact rather than a source;
+- **non-core code or a script that served one investigation** — it belongs in the message of the
+  commit that used it, or in `experiments/` (untracked), not in the tree.
+
+A path in a document is relative to the repository root. If a measurement needs the machine that
+took it, the number goes in the document and the machine goes in the commit message.
+
+Three gates enforce this in `.github/workflows/ci.yml`: `no machine paths`, `no secrets`, and
+`no large tracked files` (256 KiB). They exist because `.gitignore` hides a file instead of
+reporting it, and because a forced add or a merge from an old branch bypasses the ignore rule.
+
 ## Commit messages
 
 The history is a document, and a message that takes three paragraphs to say "fixed the cache" is a
