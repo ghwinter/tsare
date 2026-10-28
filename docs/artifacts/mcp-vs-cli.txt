@@ -1,0 +1,18 @@
+command: tsare argue docs/48-concludes.tsare
+P_OPEN_ONE  supported  W_OPEN_CLASS
+P_OPEN_TWO  supported  W_OPEN_CLASS
+
+MCP tools/call argue over stdio (same document):
+P_OPEN_ONE               supported  W_OPEN_CLASS
+P_OPEN_TWO               supported  W_OPEN_CLASS
+
+equal: False
+
+command: tsare kinds (first three lines)
+kind         obligation                                           discharge
+fact         evidence someone else can check                      run the tool, or ask the person who saw it
+concept      a positive and a negative example                    find a counterexample, or drop the concept
+MCP tools/call kinds (first three lines):
+fact: evidence someone else can check — run the tool, or ask the person who saw it
+concept: a positive and a negative example — find a counterexample, or drop the concept
+proposition: a rule that connects its premises — name the warrant, or mark it assumed

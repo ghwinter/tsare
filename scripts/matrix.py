@@ -70,6 +70,7 @@ def commands(doc: Path, text: str, work: Path, report: Path, fixed_report: Path)
         ("weigh", ["weigh", shown]),
         ("assumptions", ["assumptions", shown, "--top", "3"]),
         ("fca", ["fca", shown]),
+        ("induce", ["induce", shown]),
         ("cat", ["cat", shown]),
         ("moves", ["moves", shown]),
         ("audit", ["audit", shown]),

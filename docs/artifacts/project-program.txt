@@ -1,0 +1,11 @@
+command: tsare check docs/project --json
+{
+  "diagnostics": [],
+  "errors": 0,
+  "warnings": 0
+}
+
+command: tsare project docs/project
+0 error(s), 0 warning(s)
+
+exit code of check: 0
