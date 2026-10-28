@@ -267,6 +267,7 @@ const COMMANDS: &[Command] = &[
         Command("repairing", "suggest", "suggest PATH [--json]           repairs with an applicability"),
         Command("repairing", "apply", "apply PATH [--dry-run]          splice machine repairs and recompile"),
         Command("repairing", "propose", "propose PATH --proposals F [--policy P] [--apply]\n                                  gate values an outside model wants to fill in\n                                  policies: harmless (default), strict, improve"),
+        Command("emitting", "fmt", "fmt PATH                             the document in one spelling, for a stable diff and hash"),
         Command("emitting", "outline", "outline PATH                        the document read as prose, grounds in the margin"),
         Command("emitting", "build", "build PATH [--out DIR] [--goals F]   obligations, clauses, open items, predicates"),
         Command("emitting", "graph", "graph PATH [--out FILE]             the relation net as Mermaid"),
@@ -587,6 +588,7 @@ pub fn run() -> i32 {
                 args.option("--action"),
             )
         }
+        "fmt" => cmd_fmt(&path),
         "induce" => cmd_induce(&path),
         "propose" => {
             let Some(proposals) = args.option("--proposals") else {

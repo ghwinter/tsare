@@ -1954,3 +1954,25 @@ fn a_form_with_an_unnamed_dimension_is_a_hint() {
     let found = tsare::hint::hints(&Program::new(&decls(&named)));
     assert!(!found[0].unnamed);
 }
+
+/// One spelling for a document with many: the formatted text must parse back to the same
+/// document, and formatting it again must not change anything.
+#[test]
+fn formatting_a_document_is_stable_and_keeps_it_checkable() {
+    let source = r#"fact F_A { claim: "a \"quoted\" line", evidence: user }
+proposition P { statement: "p", from: [F_A] }
+fact F_B { claim: "nested", evidence: tool("t"), attrs: {size: 3, kind: first} }
+"#;
+    let decls = parse(source).expect("parse");
+    let once = tsare::format::document(&decls);
+    let again = parse(&once).expect("formatted output parses");
+    assert_eq!(once, tsare::format::document(&again), "fmt is idempotent");
+    let before: Vec<&str> = check(&decls).iter().map(|item| item.code).collect();
+    let after: Vec<&str> = check(&again).iter().map(|item| item.code).collect();
+    assert_eq!(
+        before, after,
+        "the document means the same after formatting"
+    );
+    assert!(once.contains(r#"\"quoted\""#), "{once}");
+    assert!(once.contains("attrs: {size: 3, kind: first}"), "{once}");
+}

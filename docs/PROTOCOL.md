@@ -85,6 +85,7 @@ answers `--json`.
 | `suggest FILE` | repairs with an applicability | yes |
 | `apply FILE [--dry-run]` | machine repairs spliced and recompiled | |
 | `build FILE\|DIR [--out] [--goals]` | obligations, learned clauses, open items, notes, predicates | |
+| `fmt FILE` | the document in one spelling: one field per line, one separator everywhere, for a diff and a hash that mean something | |
 | `outline FILE` | the document read as prose: each field quoted, its ground and its diagnostics in the margin | |
 | `mem [--store FILE] [--recall CODE...] [--k N]` | the case store: audit it, or recall similar situations | |
 | `propose FILE --proposals FILE.json [--policy ...]` | gate values an outside model wants to fill into holes | |

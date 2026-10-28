@@ -493,3 +493,12 @@ pub(crate) fn cmd_mem(store: &Path, recall: Option<&[String]>, k: usize) -> i32 
     );
     0
 }
+
+pub(crate) fn cmd_fmt(path: &Path) -> i32 {
+    let loaded = match load(path) {
+        Ok(loaded) => loaded,
+        Err(error) => return fail(error),
+    };
+    print!("{}", crate::format::document(&loaded.decls));
+    0
+}
