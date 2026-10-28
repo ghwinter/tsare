@@ -180,15 +180,16 @@ export function apply(ctx, raw) {
   /** agent -> Set of ledger stamps already reminded, never more than `remindLimit` in total. */
   const remanded = new Map()
   /** A live integration needs evidence about which hook fired; this is the only file it writes. */
-  const trace = config.debug
-    ? (line) => {
-        try {
-          appendFileSync(join(tmpdir(), 'tsare-gate.log'), `${new Date().toISOString()} ${line}\n`)
-        } catch {
-          // a trace that cannot be written is not a reason to fail a turn
+  const trace =
+    config.debug === true || process.env.TSARE_GATE_DEBUG === '1'
+      ? (line) => {
+          try {
+            appendFileSync(join(tmpdir(), 'tsare-gate.log'), `${new Date().toISOString()} ${line}\n`)
+          } catch {
+            // a trace that cannot be written is not a reason to fail a turn
+          }
         }
-      }
-    : () => {}
+      : () => {}
   trace(`apply pid=${process.pid} cwd=${process.cwd()} ledger=${config.ledger} brief=${config.brief}`)
 
   /** The directory the ledger lives in: the config, else the session's own working directory. */
