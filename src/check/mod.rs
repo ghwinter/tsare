@@ -554,10 +554,7 @@ fn num_field(decl: &Decl, key: &str) -> Option<f64> {
     decl.fields
         .iter()
         .find(|(name, _)| name == key)
-        .and_then(|(_, value)| match value {
-            Val::Num(text) => text.parse().ok(),
-            _ => None,
-        })
+        .and_then(|(_, value)| crate::program::num_of(value))
 }
 
 fn check_tension(decls: &[Decl], out: &mut Vec<Diagnostic>) {

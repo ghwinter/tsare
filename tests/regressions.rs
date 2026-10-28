@@ -314,3 +314,17 @@ fn a_field_written_twice_is_refused() {
         "{found:#?}"
     );
 }
+
+#[test]
+fn a_percent_suffixed_confidence_is_still_out_of_range() {
+    // Defect: check::num_field used a strict f64 parse while the lexer makes "150%" one number
+    // token and type_ok accepts it as num. The strict parse returned None, so a confidence of
+    // 150% skipped E-CONFIDENCE entirely and compiled as clean.
+    let found = tsare::check::check(&parse(include_str!(
+        "../docs/repro/confidence-percent.tsare"
+    )));
+    assert!(
+        found.iter().any(|item| item.code == "E-CONFIDENCE"),
+        "{found:#?}"
+    );
+}
