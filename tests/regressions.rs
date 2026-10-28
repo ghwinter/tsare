@@ -587,3 +587,25 @@ fn build_refuses_a_directory_that_does_not_compile() {
     assert!(!out.join("OBLIGATIONS.md").exists(), "{text}");
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn a_retired_law_does_not_sign_a_refinement() {
+    // Defect: check_refinements counted a law with `refines:` as a signatory without asking
+    // whether the law had been withdrawn. A retired law kept signing for its layer, so
+    // W-UNREFINED stayed silent after the only implementation claim was superseded.
+    let source = concat!(
+        "layer L_UP { name: \"interface\", exposes: [F_A] }\n",
+        "layer L_DOWN { name: \"implementation\", exposes: [] }\n",
+        "fact F_A { claim: \"a\", evidence: tool(\"t\") }\n",
+        "law K_UP { statement: \"the interface holds\", holds_in: L_UP, checked_by: [F_A] }\n",
+        "law K_OLD { statement: \"down implements up\", holds_in: L_DOWN, checked_by: [F_A], refines: L_UP }\n",
+        "law K_NEW { statement: \"a different down rule\", holds_in: L_DOWN, checked_by: [F_A], supersedes: [K_OLD], because: [F_A] }\n",
+    );
+    let found = tsare::check::check(&parse(source));
+    assert!(
+        found
+            .iter()
+            .any(|item| item.code == "W-UNREFINED" && item.message.contains("K_UP")),
+        "{found:#?}"
+    );
+}

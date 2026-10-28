@@ -607,11 +607,19 @@ fn check_tension(decls: &[Decl], out: &mut Vec<Diagnostic>) {
 /// `layer` names what is hidden and `law` names what is preserved; `refines` is the third
 /// condition, and without it the abstraction is a promise nobody signed.
 fn check_refinements(decls: &[Decl], out: &mut Vec<Diagnostic>) {
+    // A retired law still resolves and no longer holds a position, so it cannot be the signatory
+    // that makes a refinement honest.
+    let gone = crate::closure::retired(decls);
     let refiners: Vec<&Decl> = decls
         .iter()
-        .filter(|decl| decl.kind == "law" && id_field(decl, "refines").is_some())
+        .filter(|decl| {
+            decl.kind == "law" && id_field(decl, "refines").is_some() && !gone.contains(&decl.name)
+        })
         .collect();
-    for decl in decls.iter().filter(|decl| decl.kind == "law") {
+    for decl in decls
+        .iter()
+        .filter(|decl| decl.kind == "law" && !gone.contains(&decl.name))
+    {
         // a law that refines another layer is itself the grounding act: it is anchored to the
         // layer it implements, so it does not need a refiner of its own
         if id_field(decl, "refines").is_some() {
