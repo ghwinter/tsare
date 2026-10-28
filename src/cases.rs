@@ -161,7 +161,7 @@ pub fn audit() -> Audit {
     }
 }
 
-/// Python's list repr, because the store prints its code list the way it was written.
+/// A bracketed, single-quoted list, because the store prints its code list the way it was written.
 pub fn list_repr(items: &[String]) -> String {
     let quoted: Vec<String> = items
         .iter()

@@ -370,7 +370,7 @@ pub fn obligations(prog: &Program, decl: &Decl) -> Vec<String> {
     out
 }
 
-/// Python's `str(float)`: an integral value keeps its `.0`.
+/// A value with nothing after the point keeps its `.0`, so the text says it is a number.
 pub fn repr_float(value: f64) -> String {
     if value.is_finite() && value.fract() == 0.0 && value.abs() < 1e16 {
         format!("{value:.1}")
@@ -379,7 +379,7 @@ pub fn repr_float(value: f64) -> String {
     }
 }
 
-/// Python's `f"{value:g}"` for the values a document states.
+/// The shortest form for the values a document states; an integral one loses its tail.
 pub fn fmt_g(value: f64) -> String {
     if value.is_finite() && value.fract() == 0.0 && value.abs() < 1e6 {
         format!("{}", value as i64)

@@ -1,8 +1,8 @@
 //! Golden snapshots: the exact text every command prints for a fixture document.
 //!
-//! The snapshots were taken from the binary while it still agreed, command for command and
-//! byte for byte, with the reference implementation in `obligo` (tag `v1`).  The Python is no
-//! longer needed to run the compiler, but its output is still the standard here.
+//! The snapshots are the standard.  They were fixed when the text was first agreed, command for
+//! command and byte for byte, and a change to what the tool says has to show up here as a diff
+//! before it ships.
 //!
 //! Set `UPDATE_GOLDEN=1` to rewrite the snapshots after an intended change, then read the
 //! diff before committing it.

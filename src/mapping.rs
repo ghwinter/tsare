@@ -1,7 +1,7 @@
 //! Structure mapping between two documents, cheaply.
 //!
-//! Gentner's claim is that analogy aligns relations, not objects, and prefers higher-order
-//! relations.  This is the crude version: give each node a bag of edge-label paths up to
+//! Analogy aligns relations rather than objects, and prefers higher-order relations.  This is the
+//! crude version: give each node a bag of edge-label paths up to
 //! length two, score a pair by weighted Jaccard (longer paths count double), and only pair
 //! nodes of the same kind.  It is not a maximum common subgraph; it is a signature match that
 //! can be checked by eye.

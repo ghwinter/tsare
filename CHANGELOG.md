@@ -117,9 +117,9 @@ All notable changes are recorded here. The format follows
 - `fact artifact:` + `fact out:` — the hash of what the instrument produced. `evidence: tool(...)`
   records that something ran; `out` records what came out, and a mismatch is `E-OUT-MISMATCH`.
   A hash with nothing to compare against is `W-OUT-UNVERIFIED`, which is not the same as wrong.
-  Artifact paths are read from the working directory. This closes the case the automated-research
-  papers kept producing: the process exits 0 while the artifact is a placeholder, and every other
-  check in this file is satisfied.
+  Artifact paths are read from the working directory. This closes a case that keeps recurring:
+  the process exits 0 while the artifact is a placeholder, and every other check in this file is
+  satisfied.
 
 - `E-SELF-VERDICT` — a `hypothesis` may not be marked `supported` or `refuted` by a fact whose
   only witness is a model. A model assessing its own guess is not an observation; the verdict
@@ -190,8 +190,8 @@ which observation would decide an open list, and what the attribute table alread
 
 ### Fixed
 
-- The check cache and the case store live in `.tsare/`, not `.metaform/`. The old name was the
-  abandoned project's, and it was being created inside other people's repositories.
+- The check cache and the case store live in `.tsare/`, under the tool's own name, so a run does
+  not create directories named after a project that no longer owns them.
 - `cargo package` carries no stray README from an unlisted directory.
 
 ## [0.3.0] - 2026-10-26

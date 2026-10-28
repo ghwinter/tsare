@@ -1,13 +1,10 @@
 # tsare — one implementation, one contract
 
 This repository is the compiler. The crate at the root builds a single, dependency-free
-binary: no interpreter, no runtime beyond the OS, no Python, no second code path to keep in
-step.
+binary: no interpreter, no runtime beyond the OS, no second code path to keep in step.
 
-`obligo` (tag `v1`) is the frozen reference: it holds the original Python implementation and
-every experiment behind it. It is no longer the live compiler. The differential script that
-compared the two stays in the working copies rather than in this tree, and its output is the
-record of the port.
+The text is the contract. Every command's output is pinned byte for byte by
+`tests/fixtures/golden/`, so a change to what the tool says appears as a diff before it ships.
 
 ## Two numbers, and only two
 
@@ -188,7 +185,7 @@ paraphrasing it, and it puts every ground in the margin, because a ground is not
 sentence. A projection that reads smoothly while hiding what the sentence stands on is the
 failure this engine exists to refuse — produced by the engine.
 
-## Checks added after v1
+## Checks the contract has grown
 
 Each of these follows one rule: a property that can be derived from the document must be
 checked against what was declared.
@@ -224,26 +221,27 @@ introduced diagnostic is a rejection), `improve` (something besides the hole mus
 The default is `harmless`. None of the three looks at content, and the experiments in
 `experiments/hole-filling` measure what that costs.
 
-## Deliberate differences from v1
+## Deliberate choices about the text
 
-These are decisions, not drift:
+These are decisions, not drift. Each one was the other way in an earlier draft of the contract,
+and each is the way it is now for a reason a reader can check:
 
 1. **Diagnostic wording and rendering.** The engine words its own messages and prints
-   `CODE file:line message`; v1 printed rustc-style frames with hints. Codes, severities,
-   lines and columns agree; prose does not.
-2. **`project` attribution.** v1 guessed the owning file from the message text; the engine
-   attributes by span.
-3. **`E-LAYER-LEAK` span.** v1 pointed at the target declaration; the engine points at the
-   declaration that reaches across layers, which is the one to edit. Line numbers differ.
+   `CODE file:line message`; an earlier draft printed rustc-style frames with hints. Codes,
+   severities, lines and columns agree; prose does not.
+2. **`project` attribution.** An earlier draft guessed the owning file from the message text; the
+   engine attributes by span.
+3. **`E-LAYER-LEAK` span.** An earlier draft pointed at the target declaration; the engine points
+   at the declaration that reaches across layers, which is the one to edit. Line numbers differ.
 4. **`apply` only applies `MachineApplicable`.** Both sides do this; the note is here because
    a "verified" repair that changes meaning is still a suggestion.
-5. **`mem` salt.** The case store records which checker produced an entry. The engine's salt
-   is its own, so entries written by v1 read as expired. That is what the field is for.
-6. **`egraph` does not crash.** v1 raised `KeyError` on a document whose concept references a
+5. **`mem` salt.** The case store records which checker produced an entry. The engine's salt is
+   its own, so entries written by anything else read as expired. That is what the field is for.
+6. **`egraph` does not crash.** An earlier draft aborted on a document whose concept references a
    note; the engine merges what it can and reports the rest.
 7. **Empty extents do not collide.** A concept with no positive example asserts nothing, so
    it is not reported as `E-COLLAPSE`.
-8. **`partition` is new.** v1 had no obligation attached to an enumeration. The engine adds
+8. **`partition` is new.** An enumeration used to carry no obligation. The engine adds
    one: a list must name the concept its elements share, say whether it is closed, and give a
    reason when it is closed. The checks are `E-PARTITION-EMPTY`, `E-PARTITION-DUPLICATE`,
    `E-PARTITION-ELEMENT`, `E-PARTITION-CLOSED-CONTRADICTED`, `W-PARTITION-CLOSED-UNJUSTIFIED`
@@ -318,11 +316,7 @@ one document — `tests/codes/*.tsare` (the smallest single document per code), 
 goal files. A code that nothing can produce is either unreachable or stale, and both are bugs.
 
 `tests/semantics.rs` holds properties (`an_attack_defeats_its_target`). `tests/golden.rs` holds
-the exact text of every command on six fixture documents, captured while the engine still
-agreed with v1 byte for byte. `UPDATE_GOLDEN=1 cargo test` rewrites them; read the diff first.
-
-The port itself is recorded by `scripts/diff_text.py`, which compares the binary with the
-frozen Python in `obligo`: 760 comparisons across 32 documents, no mismatch, one document the
-reference cannot process (item 6 above).
+the exact text of every command on six fixture documents. `UPDATE_GOLDEN=1 cargo test` rewrites
+them; read the diff first.
 
 
