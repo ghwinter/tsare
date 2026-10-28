@@ -108,3 +108,30 @@ fn universal_words_need_a_word_boundary() {
         "所有 is universal"
     );
 }
+
+#[test]
+fn engine_lists_conditional_rows_in_a_stable_order() {
+    // Defect: closure::engine built `conditional` by iterating a HashMap.  The same document
+    // produced a different order in every process, so `engine --json` was not diffable.
+    let decls = parse(include_str!("../docs/49-engine-order-repro.tsare"));
+    let mut orders = std::collections::BTreeSet::new();
+    for _ in 0..20 {
+        let result = tsare::closure::engine(&decls);
+        orders.insert(
+            result
+                .conditional
+                .iter()
+                .map(|(name, _)| name.clone())
+                .collect::<Vec<String>>(),
+        );
+    }
+    assert_eq!(
+        orders.len(),
+        1,
+        "same document, different orders: {orders:#?}"
+    );
+    let names: Vec<String> = orders.into_iter().next().unwrap();
+    let mut sorted = names.clone();
+    sorted.sort();
+    assert_eq!(names, sorted, "the rows are printed in name order");
+}

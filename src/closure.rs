@@ -259,6 +259,9 @@ pub fn closure(decls: &[Decl]) -> Closure {
         reasons.truncate(2);
         conditional.push((name.clone(), reasons.join("; ")));
     }
+    // `state` is a HashMap; a report whose rows follow its iteration order differs between runs.
+    // The conclusion set is the same, but a byte-for-byte comparison cannot see that.
+    conditional.sort_by(|left, right| left.0.cmp(&right.0));
     Closure {
         facts,
         held,
@@ -376,6 +379,7 @@ pub fn engine(decls: &[Decl]) -> EngineResult {
         }
         conditional.push((name.clone(), reasons));
     }
+    conditional.sort_by(|left, right| left.0.cmp(&right.0));
 
     let mut blocked = Vec::new();
     for rule in &rules {
