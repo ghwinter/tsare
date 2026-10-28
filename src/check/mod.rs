@@ -806,9 +806,11 @@ fn is_incomplete(decl: &Decl) -> bool {
 fn check_semantics(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     // A rule connects its premises to a conclusion either by naming it (`to`) or by naming a
     // class it belongs to (`concludes`).  This is the set the fixpoint uses, so the "nothing
-    // connects them" warning must use it too.
+    // connects them" warning must use it too -- and a retired rule is not a connection.
+    let gone = crate::closure::retired(decls);
     let warranty_targets: std::collections::HashSet<String> = crate::closure::applications(decls)
         .into_iter()
+        .filter(|rule| !gone.contains(&rule.warrant))
         .map(|rule| rule.target)
         .collect();
 

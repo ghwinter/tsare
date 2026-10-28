@@ -609,3 +609,24 @@ fn a_retired_law_does_not_sign_a_refinement() {
         "{found:#?}"
     );
 }
+
+#[test]
+fn a_retired_warrant_does_not_connect_premises_to_a_conclusion() {
+    // Defect: the W-UNWARRANTED target set was built from every warrant's `to` field, retired or
+    // not. A proposition whose only rule had been withdrawn looked connected, while the engine
+    // no longer applied the rule and called the conclusion conditional.
+    let source = concat!(
+        "fact F { claim: \"x\", evidence: tool(\"t\") }\n",
+        "proposition P { statement: \"p\", from: [F] }\n",
+        "proposition P2 { statement: \"p2\", from: [F] }\n",
+        "warrant W_OLD { claim: \"old rule\", from: [F], to: P, basis: [F] }\n",
+        "warrant W_NEW { claim: \"new rule\", from: [F], to: P2, basis: [F], supersedes: [W_OLD], because: [F] }\n",
+    );
+    let found = tsare::check::check(&parse(source));
+    assert!(
+        found
+            .iter()
+            .any(|item| item.code == "W-UNWARRANTED" && item.message.contains("P")),
+        "{found:#?}"
+    );
+}
