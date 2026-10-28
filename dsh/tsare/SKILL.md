@@ -48,5 +48,6 @@ Then:
 
 ## Where it is
 
-Binary: `D:\GitHub\tsare\target\release\tsare.exe`. Source, protocol and tests:
-`D:\GitHub\tsare`.
+Build it with `cargo build --release` and run `target/release/tsare` from the checkout, or install
+it with `cargo install --path .` and call `tsare`. Every path in this repository is relative to its
+own root: no document names a machine, a drive or a home directory.
