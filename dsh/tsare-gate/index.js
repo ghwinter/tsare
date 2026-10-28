@@ -275,6 +275,8 @@ export function apply(ctx, raw) {
       // a read-only working directory is not a reason to fail the agent
     }
     if (!config.brief) return
+    // A duplicate registration throws; one agent gets one line even if the event fires again.
+    if (briefFibers.has(agent)) return
     try {
       const fiber = agent.ctx.inject(['systemPrompt'], (scope) => {
         scope.systemPrompt.context({
