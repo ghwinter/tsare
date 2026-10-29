@@ -181,9 +181,10 @@ A discharger is a command, a document, a person, a question, or a declaration th
 closable. The recursion is well-founded because a leaf is a command, a document, a person or a
 question; a cycle with no leaf is `open`.
 
-`decide` is a function of `Γ` alone, so it can be the first thing a report says. `check` should
-print it on its first line and carry it as `decision` in `--json`, because it is the one thing a
-caller needs before reading a list of diagnostics.
+`decide` is a function of `Γ` alone, so it can be the first thing a report says. The target is
+`check`: its first line, and `decision` in `--json`, because it is the one thing a caller needs
+before reading a list of diagnostics. Until that lands — it changes every check golden — a
+`decide` command answers it.
 
 ## Trusted base
 
