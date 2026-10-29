@@ -15,6 +15,7 @@ include = [
     "/src/**",
     "/tests/**",
     "/SELF.tsare",
+    "/docs/CORE.md",
     "/docs/PROTOCOL.md",
     "/docs/REPO.tsare",
     "/prelude/*.tsare",
