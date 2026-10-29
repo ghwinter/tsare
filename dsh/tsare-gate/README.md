@@ -35,6 +35,7 @@ almost never fire. The plugin runs no model, opens no network, and writes nothin
 | `timeoutMs` | `10000` | per check |
 | `brief` | `true` | keep the next question in the runtime snapshot |
 | `briefMaxChars` | `240` | cap for that line |
+| `briefStyle` | `full` | `full` names the next action; `terse` states only the ledger's state |
 | `remindAfterTools` | `[]` | tool names that attach the diagnostics as context; empty means off |
 | `remindWhen` | `[]` | regexes matched against a call's arguments (e.g. `cargo (test|build)`); a match gets one claim reminder per ledger state |
 | `remindLimit` | `5` | how many claim reminders one agent may receive |

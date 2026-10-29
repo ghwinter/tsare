@@ -205,4 +205,21 @@ await nullCtx.fire('agent/turn-stopping', {
 assert.equal(nullAgent.steered.length, 1, 'a null binary must steer, not throw')
 assert.match(nullAgent.steered[0].content[0].text, /not checked|no executable/, 'the reason is not visible')
 
-console.log('tsare-gate selftest: 14 checks passed')
+// 15. a terse brief states the ledger, a full one names the next action
+for (const [style, expectsInstruction] of [['terse', false], ['full', true]]) {
+  const styleCtx = context()
+  apply(styleCtx, { command, askCommand, briefStyle: style })
+  const styleAgent = makeAgent()
+  await styleCtx.fire('agent/created', { agent: styleAgent })
+  const registered = contexts[contexts.length - 1]
+  writeFileSync(ledger, clean)
+  await styleCtx.fire('tools/post-execute', { name: 'read', arguments: {}, agent: styleAgent })
+  assert.match(registered.text(), /ledger clean/, `${style}: ${registered.text()}`)
+  assert.equal(
+    registered.text().includes('Record a claim'),
+    expectsInstruction,
+    `${style} instruction mismatch: ${registered.text()}`,
+  )
+}
+
+console.log('tsare-gate selftest: 15 checks passed')

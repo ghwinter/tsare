@@ -20,6 +20,7 @@
  *   timeoutMs          per check (default 10000)
  *   brief              keep one line in the runtime snapshot: the next question (default true)
  *   briefMaxChars      cap for that line (default 240)
+ *   briefStyle         'full' (default) names the next action; 'terse' states only the state
  *   remindAfterTools   tool names that attach the diagnostics as context after they run (default [])
  *   remindWhen         regexes matched against a tool call's arguments; a match gets one reminder
  *                      that the result is a claim (default [])
@@ -52,6 +53,7 @@ const DEFAULTS = {
   timeoutMs: 10_000,
   brief: true,
   briefMaxChars: 240,
+  briefStyle: 'full',
   remindAfterTools: [],
   remindWhen: [],
   remindLimit: 5,
@@ -272,8 +274,14 @@ export function apply(ctx, raw) {
       )
     }
     const many = countDecls(agent)
+    // `terse` states the state and nothing else; `full` also tells the model what to do next.
+    // The difference is one sentence on every step, which is what the cost experiment varies.
+    const tail =
+      config.briefStyle === 'terse'
+        ? ''
+        : ' Record a claim with evidence, or say unchecked with the reason.'
     return oneLine(
-      `tsare: ledger clean, ${many} claim(s); nothing to ask. Record a claim with evidence, or say unchecked with the reason.`,
+      `tsare: ledger clean, ${many} claim(s); nothing to ask.${tail}`,
       config.briefMaxChars,
     )
   }
