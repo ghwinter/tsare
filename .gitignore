@@ -31,9 +31,10 @@
 !/SELF.tsare
 !/docs
 
-# Inside docs/, only the two files a test or a code comment points at.
+# Inside docs/, only the files a test, a code comment or the README points at.
 /docs/*
 !/docs/PROTOCOL.md
+!/docs/CORE.md
 !/docs/REPO.tsare
 
 

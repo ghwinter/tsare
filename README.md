@@ -186,7 +186,8 @@ the compiler it argues about; a test fails if it stops compiling cleanly.
 ```
 src/            the compiler: syntax, checks, reasons, analyses, repairs, output
 tests/          properties, golden snapshots, fixtures
-docs/           PROTOCOL.md (the machine contract) and REPO.tsare (the repository as declarations)
+docs/           PROTOCOL.md (the machine contract), CORE.md (the judgment),
+                REPO.tsare (the repository as declarations)
 SELF.tsare         the same project described again, from a different angle; a test compiles it
 ```
 
