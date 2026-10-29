@@ -1,8 +1,12 @@
 name: ci
 
 on:
+  # The matrix is expensive and main is the only branch that has to be green.  dev and nightly
+  # run the same commands locally before a merge; they do not spend a runner per commit.
   push:
+    branches: [main]
   pull_request:
+    branches: [main]
 
 jobs:
   test:

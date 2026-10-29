@@ -20,14 +20,26 @@ Three tiers, and only three:
 
 | branch | holds | written by | moves |
 | --- | --- | --- | --- |
-| `main` | what is stable and absorbed | a person merges `dev`; nothing else | slowest: only after `dev` has held |
-| `dev` | integration: several stable changes together | a merge from `nightly` when green | when a change is wanted |
-| `nightly` | every experiment and every new line | direct commits | may be reset from `dev` at any time |
+| `main` | what is stable and absorbed | a person, through a pull request from `dev`, after review and a green CI | slowest: only after `dev` has held |
+| `dev` | integration: several stable changes together | a merge from `nightly`, squashed | when a change is wanted |
+| `nightly` | every experiment and every new line | direct commits, batched | may be reset from `dev` at any time |
 
 A change starts on `nightly`. When it is green and wanted it merges to `dev`. When `dev` has
-held and still passes, a person merges it to `main`. Nothing is committed to `main` directly,
-and `dev` takes nothing that has not been on `nightly`. `nightly` is expected to break: a red
-run there is information, not an incident.
+held and still passes, a person opens a pull request to `main`; CI runs on it, someone reviews
+it, and a person merges it. Nothing is committed to `main` directly, and `dev` takes nothing
+that has not been on `nightly`. `nightly` is expected to break: a red local run there is
+information, not an incident.
+
+CI runs on `main` only: a push to it, and a pull request whose base is it. `dev` and `nightly`
+spend no runner; the local commands above are the gate before a merge.
+
+## Commits are units of review
+
+An agent's default is to commit every few lines. That is noise: the history stops being
+readable, and the object store fills with near-duplicates. One commit is one coherent change
+that a person could review and revert on its own. Work in progress stays uncommitted on
+`nightly`, or is squashed before it merges to `dev`. A push is not a save button: push when the
+branch is worth someone else's pull, not when a file was saved.
 
 ## Rules the code keeps
 
