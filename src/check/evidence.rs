@@ -1,16 +1,17 @@
 //! Evidence and binding: what a claim rests on, and what it ranges over.
 //!
-//! Six checks that share one question.  A claim can be well formed and still rest on nothing:
+//! Seven checks that share one question.  A claim can be well formed and still rest on nothing:
 //! a citation whose law requires a field the claim does not carry, a verdict from a model, a
 //! bound no rule reads, a hash with nothing behind it, a universal with an unenumerable domain,
-//! a reference to something already withdrawn.  None of these is a syntax error and none is a
-//! disagreement about facts; they are all failures of the accounting.
+//! a conclusion that states a number with no measured value behind it, a reference to something
+//! already withdrawn.  None of these is a syntax error and none is a disagreement about facts;
+//! they are all failures of the accounting.
 
 use super::{id_field, ids, list_field, sem, string_field, Diagnostic, REF_KEYS};
 use crate::closure::field_ids;
 use crate::syntax::{Decl, Val};
 
-/// The six checks, in the order a reader would ask the questions.
+/// The seven checks, in the order a reader would ask the questions.
 pub(crate) fn check(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     check_requirements(decls, out);
     check_verdicts(decls, out);

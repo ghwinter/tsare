@@ -8,12 +8,15 @@ use std::collections::HashMap;
 
 use crate::syntax::{Decl, Val};
 
+/// The declarations of one document, with a name index.  A name declared twice keeps its first
+/// declaration in the index; the later one is still in `decls`.
 pub struct Program<'a> {
     pub decls: &'a [Decl],
     by_name: HashMap<&'a str, &'a Decl>,
 }
 
 impl<'a> Program<'a> {
+    /// Index the declarations by name.  The first declaration of a name wins.
     pub fn new(decls: &'a [Decl]) -> Self {
         let mut by_name = HashMap::new();
         for decl in decls {
@@ -22,23 +25,29 @@ impl<'a> Program<'a> {
         Program { decls, by_name }
     }
 
+    /// The first declaration with this name; a later duplicate is not reachable here.
     pub fn get(&self, name: &str) -> Option<&'a Decl> {
         self.by_name.get(name).copied()
     }
 
+    /// Whether the document declares this name; a retired declaration still answers true.
     pub fn has(&self, name: &str) -> bool {
         self.by_name.contains_key(name)
     }
 
+    /// Every declaration of a kind, in document order; a retired one is included.
     pub fn of_kind(&self, kind: &str) -> Vec<&'a Decl> {
         self.decls.iter().filter(|decl| decl.kind == kind).collect()
     }
 
+    /// How many declarations carry a kind; two declarations of one name both count.
     pub fn count(&self, kind: &str) -> usize {
         self.decls.iter().filter(|decl| decl.kind == kind).count()
     }
 }
 
+/// The first value written for a key.  The checker reports a repeated key, and this reads only
+/// the first.
 pub fn field<'a>(decl: &'a Decl, key: &str) -> Option<&'a Val> {
     decl.fields
         .iter()
@@ -46,6 +55,7 @@ pub fn field<'a>(decl: &'a Decl, key: &str) -> Option<&'a Val> {
         .map(|(_, value)| value)
 }
 
+/// A field's string value.  A name, number, list, call or `?` hole gives `None`.
 pub fn f_str<'a>(decl: &'a Decl, key: &str) -> Option<&'a str> {
     match field(decl, key) {
         Some(Val::Str(text)) => Some(text.as_str()),
@@ -69,10 +79,12 @@ pub fn num_of(value: &Val) -> Option<f64> {
     }
 }
 
+/// A field's number, read the way `num_of` reads it; anything else gives `None`.
 pub fn f_num(decl: &Decl, key: &str) -> Option<f64> {
     num_of(field(decl, key)?)
 }
 
+/// A field's value when it is a bare name; a string, number, list or call gives `None`.
 pub fn f_id<'a>(decl: &'a Decl, key: &str) -> Option<&'a str> {
     match field(decl, key) {
         Some(Val::Id(name)) => Some(name.as_str()),
@@ -80,6 +92,8 @@ pub fn f_id<'a>(decl: &'a Decl, key: &str) -> Option<&'a str> {
     }
 }
 
+/// The bare names in a list field, in the order written.  A value of another shape is dropped,
+/// and a missing field is an empty list.
 pub fn f_ids(decl: &Decl, key: &str) -> Vec<String> {
     match field(decl, key) {
         Some(Val::List(items)) => items
@@ -93,10 +107,12 @@ pub fn f_ids(decl: &Decl, key: &str) -> Vec<String> {
     }
 }
 
+/// The positive examples offered for a concept: its `grounded_by` names.
 pub fn pos(decl: &Decl) -> Vec<String> {
     f_ids(decl, "grounded_by")
 }
 
+/// The negative examples offered for a concept: its `against` names.
 pub fn neg(decl: &Decl) -> Vec<String> {
     f_ids(decl, "against")
 }
@@ -113,14 +129,17 @@ pub fn instrument_of<'a>(decl: &'a Decl, key: &str) -> Option<&'a str> {
     }
 }
 
+/// Whether the key appears, including when its value is a hole.
 pub fn has_field(decl: &Decl, key: &str) -> bool {
     decl.fields.iter().any(|(name, _)| name == key)
 }
 
+/// Whether the field is the `?` placeholder; a missing field is not a hole.
 pub fn is_hole(decl: &Decl, key: &str) -> bool {
     matches!(field(decl, key), Some(Val::Hole))
 }
 
+/// The evidence forms a machine can reproduce: `tool(...)`, `doc(...)` and `code(...)`.
 pub const MEASURED: &[&str] = &["tool", "doc", "code"];
 
 /// How well a fact is witnessed, as an order rather than four words.  Two functions used to answer
@@ -140,6 +159,7 @@ pub enum Grade {
 }
 
 impl Grade {
+    /// The word a report shows for this grade; a model's own claim reads as `unconfirmed`.
     pub fn label(self) -> &'static str {
         match self {
             Grade::Measured => "measured",
@@ -150,6 +170,9 @@ impl Grade {
     }
 }
 
+/// How well a fact's `evidence` witnesses its claim.  `observation` counts with `user` because a
+/// person saw it; `model` is unconfirmed unless `confirmed_by` is filled in; anything else is
+/// asserted.
 pub fn grade(decl: &Decl) -> Grade {
     let name = match field(decl, "evidence") {
         Some(Val::Id(name)) => Some(name.as_str()),
@@ -170,10 +193,13 @@ pub fn grade(decl: &Decl) -> Grade {
     }
 }
 
+/// The grade of a fact's evidence as the word a report prints.
 pub fn evidence_status(decl: &Decl) -> &'static str {
     grade(decl).label()
 }
 
+/// What each name rests on: the premises of every warrant that concludes it, a proposition's
+/// `from` names, and a hypothesis's `assumes` names.
 pub fn support_edges(prog: &Program) -> HashMap<String, Vec<String>> {
     let mut edges: HashMap<String, Vec<String>> = HashMap::new();
     for rule in crate::closure::applications(prog.decls) {
@@ -201,6 +227,9 @@ pub struct Step {
     pub path: Vec<String>,
 }
 
+/// Every fact reached from `start` by following `edges`, each once, with the path that first
+/// reached it.  A proposition on the way is followed rather than reported, and a name the
+/// document does not declare ends its branch.
 pub fn walk(prog: &Program, start: &str, edges: &HashMap<String, Vec<String>>) -> Vec<Step> {
     let mut found: Vec<Step> = Vec::new();
     let mut seen: Vec<String> = vec![start.to_string()];
@@ -235,6 +264,7 @@ pub fn walk(prog: &Program, start: &str, edges: &HashMap<String, Vec<String>>) -
     found
 }
 
+/// For each kind: what it must show before it counts, and the move that discharges the debt.
 pub const TABLE: &[(&str, &str, &str)] = &[
     (
         "fact",

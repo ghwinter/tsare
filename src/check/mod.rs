@@ -1,4 +1,11 @@
-//! Record, type, duplicate and reference checks.
+//! Whether a document's declarations hold together: kinds and fields the language has, values of
+//! the type their field declares, references that resolve to a declared name of the expected kind,
+//! and the relations no single declaration can show -- a justification cycle, two concepts with
+//! one extent, one metric constrained both ways without a ranking, a layer reached into without
+//! exposing what was reached, a law in a layer that no law at another layer refines.
+//!
+//! `check` is the entry point.  Every pass reads the declarations, never the diagnostics an
+//! earlier pass produced, so the result is the whole list of complaints and not the first.
 
 use std::collections::{HashMap, HashSet};
 
@@ -13,6 +20,9 @@ use crate::closure;
 use crate::specs::spec;
 use crate::syntax::{Decl, Val};
 
+/// The field keys that hold references to other declarations.  They are the document's edges: only
+/// these keys are walked for resolution, for the kind the field's type expects, and for the checks
+/// that follow one declaration to another.
 pub const REF_KEYS: &[&str] = &[
     "from",
     "because",
@@ -51,6 +61,8 @@ pub const LITERALS: &[&str] = &[
     "experiment",
 ];
 
+/// One complaint: the code that classifies it, the message that names what is wrong, the span that
+/// locates it, and the declaration it names when the complaint is about one.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Diagnostic {
     pub code: &'static str,
@@ -108,6 +120,9 @@ const KNOWN_CODES: &[&str] = &[
     "W-CONDITIONAL",
 ];
 
+/// Every name a value mentions, in the order it is written.  Literals such as `tool` and `user`
+/// are names too and appear here; deciding that they are not declarations belongs to the caller,
+/// because only the field says what kind of name it holds.
 pub fn refs(value: &Val, out: &mut Vec<String>) {
     match value {
         Val::Id(name) => out.push(name.clone()),
@@ -254,6 +269,9 @@ fn check_record(decl: &Decl, out: &mut Vec<Diagnostic>) {
     }
 }
 
+/// Every complaint the document earns, from every pass: no pass stops at the first defect and no
+/// pass reads another's findings, so the result is the whole list.  A document that declares
+/// nothing earns a diagnostic of its own rather than an empty result.
 pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
     let mut out = Vec::new();
     if decls.is_empty() {
@@ -280,6 +298,8 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
                 decl,
             ));
         } else {
+            // the first declaration of a name owns it: the duplicate is reported above, and every
+            // later reference resolves to the kind declared first
             by_name.insert(decl.name.as_str(), decl.kind.as_str());
         }
     }
@@ -353,6 +373,8 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
                     }
                     continue;
                 }
+                // one report per missing name per declaration: the same absent target named by
+                // two fields is one mistake, and a second report would tell the reader nothing new
                 if seen.insert((decl.name.clone(), name.clone())) {
                     out.push(diag(
                         "E-UNDEFINED",
@@ -411,6 +433,8 @@ fn diag_ref(code: &'static str, message: String, decl: &Decl, key: &str, name: &
     }
 }
 
+/// Whether the justification edges close on themselves.  A cycle is an error because every member
+/// would be grounded in the next, which leaves the loop as a whole grounded in nothing.
 fn check_cycles(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     let names: Vec<String> = decls.iter().map(|decl| decl.name.clone()).collect();
     let mut by_name: std::collections::HashMap<&str, &Decl> = std::collections::HashMap::new();
@@ -430,6 +454,8 @@ fn check_cycles(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                 targets.extend(ids(value));
             }
         }
+        // only a declared name can close a cycle: an unresolved target belongs to E-UNDEFINED, and
+        // following it here would put a name in a cycle path that no declaration backs
         targets.retain(|target| names.contains(target));
         edges.insert(decl.name.clone(), targets);
     }
@@ -477,6 +503,9 @@ fn check_cycles(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     }
 }
 
+/// Whether two concepts name the same extent.  A concept is its positives and negatives, compared
+/// here as sets, so two with the same pair admit and exclude exactly the same things and differ
+/// only in name: one concept with two spellings.
 fn check_collapse(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     let mut seen: std::collections::HashMap<(Vec<String>, Vec<String>), String> =
         std::collections::HashMap::new();
@@ -559,6 +588,10 @@ fn num_field(decl: &Decl, key: &str) -> Option<f64> {
         .and_then(|(_, value)| crate::program::num_of(value))
 }
 
+/// Whether two `value` declarations pull one metric in opposite directions and leave the pair
+/// unranked.  Opposite directions are a contradiction only when nothing ranks one above the other:
+/// unequal priorities record a trade already decided, while equal or missing priorities mean the
+/// document asserts both and chooses neither.
 fn check_tension(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     let mut by_metric: std::collections::HashMap<String, Vec<&Decl>> =
         std::collections::HashMap::new();
@@ -652,6 +685,9 @@ fn check_refinements(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     }
 }
 
+/// Whether a declaration reaches into another layer without that layer exposing the target.  A
+/// layer is a promise about what it hides, so a name it does not expose is not available outside
+/// it, and the reference is a leak even though it resolves.
 fn check_layer(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     let mut exposes: std::collections::HashMap<&str, Vec<String>> =
         std::collections::HashMap::new();
@@ -687,6 +723,8 @@ fn check_layer(decls: &[Decl], out: &mut Vec<Diagnostic>) {
                 if target_layer == source {
                     continue;
                 }
+                // a layer the document never declares exposes nothing, so an absent entry is not an
+                // exemption
                 let exposed = exposes
                     .get(target_layer)
                     .map(|names| names.iter().any(|item| item == &name))
@@ -736,6 +774,8 @@ fn attr_keys(decl: &Decl) -> HashSet<String> {
     }
 }
 
+/// Push a diagnostic about `decl`, anchored at the span of the field `key` names when that field
+/// can be found and at the declaration's own span otherwise.
 pub(crate) fn sem(
     decl: &Decl,
     code: &'static str,

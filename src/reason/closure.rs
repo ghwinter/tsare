@@ -14,6 +14,7 @@ fn ids(value: &Val, out: &mut Vec<String>) {
     }
 }
 
+/// Every name under a field, including names nested in lists, calls and records.
 pub fn field_ids(decl: &Decl, key: &str) -> Vec<String> {
     let mut out = Vec::new();
     for (name, value) in &decl.fields {
@@ -24,6 +25,7 @@ pub fn field_ids(decl: &Decl, key: &str) -> Vec<String> {
     out
 }
 
+/// The name a field holds when it is written bare; any other shape gives `None`.
 pub fn id_field<'a>(decl: &'a Decl, key: &str) -> Option<&'a str> {
     for (name, value) in &decl.fields {
         if name == key {
@@ -58,12 +60,16 @@ fn matches(decl: &Decl, record: &[(String, Val)]) -> bool {
     })
 }
 
+/// One application of a warrant: the warrant's name, the premises it reads, and the name it
+/// reaches.
 pub struct Rule {
     pub warrant: String,
     pub premises: Vec<String>,
     pub target: String,
 }
 
+/// Every way a warrant applies.  `to` names one target directly; `concludes` is a pattern, and
+/// each proposition whose fields satisfy it becomes a target.
 pub fn applications(decls: &[Decl]) -> Vec<Rule> {
     let mut out = Vec::new();
     for decl in decls.iter().filter(|decl| decl.kind == "warrant") {
@@ -92,6 +98,7 @@ pub fn applications(decls: &[Decl]) -> Vec<Rule> {
     out
 }
 
+/// The warrants that survive every attack: the first half of `grounded_sets`.
 pub fn grounded(decls: &[Decl]) -> HashSet<String> {
     grounded_sets(decls).0
 }
@@ -144,6 +151,8 @@ pub fn grounded_sets(decls: &[Decl]) -> (HashSet<String>, HashSet<String>) {
             })
             .cloned()
             .collect();
+        // OUT is rebuilt from the IN just computed, so both sets move in the same round; using
+        // the previous IN would make every attack take one more pass to count.
         let new_outside: HashSet<String> = invalid
             .iter()
             .cloned()
@@ -168,6 +177,8 @@ pub fn grounded_sets(decls: &[Decl]) -> (HashSet<String>, HashSet<String>) {
     (inside, outside)
 }
 
+/// The word for each proposition: `asserted` when no rule concludes it, `supported` when a
+/// surviving rule does, and `defeated` when none of its rules survives.
 pub fn statuses(decls: &[Decl], inside: &HashSet<String>) -> HashMap<String, String> {
     let mut by_conclusion: HashMap<String, Vec<String>> = HashMap::new();
     // `concludes:` is a rule about a class, not a rule about one name; the class members are
@@ -213,12 +224,17 @@ fn premise_label(
         .unwrap_or_else(|| "unknown".to_string())
 }
 
+/// What a document grounds: the facts it states and does not retire, everything those facts
+/// derive through surviving rules, and the supported conclusions whose premises are missing.
 pub struct Closure {
     pub facts: HashSet<String>,
     pub held: HashSet<String>,
     pub conditional: Vec<(String, String)>,
 }
 
+/// The grounded reading of a document: its facts, then a fixpoint over the rules whose warrants
+/// survive and are not retired.  A conclusion that has a surviving rule but whose premises never
+/// ground is reported conditionally, with the premises it lacks.
 pub fn closure(decls: &[Decl]) -> Closure {
     let inside = grounded(decls);
     let gone = retired(decls);
@@ -288,6 +304,9 @@ pub fn closure(decls: &[Decl]) -> Closure {
     }
 }
 
+/// The engine's answer: the names it derives (the facts it starts from are not repeated), the
+/// conclusions it holds only conditionally, the rules it cannot apply, the chain behind each
+/// derived name, and the facts beneath each name that no machine measured.
 pub struct EngineResult {
     pub held: Vec<String>,
     pub conditional: Vec<(String, Vec<String>)>,
@@ -321,6 +340,9 @@ fn support_edges(decls: &[Decl]) -> HashMap<String, Vec<String>> {
     edges
 }
 
+/// The derivation behind `closure`, kept: each derived name remembers the rule and premises that
+/// first produced it, so a report can print the chain.  A rule that never has all its premises
+/// held is reported blocked with the ones that are missing.
 pub fn engine(decls: &[Decl]) -> EngineResult {
     let inside = grounded(decls);
     let gone = retired(decls);
