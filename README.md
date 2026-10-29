@@ -186,6 +186,7 @@ the compiler it argues about; a test fails if it stops compiling cleanly.
 ```
 src/            the compiler: syntax, checks, reasons, analyses, repairs, output
 tests/          properties, golden snapshots, fixtures
+scripts/        ci.sh, the gate in one command, and the corpus harness
 docs/           PROTOCOL.md (the machine contract), CORE.md (the judgment),
                 REPO.tsare (the repository as declarations)
 SELF.tsare         the same project described again, from a different angle; a test compiles it

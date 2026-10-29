@@ -8,11 +8,11 @@ stays outside the binary.
 ## Before a pull request
 
 ```powershell
-cargo fmt --all --check
-cargo clippy --all-targets -- -D warnings
-cargo test --release
-cargo run --release --quiet -- check SELF.tsare docs/REPO.tsare
+sh scripts/ci.sh
 ```
+
+On a clean checkout, `sh scripts/ci.sh --hygiene` also runs the repository checks that CI runs
+(no uncommitted changes, no machine paths, no secrets, no large files, no regenerable rows).
 
 ## How the branches move
 
