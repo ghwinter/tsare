@@ -14,6 +14,21 @@ cargo test --release
 cargo run --release --quiet -- check SELF.tsare docs/REPO.tsare
 ```
 
+## How the branches move
+
+Three tiers, and only three:
+
+| branch | holds | written by | moves |
+| --- | --- | --- | --- |
+| `main` | what is stable and absorbed | a person merges `dev`; nothing else | slowest: only after `dev` has held |
+| `dev` | integration: several stable changes together | a merge from `nightly` when green | when a change is wanted |
+| `nightly` | every experiment and every new line | direct commits | may be reset from `dev` at any time |
+
+A change starts on `nightly`. When it is green and wanted it merges to `dev`. When `dev` has
+held and still passes, a person merges it to `main`. Nothing is committed to `main` directly,
+and `dev` takes nothing that has not been on `nightly`. `nightly` is expected to break: a red
+run there is information, not an incident.
+
 ## Rules the code keeps
 
 1. No model call, no network, no clock, no randomness in `src/`. A check that cannot be decided
