@@ -162,6 +162,12 @@ const [unrelated] = await remindCtx.fire('tools/post-execute', {
   agent: remindAgent,
 })
 assert.equal(unrelated.additionalContexts, undefined, 'an unrelated command must not be reminded')
+const [written] = await remindCtx.fire('tools/post-execute', {
+  name: 'write',
+  arguments: { file: 'notes.md', content: 'run `cargo test` and record it' },
+  agent: remindAgent,
+})
+assert.equal(written.additionalContexts, undefined, 'a file whose content mentions a command is not a run')
 writeFileSync(ledger, `${clean}note N_MORE { tag: conjecture, text: "OK" }\n`)
 const [third] = await remindCtx.fire('tools/post-execute', {
   name: 'pwsh',

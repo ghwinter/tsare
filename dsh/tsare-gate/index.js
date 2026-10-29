@@ -395,13 +395,11 @@ export function apply(ctx, raw) {
     if (!Array.isArray(config.remindWhen) || !config.remindWhen.length) return decision
     const agent = exec.agent
     if (!agent) return decision
-    let haystack
-    try {
-      haystack = `${exec.name} ${JSON.stringify(exec.arguments ?? {})}`
-    } catch {
-      return decision
-    }
-    if (!matchesRemind(haystack)) return decision
+    // Only a command can be a verification run.  Matching the whole argument object made a
+    // write whose *file content* mentioned `cargo test` look like a test run.
+    const command = typeof exec.arguments?.command === 'string' ? exec.arguments.command : ''
+    if (!command) return decision
+    if (!matchesRemind(`${exec.name} ${command}`)) return decision
     const seen = remanded.get(agent) ?? new Set()
     const limit = Number.isFinite(config.remindLimit) && config.remindLimit >= 0 ? config.remindLimit : 5
     if (seen.size >= limit) return decision
