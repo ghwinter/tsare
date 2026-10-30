@@ -1,0 +1,1 @@
+{"decision": "open", "items": [{"name": "P_THRESHOLD", "kind": "proposition", "decision": "open", "reason": "no premise and no rule"}]}

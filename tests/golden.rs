@@ -125,6 +125,8 @@ const COMMANDS: &[(&str, &[&str])] = &[
     // same six times.  The test below pins the interesting case; the module's unit tests pin
     // the rest.
     ("cost", &[]),
+    ("decide", &[]),
+    ("decide-json", &["--json"]),
     ("weigh", &[]),
     ("cat", &[]),
     ("outline", &[]),

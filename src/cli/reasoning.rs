@@ -766,6 +766,44 @@ pub(crate) fn cmd_imply(path: &Path, args: &Args) -> i32 {
     0
 }
 
+pub(crate) fn cmd_decide(path: &Path, json: bool) -> i32 {
+    let loaded = match load(path) {
+        Ok(loaded) => loaded,
+        Err(error) => return fail(error),
+    };
+    let verdict = crate::decide::report(&loaded.decls);
+    if json {
+        let items: Vec<J> = verdict
+            .items
+            .iter()
+            .map(|item| {
+                obj(vec![
+                    ("name", J::Str(item.name.clone())),
+                    ("kind", J::Str(item.kind.clone())),
+                    ("decision", J::Str(item.decision.label().to_string())),
+                    ("reason", J::Str(item.reason.to_string())),
+                ])
+            })
+            .collect();
+        emit(obj(vec![
+            ("decision", J::Str(verdict.decision.label().to_string())),
+            ("items", J::Arr(items)),
+        ]));
+        return 0;
+    }
+    println!("{}", verdict.decision.label());
+    for item in &verdict.items {
+        println!(
+            "{} {} {}: {}",
+            pad(&item.name, 20),
+            pad(item.decision.label(), 9),
+            item.kind,
+            item.reason
+        );
+    }
+    0
+}
+
 pub(crate) fn cmd_cost(path: &Path, top: usize, json: bool) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,

@@ -1,0 +1,1 @@
+{"decision": "open", "items": [{"name": "W_X", "kind": "warrant", "decision": "open", "reason": "no basis"}]}

@@ -229,8 +229,8 @@ core judges what was written. `check/kernel.rs` is not this kernel either: it is
 
 The rules above are the target. The tree today:
 
-- **D1.** No `admit` and no `decide`. `check` is the absolute judgment, `propose::verify` a
-  relative one, `closure` the fixed point; nothing answers `closable`.
+- **D1.** No `admit`. `check` is the absolute judgment, `propose::verify` a relative one,
+  `closure` the fixed point. `decide` answers `closable`; `check` does not carry the decision yet.
 - **D2.** The kind is a string. R1–R6 are not the structure of `check`; it is a sequence of
   passes, and a new kind or a new rule lands in several of them.
 - **D3.** The codes are not assigned to rules. A short list is interned; the rest are minted where
