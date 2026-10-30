@@ -16,6 +16,8 @@
  *   ledger             ledger path, relative to `cwd` (default '.tsare/session.tsare')
  *   cwd                where the ledger lives (default: the process working directory)
  *   mode               'errors' (default) fails on errors, 'warnings' also on warnings (--strict)
+ *   level              off | brief | remind | steer, a preset over brief, remindWhen and steerLimit;
+ *                      a named level writes those keys, a missing one is inferred from them
  *   steerLimit         steers per agent before the gate gives up (default 3)
  *   timeoutMs          per check (default 10000)
  *   brief              keep one line in the runtime snapshot: the next question (default true)
@@ -60,6 +62,53 @@ const DEFAULTS = {
   command: null,
   askCommand: null,
   debug: false,
+}
+
+/** The levels, weakest to strongest.  A stronger one adds obligations; it never removes a rule. */
+const LEVELS = ['off', 'brief', 'remind', 'steer']
+
+/** What `remind` and `steer` use when the config names no trigger of its own. */
+const DEFAULT_REMIND = ['cargo (test|build|clippy)', 'npm test', 'pytest']
+
+/** The configured level, else the one the three switches already describe. */
+function levelOf(config) {
+  const named = typeof config.level === 'string' ? config.level.trim().toLowerCase() : ''
+  if (LEVELS.includes(named)) return named
+  if (config.brief === false) return 'off'
+  if (Number.isFinite(config.steerLimit) && config.steerLimit > 0) return 'steer'
+  const reminds = Array.isArray(config.remindWhen) && config.remindWhen.length > 0
+  return reminds ? 'remind' : 'brief'
+}
+
+/**
+ * A level is a preset, not a second set of rules: it writes `brief`, `remindWhen` and
+ * `steerLimit`, and the rest of the gate reads those as before.  A named level wins over the
+ * switches; an absent one is inferred and leaves them alone, so an old config keeps its meaning.
+ */
+function applyLevel(config) {
+  const named = typeof config.level === 'string' ? config.level.trim().toLowerCase() : ''
+  config.level = LEVELS.includes(named) ? named : levelOf(config)
+  if (!LEVELS.includes(named)) return config
+  config.brief = config.level !== 'off'
+  if (config.level === 'off') {
+    config.remindWhen = []
+    config.steerLimit = 0
+    return config
+  }
+  if (config.level === 'brief') {
+    config.remindWhen = []
+    config.steerLimit = 0
+    return config
+  }
+  if (!Array.isArray(config.remindWhen) || config.remindWhen.length === 0) {
+    config.remindWhen = [...DEFAULT_REMIND]
+  }
+  if (config.level === 'remind') {
+    config.steerLimit = 0
+  } else if (!Number.isFinite(config.steerLimit) || config.steerLimit <= 0) {
+    config.steerLimit = 3
+  }
+  return config
 }
 
 /** The message a gate injects; the shape is the one `createUserMessage` builds. */
@@ -174,7 +223,7 @@ async function nextQuestion(config, cwd) {
  * @param raw - user config.
  */
 export function apply(ctx, raw) {
-  const config = { ...DEFAULTS, ...(raw ?? {}) }
+  const config = applyLevel({ ...DEFAULTS, ...(raw ?? {}) })
   const steers = new Map()
   /** agent -> {stamp, text}; the runtime context reads `text`, the post-execute hook refreshes it. */
   const briefs = new Map()
@@ -261,7 +310,7 @@ export function apply(ctx, raw) {
         ? `first ${first.code} ${first.name || '<file>'}: ${first.message ?? ''}`
         : 'no diagnostic rows'
       return oneLine(
-        `tsare: ledger not checkable (${verdict.report?.errors ?? 0} error(s), ` +
+        `tsare[${config.level}]: ledger not checkable (${verdict.report?.errors ?? 0} error(s), ` +
           `${verdict.report?.warnings ?? 0} warning(s)); ${detail}. Fix it, or record why it cannot be checked.`,
         config.briefMaxChars,
       )
@@ -269,7 +318,7 @@ export function apply(ctx, raw) {
     const question = await nextQuestion(config, cwdOf(agent))
     if (question) {
       return oneLine(
-        `tsare: next question — ${question} (ledger ${config.ledger})`,
+        `tsare[${config.level}]: next question — ${question} (ledger ${config.ledger})`,
         config.briefMaxChars,
       )
     }
@@ -281,7 +330,7 @@ export function apply(ctx, raw) {
         ? ''
         : ' Record a claim with evidence, or say unchecked with the reason.'
     return oneLine(
-      `tsare: ledger clean, ${many} claim(s); nothing to ask.${tail}`,
+      `tsare[${config.level}]: ledger clean, ${many} claim(s); nothing to ask.${tail}`,
       config.briefMaxChars,
     )
   }

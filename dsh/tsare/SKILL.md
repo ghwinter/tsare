@@ -53,6 +53,9 @@ Then:
 - If a claim cannot be checked, do not delete it to pass: record the gap and say `unchecked` with
   the reason in the answer. The gate reads the ledger, not the prose, and a thin ledger passes --
   the escape is honest, the silence is not.
+- The gate has a level (`off`, `brief`, `remind`, `steer`). It changes the gate's response, never
+  what the checker judges. The level is the user's: do not edit the profile or the ledger to lower
+  it; a stricter command is always allowed.
 
 ## Where it is
 

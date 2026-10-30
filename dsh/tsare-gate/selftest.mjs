@@ -222,4 +222,49 @@ for (const [style, expectsInstruction] of [['terse', false], ['full', true]]) {
   )
 }
 
-console.log('tsare-gate selftest: 15 checks passed')
+// 16. the level is the switches' own name when none is configured
+for (const [extra, expected] of [
+  [{ brief: true, steerLimit: 0 }, 'brief'],
+  [{ brief: true, remindWhen: ['cargo test'], steerLimit: 0 }, 'remind'],
+  [{}, 'steer'],
+]) {
+  const levelCtx = context()
+  apply(levelCtx, { command, askCommand, ...extra })
+  const levelAgent = makeAgent()
+  await levelCtx.fire('agent/created', { agent: levelAgent })
+  writeFileSync(ledger, clean)
+  await levelCtx.fire('tools/post-execute', { name: 'read', arguments: {}, agent: levelAgent })
+  const text = contexts[contexts.length - 1].text()
+  assert.match(text, new RegExp(`^tsare\\[${expected}\\]`), `${expected}: ${text}`)
+}
+
+// 17. a named level writes the switches: off wins over a stale brief and a steer limit
+const offCtx = context()
+apply(offCtx, { command, askCommand, level: 'off', brief: true, steerLimit: 3 })
+const offAgent = makeAgent()
+const beforeOff = contexts.length
+await offCtx.fire('agent/created', { agent: offAgent })
+assert.equal(contexts.length, beforeOff, 'level off must not install a brief')
+writeFileSync(ledger, dirty)
+await offCtx.fire('agent/turn-stopping', {
+  agent: offAgent,
+  turn: 1,
+  signal: new AbortController().signal,
+})
+assert.equal(offAgent.steered.length, 0, 'level off must not steer')
+
+// 18. level remind supplies the trigger when the config names none
+const remindLevelCtx = context()
+apply(remindLevelCtx, { command, askCommand, level: 'remind' })
+const remindLevelAgent = makeAgent()
+await remindLevelCtx.fire('agent/created', { agent: remindLevelAgent })
+writeFileSync(ledger, clean)
+const [reminded] = await remindLevelCtx.fire('tools/post-execute', {
+  name: 'pwsh',
+  arguments: { command: 'cargo test --release' },
+  agent: remindLevelAgent,
+})
+assert.equal(reminded.additionalContexts.length, 1, 'level remind must supply a trigger')
+assert.match(contexts[contexts.length - 1].text(), /^tsare\[remind\]/, contexts[contexts.length - 1].text())
+
+console.log('tsare-gate selftest: 18 checks passed')
