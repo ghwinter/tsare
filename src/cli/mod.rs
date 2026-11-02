@@ -242,6 +242,7 @@ const COMMANDS: &[Command] = &[
         Command("checking", "project", "project DIR                                          the same, grouped by file"),
         Command("checking", "trace", "trace PATH [--out FILE]      a replayable record of one run"),
         Command("checking", "replay", "replay TRACE                 re-run a recorded run and compare"),
+        Command("checking", "grow", "grow LIBRARY SOURCE NAME --out FILE   add one checked declaration to a library"),
         Command("reasoning", "engine", "engine PATH [--json]         held, conditional, blocked, chains, gates"),
         Command("reasoning", "argue", "argue PATH [--against OTHER] which conclusions survive attack"),
         Command("reasoning", "confront", "confront LEFT RIGHT          which rules attack which, and which attacks nobody answered"),
@@ -529,6 +530,18 @@ pub fn run() -> i32 {
         "engine" => cmd_engine(&path, args.has("--json")),
         "trace" => cmd_trace(&path, args.option("--out")),
         "replay" => cmd_replay(&path),
+        "grow" => {
+            let (Some(library), Some(source), Some(name)) = (args.at(0), args.at(1), args.at(2))
+            else {
+                println!("usage: tsare grow LIBRARY SOURCE NAME --out FILE");
+                return 2;
+            };
+            let Some(out) = args.option("--out") else {
+                println!("usage: tsare grow LIBRARY SOURCE NAME --out FILE");
+                return 2;
+            };
+            cmd_grow(Path::new(library), Path::new(source), name, out)
+        }
         "suggest" => cmd_suggest(&path, args.has("--json")),
         "apply" => cmd_apply(&path, args.has("--dry-run")),
         "argue" => cmd_argue(&path, args.option("--against").map(Path::new)),

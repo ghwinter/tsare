@@ -87,6 +87,7 @@ answers `--json`.
 | `project DIR` | a directory checked as one program, grouped by file | |
 | `trace FILE [--out FILE]` | one run as a replayable record: the ledger, its hash, and `check`, `ask` and `decide` with their reports and statuses | yes |
 | `replay TRACE` | re-run every recorded step on the embedded ledger and compare byte for byte; `match` or the first difference | |
+| `grow LIBRARY SOURCE NAME --out FILE` | copy one declaration and a content-addressed entry note into a library, keeping it only if the grown document has no error | |
 | `fix FILE [--apply]` | verified repair candidates, and applying them | |
 | `suggest FILE` | repairs with an applicability | yes |
 | `apply FILE [--dry-run]` | machine repairs spliced and recompiled | |

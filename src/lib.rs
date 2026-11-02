@@ -14,7 +14,7 @@ pub mod mcp;
 pub mod reason;
 
 pub use check::{decide, epistemic, fix, kernel};
-pub use emit::{build, format, graph, mapping, outline};
+pub use emit::{build, format, graph, growth, mapping, outline};
 pub use io::{apply, cache, cases, session, trace};
 pub use lang::{explain, hash, json, paths, program, render, specs, sugar, syntax};
 pub use reason::{

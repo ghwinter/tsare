@@ -14,6 +14,10 @@ All notable changes are recorded here. The format follows
 - `epistemic`: each conclusion's state — verified, inferred or unverified — with the rule, fact or
   witness behind it. It reads the finer field the three-state projection collapses.
 
+- `grow`: a declaration enters a library only if the grown document stays admissible; the entry
+  note records the source's content hash. It gates admissibility, not whether the abstraction
+  earns its place.
+
 - `trace` and `replay`: one run (`check`, `ask`, `decide`) can be recorded with the ledger it read
   and each report it produced, then re-run and compared. The record is content-addressed and names
   no path.

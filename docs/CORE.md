@@ -252,8 +252,10 @@ The rules above are the target. The tree today:
   before writing it; nothing re-checks the bytes that were written.
 - **D10.** No session trace: one run over one ledger is replayable (`check`, `ask`, `decide`), but a
   session's sequence of writes and turns is not recorded as one run.
+- **D11.** The growth gate checks admissibility, not benefit: `grow` keeps a declaration only if the
+  library stays admissible; nothing measures whether it earns its place.
 
 The order of work follows the dependencies: D3 before D1 (a judgment needs its rules named), D1
 before D2 (the judgment first, the structure of the checker second), D4 before D5, D10 after D1
-(a record needs the judgment it records), and D6 and D9 last because they change behavior rather
-than vocabulary.
+(a record needs the judgment it records), D11 after D10 (a gate needs a judgment and a record),
+and D6 and D9 last because they change behavior rather than vocabulary.

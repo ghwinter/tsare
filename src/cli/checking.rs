@@ -338,3 +338,42 @@ pub(crate) fn cmd_replay(path: &Path) -> i32 {
         }
     }
 }
+
+/// Add one declaration from a source document to a library, if the library stays admissible.
+pub(crate) fn cmd_grow(library: &Path, source: &Path, name: &str, out: &str) -> i32 {
+    let library_text = match fs::read_to_string(library) {
+        Ok(text) => text,
+        Err(error) => return fail(format!("{}: {error}", library.display())),
+    };
+    let source_text = match fs::read_to_string(source) {
+        Ok(text) => text,
+        Err(error) => return fail(format!("{}: {error}", source.display())),
+    };
+    match crate::growth::grow(&library_text, &source_text, name) {
+        crate::growth::Verdict::Accepted(grown) => {
+            if let Err(error) = fs::write(out, &grown.text) {
+                return fail(format!("{out}: {error}"));
+            }
+            let short: String = grown.source_sha256.chars().take(12).collect();
+            println!(
+                "accepted {} (source {short}, {} warning(s)) -> {out}",
+                grown.name, grown.warnings
+            );
+            0
+        }
+        crate::growth::Verdict::Rejected {
+            reason,
+            diagnostics,
+        } => {
+            println!("rejected {name}: {reason}");
+            for item in &diagnostics {
+                let witness = item.witness.as_deref().unwrap_or("<file>");
+                println!(
+                    "  {} {} line {}: {}",
+                    item.code, witness, item.line, item.message
+                );
+            }
+            1
+        }
+    }
+}
