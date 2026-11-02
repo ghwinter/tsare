@@ -439,7 +439,7 @@ impl Parser {
 /// first one: an absent header means format 1, so a document written before the header existed
 /// is not a document of unknown version.  The number changes only when the grammar does, never
 /// when the crate does.
-pub const FORMAT_VERSION: u32 = 1;
+pub const FORMAT_VERSION: u32 = 2;
 
 /// The optional first line, `tsare <n>`.  `None` means no header.  `Ok(n)` is the number of
 /// bytes the header occupies, including its newline.  `Err` means the document declares a
@@ -470,10 +470,10 @@ fn header(src: &str) -> Option<Result<usize, ParseError>> {
             ))));
         }
     }
-    if version != FORMAT_VERSION {
+    if version != 1 && version != FORMAT_VERSION {
         return Some(Err(version_error(&format!(
-            "this document is format {version}; this build speaks format {FORMAT_VERSION}, so \
-             it cannot read this one"
+            "this document is format {version}; this build speaks formats 1 and {FORMAT_VERSION}, \
+             so it cannot read this one"
         ))));
     }
     Some(Ok(line_end + usize::from(line_end < src.len())))

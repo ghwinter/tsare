@@ -482,6 +482,61 @@ pub(crate) fn cmd_status(path: &Path, json: bool) -> i32 {
     0
 }
 
+/// Where each quoted claim sits in its source: the source, the line and the column.
+pub(crate) fn cmd_provenance(path: &Path, json: bool) -> i32 {
+    let loaded = match load(path) {
+        Ok(loaded) => loaded,
+        Err(error) => return fail(error),
+    };
+    let rows = crate::provenance::rows(&loaded.decls);
+    if json {
+        let items: Vec<J> = rows
+            .iter()
+            .map(|row| {
+                let line = match row.line {
+                    Some(line) => J::Num(line as f64),
+                    None => J::Null,
+                };
+                let col = match row.col {
+                    Some(col) => J::Num(col as f64),
+                    None => J::Null,
+                };
+                J::Obj(vec![
+                    ("name".to_string(), J::Str(row.name.clone())),
+                    ("kind".to_string(), J::Str(row.kind.clone())),
+                    ("source".to_string(), J::Str(row.source.clone())),
+                    ("source_name".to_string(), J::Str(row.source_name.clone())),
+                    ("line".to_string(), line),
+                    ("col".to_string(), col),
+                    ("quote".to_string(), J::Str(row.quote.clone())),
+                ])
+            })
+            .collect();
+        let value = J::Obj(vec![("rows".to_string(), J::Arr(items))]);
+        println!("{}", crate::json::serialize(&value));
+        return 0;
+    }
+    if rows.is_empty() {
+        println!("no quoted claims");
+        return 0;
+    }
+    for row in &rows {
+        let place = match (row.line, row.col) {
+            (Some(line), Some(col)) => format!("{line}:{col}"),
+            _ => "not found".to_string(),
+        };
+        println!(
+            "{} {} {} ({}): {place} {}",
+            pad(&row.name, 20),
+            pad(&row.kind, 10),
+            pad(&row.source, 16),
+            row.source_name,
+            row.quote
+        );
+    }
+    0
+}
+
 /// Add one declaration from a source document to a library, if the library stays admissible.
 pub(crate) fn cmd_grow(library: &Path, source: &Path, name: &str, out: &str) -> i32 {
     let library_text = match fs::read_to_string(library) {

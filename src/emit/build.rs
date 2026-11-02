@@ -22,6 +22,7 @@ pub const ACTIONS: &[(&str, &str)] = &[
     ("warrant", "justify"),
     ("law", "watch"),
     ("layer", "expose"),
+    ("source", "quote"),
     ("note", "promote"),
 ];
 
@@ -284,6 +285,11 @@ pub fn obligation(
             action,
             state: "none",
             note: "not a commitment".to_string(),
+        },
+        "source" => Obligation {
+            action,
+            state: "ready",
+            note: "the text is its own witness".to_string(),
         },
         _ => Obligation {
             action,

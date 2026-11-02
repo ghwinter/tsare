@@ -494,7 +494,7 @@ proposition P { statement: "s", from: [F], confidence: 0.8 }
 #[test]
 fn every_kind_owes_an_action() {
     use tsare::program::TABLE;
-    assert_eq!(TABLE.len(), 12, "one row per kind");
+    assert_eq!(TABLE.len(), 13, "one row per kind");
     for (kind, obligation, discharge) in TABLE {
         assert!(
             tsare::specs::spec(kind).is_some(),
@@ -544,9 +544,10 @@ fn a_document_declares_a_format_only_when_it_must() {
     assert_eq!(declared[0].line, 2);
 
     // a newer format stops parsing: one true error beats a page of nonsense
-    let error = parse("tsare 2\nfact F { claim: \"x\", evidence: user }").unwrap_err();
+    assert!(parse("tsare 2\nfact F { claim: \"x\", evidence: user }").is_ok());
+    let error = parse("tsare 3\nfact F { claim: \"x\", evidence: user }").unwrap_err();
     assert_eq!(error.code, "E-VERSION");
-    assert!(error.message.contains("format 2"), "{}", error.message);
+    assert!(error.message.contains("format 3"), "{}", error.message);
     assert_eq!((error.line, error.col), (1, 1));
 
     // a header with no number is still a header

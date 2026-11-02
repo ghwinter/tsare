@@ -43,7 +43,7 @@ The judgment has three readings:
 `admit` is not compositional. R5 and R6 read the whole ledger, so the judgment is a function of
 `(Γ, d)`, not of `d` alone.
 
-## One former, twelve shapes
+## One former, thirteen shapes
 
 A declaration is `claim + witness + scope`. The kind names the **shape of the witness**, not a
 separate judgment. `note` is the unit: it has no witness and is not a commitment.
@@ -61,10 +61,11 @@ separate judgment. `note` is the unit: it has no witness and is not a commitment
 | law | a principle | a checker | the thing that would break if it failed |
 | layer | an interface | a contract | what others may use, and nothing else |
 | partition | a classification | a dimension | the concept the elements share, or a stated lack |
+| source | a text and its name | the text itself | a line a claim can quote |
 | note | — | — | nothing |
 
 The table is the test of the claim: a kind whose row does not fit is a seventh question, not a
-twelfth special case.
+thirteenth special case.
 
 ## The six questions
 
@@ -96,7 +97,7 @@ R1 shape        E-SYNTAX E-VERSION E-EMPTY-DOCUMENT E-EMPTY E-KIND-UNKNOWN E-FIE
                 E-MISSING E-TYPE E-DUP-FIELD E-DUP-ID E-KIND E-UNDEFINED E-NOTE-REF
                 E-WITNESS E-WARRANT-MODE E-NO-ANSWERS E-NO-ASSUMPTION E-NO-SIGNATURE
                 E-NO-PREMISE E-PARTITION-EMPTY E-PARTITION-DUPLICATE E-PARTITION-CLOSURE
-                E-CONFIDENCE E-INCOMMENSURABLE
+                E-CONFIDENCE E-INCOMMENSURABLE E-QUOTE E-QUOTE-SOURCE
 R2 witness      E-SELF-VERDICT E-NO-EVIDENCE E-SCOPE-UNBOUNDED E-OUT-MISMATCH
                 W-HOLE W-UNCONFIRMED W-UNSATISFIED W-BARE-NUMBER W-OVERCLAIM
                 W-BASIS-NO-CRITERION W-UNWARRANTED-BASIS W-LAW-UNCHECKED

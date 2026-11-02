@@ -205,6 +205,7 @@ fn judge(
                 _ => (Decision::Open, "open, and no question closes it"),
             }
         }
+        "source" => (Decision::Closed, "the text is its own witness"),
         _ => (Decision::Open, "unknown kind"),
     }
 }

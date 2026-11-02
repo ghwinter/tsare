@@ -321,6 +321,7 @@ pub const TABLE: &[(&str, &str, &str)] = &[
         "a dimension, or a stated lack of one",
         "name the concept the elements share, or the question that would",
     ),
+    ("source", "a text and its name", "the text itself"),
     (
         "note",
         "nothing; it is not a commitment",

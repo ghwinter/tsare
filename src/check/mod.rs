@@ -17,6 +17,7 @@ pub(crate) mod evidence;
 pub mod fix;
 pub mod kernel;
 mod partition;
+pub mod provenance;
 pub mod status;
 
 use crate::closure;
@@ -30,6 +31,7 @@ pub const REF_KEYS: &[&str] = &[
     "from",
     "because",
     "to",
+    "source",
     "grounded_by",
     "against",
     "uses",
@@ -119,6 +121,8 @@ const KNOWN_CODES: &[&str] = &[
     "E-TENSION",
     "E-LAYER-LEAK",
     "E-UNCOVERED",
+    "E-QUOTE",
+    "E-QUOTE-SOURCE",
     "W-HOLE",
     "W-CONDITIONAL",
 ];
@@ -388,7 +392,86 @@ pub fn check(decls: &[Decl]) -> Vec<Diagnostic> {
             }
         }
     }
+    check_quotes(decls, &by_name, &mut out);
     out
+}
+
+/// A quote is the anchor between a claim and its source: both fields or neither, and the quote
+/// must be a line of the source's `text`.
+fn check_quotes(decls: &[Decl], by_name: &HashMap<&str, &str>, out: &mut Vec<Diagnostic>) {
+    for decl in decls {
+        if decl.kind != "fact" && decl.kind != "proposition" {
+            continue;
+        }
+        let source = crate::program::f_id(decl, "source");
+        let quote = crate::program::f_str(decl, "quote");
+        match (source, quote) {
+            (None, None) => {}
+            (None, Some(_)) => out.push(diag(
+                "E-QUOTE-SOURCE",
+                format!("{}.quote needs a source", decl.name),
+                decl,
+            )),
+            (Some(_), None) => out.push(diag(
+                "E-QUOTE",
+                format!("{}.source needs a quote", decl.name),
+                decl,
+            )),
+            (Some(source), Some(quote)) => {
+                if quote.trim().is_empty() {
+                    out.push(diag(
+                        "E-QUOTE",
+                        format!("{}.quote is empty", decl.name),
+                        decl,
+                    ));
+                    continue;
+                }
+                let Some(kind) = by_name.get(source) else {
+                    continue;
+                };
+                if *kind != "source" {
+                    continue;
+                }
+                let Some(target) = decls.iter().find(|item| item.name == source) else {
+                    continue;
+                };
+                let lines = text_lines(target);
+                if lines.iter().any(|line| line.contains(quote)) {
+                    continue;
+                }
+                let (line, col) = field_pos(decl, "quote");
+                out.push(Diagnostic {
+                    code: "E-QUOTE",
+                    message: format!("{}.quote does not occur in {source}", decl.name),
+                    line,
+                    col,
+                    end_line: line,
+                    end_col: col + quote.chars().count(),
+                    file: decl.file.clone(),
+                    witness: Some(decl.name.clone()),
+                });
+            }
+        }
+    }
+}
+
+/// The lines of a `list:str` field; an absent or mistyped field is an empty list.
+fn text_lines(decl: &Decl) -> Vec<String> {
+    match decl
+        .fields
+        .iter()
+        .find(|(name, _)| name == "text")
+        .map(|(_, value)| value)
+    {
+        Some(Val::List(items)) => items
+            .iter()
+            .filter_map(|item| match item {
+                Val::Str(text) => Some(text.clone()),
+                _ => None,
+            })
+            .collect(),
+        _ => Vec::new(),
+    }
 }
 
 pub(crate) fn ids(value: &Val) -> Vec<String> {

@@ -14,10 +14,10 @@ The text is the contract. Every command's output is pinned byte for byte by
 | **crate** | `Cargo.toml`, `tsare --version` | behaviour: which checks, commands and outputs exist | semver, below |
 
 The format number is the one that must not inflate. It is written in every document, so a new
-number means every document needs rewriting. It stays `1` while `2` does not exist, and the
-line may be omitted -- which is why the documents written before the line existed still compile
-unchanged. A document that declares a format this build does not speak gets `E-VERSION` and
-stops: one true error instead of a page of parse noise.
+number means every document needs rewriting. Format 2 adds the `source` kind and the `source` /
+`quote` fields; a format 1 document remains valid and a document without the line is format 1. A
+document that declares a format this build does not speak gets `E-VERSION` and stops: one true
+error instead of a page of parse noise.
 
 The crate number may move as often as the work needs:
 
@@ -55,6 +55,7 @@ answers `--json`.
 | --- | --- | --- |
 | `check FILE\|DIR` | which declarations are well formed; `--goals`, `--sugar`, `--cache`, `--against OTHER`, `--strict` | yes |
 | `status FILE [--json]` | one line: the decision, the epistemic counts, and the next question; the JSON also carries the first debt and the claim count; errors exit 1 | yes |
+| `provenance FILE [--json]` | where each quoted claim sits in its source: the source, the line and the column | yes |
 | `engine FILE\|DIR` | held, conditional, blocked, chains, gates | yes |
 | `argue FILE [--against OTHER]` | which conclusions survive attack; with `--against`, the attack graph is the merge | |
 | `confront LEFT RIGHT` | which rules attack across the pair, and which attacks nobody answered; exit 1 when `LEFT` leaves one unanswered | |
@@ -331,10 +332,10 @@ opaque string that only equality can compare. That is why this is a checkability
 semantic one -- and why "the model does not have to be trusted" is a statement about structure, not
 about understanding.
 
-The twelve kinds are an **epistemic type system**: each names an obligation rather than a data
+The thirteen kinds are an **epistemic type system**: each names an obligation rather than a data
 shape. A `fact` owes evidence someone else can check, a `value` owes an instrument and a threshold,
-a `warrant` owes premises, a rule and a licence. Passing the type check means the obligation is met,
-not that the sentence is true.
+a `warrant` owes premises, a rule and a licence, a `source` owes the text a claim quotes. Passing
+the type check means the obligation is met, not that the sentence is true.
 
 | Layer | What is checked | What it does not give you |
 | --- | --- | --- |

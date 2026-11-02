@@ -8,6 +8,12 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `source` and the `source` / `quote` fields: a claim can anchor to a line of an embedded source
+  text; `check` reports `E-QUOTE` when the quote is not a line of it, and `E-QUOTE-SOURCE` when
+  the pair is incomplete. Format 2 adds the kind; format 1 documents still parse.
+
+- `provenance`: where each quoted claim sits in its source, with the line and column.
+
 - `status`: the loop's one line — the decision, the epistemic counts and the next question — in
   the same terms as the gate's brief. Its JSON also carries the claim count and the first debt.
   It exits 1 when the document has an error.

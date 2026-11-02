@@ -240,6 +240,7 @@ const HIDDEN: &[&str] = &["mcp"];
 const COMMANDS: &[Command] = &[
         Command("checking", "check", "check PATH [--json] [--goals F] [--sugar] [--cache] [--against OTHER] [--strict]   parse and check (the default)"),
         Command("checking", "status", "status PATH [--json]         the decision, the epistemic counts and the next question"),
+        Command("checking", "provenance", "provenance PATH [--json]    where each quoted claim sits in its source"),
         Command("checking", "project", "project DIR                                          the same, grouped by file"),
         Command("checking", "trace", "trace PATH [--out FILE | --append FILE]   one run, or append it to a session"),
         Command("checking", "replay", "replay TRACE [--diff]        re-run a recorded session, show the write-backs, compare"),
@@ -532,6 +533,7 @@ pub fn run() -> i32 {
         ),
         "engine" => cmd_engine(&path, args.has("--json")),
         "status" => cmd_status(&path, args.has("--json")),
+        "provenance" => cmd_provenance(&path, args.has("--json")),
         "trace" => cmd_trace(&path, args.option("--out"), args.option("--append")),
         "replay" => cmd_replay(&path, args.has("--diff")),
         "grow" => {

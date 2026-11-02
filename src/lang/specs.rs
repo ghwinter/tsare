@@ -23,6 +23,8 @@ pub fn spec(kind: &str) -> Option<&'static [Field]> {
             ("layer", "ref:layer", false),
             ("supersedes", "list:ref:any", false),
             ("because", "list:ref:any", false),
+            ("source", "ref:source", false),
+            ("quote", "str", false),
         ],
         "concept" => &[
             ("name", "str", true),
@@ -45,6 +47,8 @@ pub fn spec(kind: &str) -> Option<&'static [Field]> {
             ("layer", "ref:layer", false),
             ("supersedes", "list:ref:any", false),
             ("because", "list:ref:any", false),
+            ("source", "ref:source", false),
+            ("quote", "str", false),
         ],
         "hypothesis" => &[
             ("assumes", "list:ref:any", true),
@@ -121,6 +125,13 @@ pub fn spec(kind: &str) -> Option<&'static [Field]> {
             ("closure", "enum:closed,open,unknown", true),
             ("basis", "list:ref:any", false),
             ("closes_with", "list:ref:question", false),
+            ("layer", "ref:layer", false),
+            ("supersedes", "list:ref:any", false),
+            ("because", "list:ref:any", false),
+        ],
+        "source" => &[
+            ("name", "str", true),
+            ("text", "list:str", true),
             ("layer", "ref:layer", false),
             ("supersedes", "list:ref:any", false),
             ("because", "list:ref:any", false),

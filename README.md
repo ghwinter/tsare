@@ -142,10 +142,10 @@ Exit codes: `0` no errors, `1` errors found (or a file that is not there), `2` a
 | did the last edit remove complaints, or trade them for others? | `delta` |
 | what does the checked document oblige, and what did it learn? | `build` |
 
-Twelve kinds, each with a decidable obligation: a fact owes evidence someone else can check, a
+Thirteen kinds, each with a decidable obligation: a fact owes evidence someone else can check, a
 concept owes a counterexample, a proposition owes a rule, a hypothesis owes a test or a rival,
 a value owes an instrument, a warrant owes a basis, a partition owes a dimension and a stated
-closure.
+closure, a source owes the text a claim quotes.
 
 ## What it is not
 
