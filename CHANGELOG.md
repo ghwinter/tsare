@@ -9,7 +9,8 @@ All notable changes are recorded here. The format follows
 ### Added
 
 - `status`: the loop's one line — the decision, the epistemic counts and the next question — in
-  the same terms as the gate's brief. It exits 1 when the document has an error.
+  the same terms as the gate's brief. Its JSON also carries the claim count and the first debt.
+  It exits 1 when the document has an error.
 
 - `decide`: whether a document is closed, closable or open, and which declarations still owe a
   witness. It reads the ledger alone; `check` keeps its output until the format freezes.

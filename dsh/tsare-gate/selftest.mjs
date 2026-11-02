@@ -30,9 +30,8 @@ function context() {
 }
 
 const command = [process.execPath, fake, 'check', '.tsare/session.tsare', '--json']
-const askCommand = [process.execPath, fake, 'ask', '.tsare/session.tsare', '--one']
+const statusCommand = [process.execPath, fake, 'status', '.tsare/session.tsare', '--json']
 const decideCommand = [process.execPath, fake, 'decide', '.tsare/session.tsare', '--json']
-const epistemicCommand = [process.execPath, fake, 'epistemic', '.tsare/session.tsare', '--json']
 const dirty = 'tsare 1\nfact F_X { claim: "a claim with nothing behind it" }\n'
 const clean = 'tsare 1\nnote N_OK { tag: conjecture, text: "OK" }\n'
 const session = { header: { cwd: dir } }
@@ -67,9 +66,8 @@ const agent = makeAgent()
 const ctx = context()
 apply(ctx, {
   command,
-  askCommand,
+  statusCommand,
   decideCommand,
-  epistemicCommand,
   remindAfterTools: ['bash'],
   steerLimit: 3,
   maxDeclarations: 1,
@@ -143,7 +141,7 @@ assert.match(contexts[0].text(), /E-MISSING/, contexts[0].text())
 
 // 12. a verification command gets one reminder per ledger state, and an unrelated one gets none
 const remindCtx = context()
-apply(remindCtx, { command, askCommand, remindWhen: ['cargo (test|build)'], remindLimit: 2 })
+apply(remindCtx, { command, statusCommand, remindWhen: ['cargo (test|build)'], remindLimit: 2 })
 const remindAgent = makeAgent()
 await remindCtx.fire('agent/created', { agent: remindAgent })
 writeFileSync(ledger, clean)
@@ -212,7 +210,7 @@ assert.match(nullAgent.steered[0].content[0].text, /not checked|no executable/, 
 // 15. a terse brief states the ledger, a full one names the next action
 for (const [style, expectsInstruction] of [['terse', false], ['full', true]]) {
   const styleCtx = context()
-  apply(styleCtx, { command, askCommand, briefStyle: style })
+  apply(styleCtx, { command, statusCommand, briefStyle: style })
   const styleAgent = makeAgent()
   await styleCtx.fire('agent/created', { agent: styleAgent })
   const registered = contexts[contexts.length - 1]
@@ -233,7 +231,7 @@ for (const [extra, expected] of [
   [{}, 'steer'],
 ]) {
   const levelCtx = context()
-  apply(levelCtx, { command, askCommand, ...extra })
+  apply(levelCtx, { command, statusCommand, ...extra })
   const levelAgent = makeAgent()
   await levelCtx.fire('agent/created', { agent: levelAgent })
   writeFileSync(ledger, clean)
@@ -244,7 +242,7 @@ for (const [extra, expected] of [
 
 // 17. a named level writes the switches: off wins over a stale brief and a steer limit
 const offCtx = context()
-apply(offCtx, { command, askCommand, level: 'off', brief: true, steerLimit: 3 })
+apply(offCtx, { command, statusCommand, level: 'off', brief: true, steerLimit: 3 })
 const offAgent = makeAgent()
 const beforeOff = contexts.length
 await offCtx.fire('agent/created', { agent: offAgent })
@@ -259,7 +257,7 @@ assert.equal(offAgent.steered.length, 0, 'level off must not steer')
 
 // 18. level remind supplies the trigger when the config names none
 const remindLevelCtx = context()
-apply(remindLevelCtx, { command, askCommand, level: 'remind' })
+apply(remindLevelCtx, { command, statusCommand, level: 'remind' })
 const remindLevelAgent = makeAgent()
 await remindLevelCtx.fire('agent/created', { agent: remindLevelAgent })
 writeFileSync(ledger, clean)
@@ -273,7 +271,7 @@ assert.match(contexts[contexts.length - 1].text(), /^tsare\[remind\]/, contexts[
 
 // 19. level gate steers on an open debt even when the checker is clean
 const gateCtx = context()
-apply(gateCtx, { command, askCommand, decideCommand, level: 'gate', steerLimit: 3 })
+apply(gateCtx, { command, statusCommand, decideCommand, level: 'gate', steerLimit: 3 })
 const gateAgent = makeAgent()
 await gateCtx.fire('agent/created', { agent: gateAgent })
 const openLedger = 'tsare 1\nnote N_OK { tag: conjecture, text: "OK OPEN_DEBT" }\n'
@@ -294,7 +292,7 @@ assert.match(gateAgent.steered[0].content[0].text, /open/, gateAgent.steered[0].
 
 // 20. the same ledger at steer does not: steer reads the check, not the decision
 const strictCtx = context()
-apply(strictCtx, { command, askCommand, decideCommand, level: 'steer', steerLimit: 3 })
+apply(strictCtx, { command, statusCommand, decideCommand, level: 'steer', steerLimit: 3 })
 const strictAgent = makeAgent()
 await strictCtx.fire('agent/created', { agent: strictAgent })
 writeFileSync(ledger, openLedger)

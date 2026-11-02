@@ -428,6 +428,14 @@ pub(crate) fn cmd_status(path: &Path, json: bool) -> i32 {
             ]),
             None => J::Null,
         };
+        let debt = match verdict.items.first() {
+            Some(item) => J::Obj(vec![
+                ("name".to_string(), J::Str(item.name.clone())),
+                ("kind".to_string(), J::Str(item.kind.clone())),
+                ("reason".to_string(), J::Str(item.reason.to_string())),
+            ]),
+            None => J::Null,
+        };
         let value = J::Obj(vec![
             (
                 "decision".to_string(),
@@ -446,6 +454,8 @@ pub(crate) fn cmd_status(path: &Path, json: bool) -> i32 {
                 },
             ),
             ("first".to_string(), first),
+            ("claims".to_string(), J::Num(loaded.decls.len() as f64)),
+            ("debt".to_string(), debt),
         ]);
         println!("{}", crate::json::serialize(&value));
         return if errors > 0 { 1 } else { 0 };

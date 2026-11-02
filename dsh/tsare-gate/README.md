@@ -13,7 +13,7 @@ choice at three seams DSH owns:
 | seam | behaviour |
 | --- | --- |
 | `agent/turn-stopping` | the turn is about to close; the plugin runs `tsare check LEDGER --json` and, if the ledger is not checkable, calls `agent.steer(...)` with the diagnostics. The machine runs another step: **the turn cannot close while the checker objects**, up to `steerLimit` times. |
-| `systemPrompt.context` | one standing line: the decision (`tsare decide`), the epistemic counts (`tsare epistemic`) and the ledger's **next question** (`tsare ask --one`) or its first error, replaced in place and recomputed only when the ledger changes. This is the engine; the gate is the brake. |
+| `systemPrompt.context` | one standing line from `tsare status --json`: the decision, the verified/inferred/unverified counts, and the ledger's **next question** or its first error, replaced in place and recomputed only when the ledger changes. This is the engine; the gate is the brake. |
 | `tools/post-execute` | for the tools named in `remindAfterTools`, a dirty ledger rides along as context on the next request; for arguments matching `remindWhen`, one reminder that the result is a claim, once per ledger state. It never blocks the tool. |
 | `agent/created` | a session that starts without a ledger gets one: a single `note` declaration, which is a valid document. |
 
@@ -41,9 +41,8 @@ almost never fire. The plugin runs no model, opens no network, and writes nothin
 | `remindWhen` | `[]` | regexes matched against a call's arguments (e.g. `cargo (test|build)`); a match gets one claim reminder per ledger state |
 | `remindLimit` | `5` | how many claim reminders one agent may receive |
 | `command` | none | argv override (`[file, ...args]`) for the check, for tests and wrappers |
-| `askCommand` | none | argv override for the next-question call |
-| `decideCommand` | none | argv override for the decision call (`tsare decide LEDGER --json`) |
-| `epistemicCommand` | none | argv override for the counts call (`tsare epistemic LEDGER --json`) |
+| `statusCommand` | none | argv override for the brief's call (`tsare status LEDGER --json`) |
+| `decideCommand` | none | argv override for the decision call at turn stopping (`tsare decide LEDGER --json`) |
 | `debug` | `false` | append one line per hook (apply, created, install, post-execute, turn-stopping) to a temp file, for diagnosing a live integration |
 
 ## Levels

@@ -59,4 +59,6 @@ fn the_json_view_carries_the_same_fields() {
     assert!(out.contains("\"verified\""), "{out}");
     assert!(out.contains("\"errors\""), "{out}");
     assert!(out.contains("\"first\""), "{out}");
+    assert!(out.contains("\"claims\""), "{out}");
+    assert!(out.contains("\"debt\""), "{out}");
 }

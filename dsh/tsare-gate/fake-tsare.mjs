@@ -1,20 +1,43 @@
-// A stand-in for `tsare check LEDGER --json`, `tsare ask LEDGER --one`, `tsare decide
-// LEDGER --json` and `tsare epistemic LEDGER --json`, so the plugin can be tested without the
-// real binary.  The ledger is "clean" when it contains the word OK, it has a question when it
-// contains ASK, and it has an open debt when it contains OPEN_DEBT.
+// A stand-in for `tsare check LEDGER --json`, `tsare status LEDGER --json` and `tsare decide
+// LEDGER --json`, so the plugin can be tested without the real binary.  The ledger is "clean"
+// when it contains the word OK, it has a question when it contains ASK, and it has an open debt
+// when it contains OPEN_DEBT.
 import { readFileSync } from 'node:fs'
 
 const args = process.argv.slice(2)
 const ledger = process.argv.find((item) => item.endsWith('.tsare'))
 const text = ledger ? readFileSync(ledger, 'utf8') : ''
 
-if (args[0] === 'ask') {
-  process.stdout.write(
-    text.includes('ASK')
-      ? 'does F_GAP record weight?\n'
-      : 'nothing to ask: every list covers its extent and nothing collides\n',
-  )
-  process.exit(0)
+if (args[0] === 'status') {
+  const report = {
+    decision: 'closed',
+    verified: 1,
+    inferred: 1,
+    unverified: 2,
+    errors: 0,
+    warnings: 0,
+    claims: 1,
+    question: null,
+    first: null,
+    debt: null,
+  }
+  if (text.includes('OPEN_DEBT')) {
+    report.decision = 'open'
+    report.debt = { name: 'D1', kind: 'fact', reason: "a model's word, with no confirmation named" }
+  } else if (text.includes('ASK')) {
+    report.decision = 'closable'
+    report.question = 'does F_GAP record weight?'
+  } else if (!text.includes('OK')) {
+    report.decision = 'open'
+    report.errors = 1
+    report.warnings = 1
+    report.verified = 0
+    report.inferred = 0
+    report.unverified = 0
+    report.first = { code: 'E-MISSING', name: 'F_X', message: 'F_X needs evidence' }
+  }
+  process.stdout.write(`${JSON.stringify(report)}\n`)
+  process.exit(report.errors > 0 ? 1 : 0)
 }
 
 if (args[0] === 'decide') {
@@ -22,15 +45,6 @@ if (args[0] === 'decide') {
     text.includes('OPEN_DEBT')
       ? '{"decision":"open","items":[{"name":"D1","kind":"fact","decision":"open","reason":"a model\'s word, with no confirmation named"}]}\n'
       : '{"decision":"closed","items":[]}\n',
-  )
-  process.exit(0)
-}
-
-if (args[0] === 'epistemic') {
-  process.stdout.write(
-    text.includes('OK')
-      ? '{"verified":1,"inferred":1,"unverified":2,"rows":[]}\n'
-      : '{"verified":0,"inferred":0,"unverified":0,"rows":[]}\n',
   )
   process.exit(0)
 }
