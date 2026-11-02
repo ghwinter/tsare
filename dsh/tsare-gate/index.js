@@ -20,7 +20,8 @@
  *                      steerLimit; a named level writes those keys, a missing one is inferred
  *   steerLimit         steers per agent before the gate gives up (default 3)
  *   timeoutMs          per check (default 10000)
- *   brief              keep one line in the runtime snapshot: the next question (default true)
+ *   brief              keep one line in the runtime snapshot: the decision, the epistemic counts
+ *                      and the next question (default true)
  *   briefMaxChars      cap for that line (default 240)
  *   briefStyle         'full' (default) names the next action; 'terse' states only the state
  *   remindAfterTools   tool names that attach the diagnostics as context after they run (default [])
@@ -30,6 +31,7 @@
  *   command            argv override for tests and wrappers; replaces [binary, check, ledger, --json]
  *   askCommand         argv override for the next-question call (default [binary, ask, ledger, --one])
  *   decideCommand      argv override for the decision call (default [binary, decide, ledger, --json])
+ *   epistemicCommand   argv override for the counts call (default [binary, epistemic, ledger, --json])
  *   debug              append one line per hook to <tmp>/tsare-gate.log (default false)
  */
 
@@ -63,6 +65,7 @@ const DEFAULTS = {
   command: null,
   askCommand: null,
   decideCommand: null,
+  epistemicCommand: null,
   debug: false,
 }
 
@@ -241,6 +244,28 @@ async function decideLedger(config, cwd) {
   return { decision: report.decision, items, text }
 }
 
+/** The epistemic counts, or null when they cannot be read.  Display only; the gate never blocks. */
+async function epistemicLedger(config, cwd) {
+  const argv =
+    config.epistemicCommand ??
+    (config.command ? null : [config.binary, 'epistemic', config.ledger, '--json'])
+  if (!argv) return null
+  const { error, stdout } = await run(argv, config, cwd)
+  if (error) return null
+  let report = null
+  try {
+    report = JSON.parse(stdout)
+  } catch {
+    return null
+  }
+  if (!report || typeof report !== 'object') return null
+  const verified = Number(report.verified)
+  const inferred = Number(report.inferred)
+  const unverified = Number(report.unverified)
+  if (![verified, inferred, unverified].every(Number.isFinite)) return null
+  return { verified, inferred, unverified }
+}
+
 /**
  * Install the gate.
  * @param ctx - plugin context; listeners are disposed with it.
@@ -339,21 +364,26 @@ export function apply(ctx, raw) {
         config.briefMaxChars,
       )
     }
-    // `gate` reads the decision, not just the diagnostics: a checkable ledger can still owe a
-    // witness that nothing in it names.
-    if (config.level === 'gate') {
-      const decided = await decideLedger(config, cwdOf(agent))
-      if (decided && decided.decision === 'open') {
-        return oneLine(
-          `tsare[gate]: open${decided.text ? ` — ${decided.text}` : ''}; fix it, or record why it cannot be checked.`,
-          config.briefMaxChars,
-        )
-      }
+    // The brief is the loop's one-line view: the decision and the count of unverified
+    // conclusions ride along with the next question.  Below `gate` they are display; at `gate`
+    // the decision is also enforced at turn stopping.
+    const decided = await decideLedger(config, cwdOf(agent))
+    const counts = await epistemicLedger(config, cwdOf(agent))
+    const tally = counts
+      ? `${counts.verified} verified, ${counts.inferred} inferred, ${counts.unverified} unverified`
+      : ''
+    const lead = [decided ? decided.decision : '', tally].filter(Boolean).join('; ')
+    const prefix = lead ? `${lead}; ` : ''
+    if (config.level === 'gate' && decided && decided.decision === 'open') {
+      return oneLine(
+        `tsare[gate]: open${decided.text ? ` — ${decided.text}` : ''}${tally ? `; ${tally}` : ''}; fix it, or record why it cannot be checked.`,
+        config.briefMaxChars,
+      )
     }
     const question = await nextQuestion(config, cwdOf(agent))
     if (question) {
       return oneLine(
-        `tsare[${config.level}]: next question — ${question} (ledger ${config.ledger})`,
+        `tsare[${config.level}]: ${prefix}next question — ${question} (ledger ${config.ledger})`,
         config.briefMaxChars,
       )
     }
@@ -365,7 +395,7 @@ export function apply(ctx, raw) {
         ? ''
         : ' Record a claim with evidence, or say unchecked with the reason.'
     return oneLine(
-      `tsare[${config.level}]: ledger clean, ${many} claim(s); nothing to ask.${tail}`,
+      `tsare[${config.level}]: ${prefix}ledger clean, ${many} claim(s); nothing to ask.${tail}`,
       config.briefMaxChars,
     )
   }

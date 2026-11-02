@@ -32,6 +32,7 @@ function context() {
 const command = [process.execPath, fake, 'check', '.tsare/session.tsare', '--json']
 const askCommand = [process.execPath, fake, 'ask', '.tsare/session.tsare', '--one']
 const decideCommand = [process.execPath, fake, 'decide', '.tsare/session.tsare', '--json']
+const epistemicCommand = [process.execPath, fake, 'epistemic', '.tsare/session.tsare', '--json']
 const dirty = 'tsare 1\nfact F_X { claim: "a claim with nothing behind it" }\n'
 const clean = 'tsare 1\nnote N_OK { tag: conjecture, text: "OK" }\n'
 const session = { header: { cwd: dir } }
@@ -67,6 +68,8 @@ const ctx = context()
 apply(ctx, {
   command,
   askCommand,
+  decideCommand,
+  epistemicCommand,
   remindAfterTools: ['bash'],
   steerLimit: 3,
   maxDeclarations: 1,
@@ -302,4 +305,10 @@ await strictCtx.fire('agent/turn-stopping', {
 })
 assert.equal(strictAgent.steered.length, 0, 'steer must not read the decision')
 
-console.log('tsare-gate selftest: 20 checks passed')
+// 21. the brief carries the decision and the epistemic counts
+writeFileSync(ledger, clean)
+await ctx.fire('tools/post-execute', { name: 'read', arguments: {}, agent })
+const view = contexts[0].text()
+assert.match(view, /closed; 1 verified, 1 inferred, 2 unverified/, view)
+
+console.log('tsare-gate selftest: 21 checks passed')

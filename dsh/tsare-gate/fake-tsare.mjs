@@ -1,7 +1,7 @@
-// A stand-in for `tsare check LEDGER --json`, `tsare ask LEDGER --one` and `tsare decide
-// LEDGER --json`, so the plugin can be tested without the real binary.  The ledger is "clean"
-// when it contains the word OK, it has a question when it contains ASK, and it has an open debt
-// when it contains OPEN_DEBT.
+// A stand-in for `tsare check LEDGER --json`, `tsare ask LEDGER --one`, `tsare decide
+// LEDGER --json` and `tsare epistemic LEDGER --json`, so the plugin can be tested without the
+// real binary.  The ledger is "clean" when it contains the word OK, it has a question when it
+// contains ASK, and it has an open debt when it contains OPEN_DEBT.
 import { readFileSync } from 'node:fs'
 
 const args = process.argv.slice(2)
@@ -22,6 +22,15 @@ if (args[0] === 'decide') {
     text.includes('OPEN_DEBT')
       ? '{"decision":"open","items":[{"name":"D1","kind":"fact","decision":"open","reason":"a model\'s word, with no confirmation named"}]}\n'
       : '{"decision":"closed","items":[]}\n',
+  )
+  process.exit(0)
+}
+
+if (args[0] === 'epistemic') {
+  process.stdout.write(
+    text.includes('OK')
+      ? '{"verified":1,"inferred":1,"unverified":2,"rows":[]}\n'
+      : '{"verified":0,"inferred":0,"unverified":0,"rows":[]}\n',
   )
   process.exit(0)
 }
