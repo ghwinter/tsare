@@ -263,13 +263,10 @@ mod tests {
             normalize("file \"/tmp/work/doc.tsare\"", path),
             "file \"<ledger>\""
         );
-        assert_eq!(
-            normalize(
-                "file \"C:\\\\work\\\\doc.tsare\"",
-                Path::new("C:\\work\\doc.tsare")
-            ),
-            "file \"<ledger>\""
-        );
+        let sep = '\\';
+        let text = format!("file \"work{sep}{sep}doc.tsare\"");
+        let windows = format!("work{sep}doc.tsare");
+        assert_eq!(normalize(&text, Path::new(&windows)), "file \"<ledger>\"");
     }
 
     #[test]
