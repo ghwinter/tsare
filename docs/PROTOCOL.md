@@ -87,7 +87,7 @@ answers `--json`.
 | `cat FILE` | the pipeline read as a category, and which functors hold | |
 | `project DIR` | a directory checked as one program, grouped by file | |
 | `trace FILE [--out FILE \| --append FILE]` | one run, or a session of runs appended; each run embeds the ledger, its hash, and `check`, `ask` and `decide` with their reports and statuses | yes |
-| `replay TRACE` | re-run every run in order and compare byte for byte; `match` or the first difference, naming the run and the step | |
+| `replay TRACE [--diff]` | re-run every run in order and compare byte for byte; `--diff` names the lines each run wrote back; `match` or the first difference, naming the run and the step | |
 | `grow LIBRARY SOURCE NAME --out FILE` | copy one declaration and a content-addressed entry note into a library, keeping it only if the grown document has no error | |
 | `fix FILE [--apply]` | verified repair candidates, and applying them | |
 | `suggest FILE` | repairs with an applicability | yes |

@@ -97,6 +97,27 @@ fn a_session_of_runs_replays_in_order() {
 }
 
 #[test]
+fn the_write_back_between_runs_is_visible() {
+    let dir = work("diff");
+    let ledger = write_ledger(&dir, CLEAN);
+    let trace = dir.join("session.trace.json");
+    let (_, _, status) = append(&ledger, &trace);
+    assert_eq!(status, 0);
+    fs::write(
+        &ledger,
+        format!("{CLEAN}fact G {{ claim: \"y\", evidence: user }}\n"),
+    )
+    .expect("second ledger");
+    let (_, _, status) = append(&ledger, &trace);
+    assert_eq!(status, 0);
+    let (out, err, status) = run(&["replay", trace.to_str().expect("trace path"), "--diff"]);
+    assert_eq!(status, 0, "{out}{err}");
+    assert!(out.contains("run 1 -> 2:"), "{out}");
+    assert!(out.contains("+ fact G"), "{out}");
+    assert!(out.contains("match"), "{out}");
+}
+
+#[test]
 fn a_report_that_changed_is_a_mismatch() {
     let dir = work("mismatch");
     let ledger = write_ledger(&dir, CLEAN);

@@ -355,8 +355,8 @@ fn print_trace_summary(trace: &crate::trace::Trace, file: &str, session: bool) {
     );
 }
 
-/// Re-run a recorded run and compare every report and status.
-pub(crate) fn cmd_replay(path: &Path) -> i32 {
+/// Re-run a recorded session and compare every report and status; `diff` shows the write-backs.
+pub(crate) fn cmd_replay(path: &Path, diff: bool) -> i32 {
     let text = match fs::read_to_string(path) {
         Ok(text) => text,
         Err(error) => return fail(format!("{}: {error}", path.display())),
@@ -368,6 +368,20 @@ pub(crate) fn cmd_replay(path: &Path) -> i32 {
             return 2;
         }
     };
+    if diff {
+        if trace.runs.len() < 2 {
+            println!("one run; nothing to diff");
+        }
+        for (index, pair) in trace.runs.windows(2).enumerate() {
+            match crate::trace::change(&pair[0].ledger, &pair[1].ledger) {
+                Some(change) => {
+                    println!("run {} -> {}:", index + 1, index + 2);
+                    print!("{change}");
+                }
+                None => println!("run {} -> {}: unchanged", index + 1, index + 2),
+            }
+        }
+    }
     match crate::trace::replay(&trace) {
         Ok(result) if result.matched => {
             println!("match");

@@ -23,8 +23,9 @@ All notable changes are recorded here. The format follows
   earns its place.
 
 - `trace` and `replay`: a run (`check`, `ask`, `decide`) can be recorded, and `--append` grows a
-  session of runs; replay re-runs them in order and names the first difference. The record carries
-  the tool version, is content-addressed and names no path.
+  session of runs; replay re-runs them in order and names the first difference, and `--diff` names
+  the lines each run wrote back. The record carries the tool version, is content-addressed and
+  names no path.
 
 ### Deprecated
 

@@ -331,6 +331,37 @@ fn digest(text: &str) -> String {
     hex(text.as_bytes())
 }
 
+/// The lines a write-back changed: the common prefix and suffix are left out, so a small edit is
+/// a small block.  `None` when the two texts are the same.
+pub fn change(old: &str, new: &str) -> Option<String> {
+    let before: Vec<&str> = old.lines().collect();
+    let after: Vec<&str> = new.lines().collect();
+    let mut prefix = 0;
+    while prefix < before.len() && prefix < after.len() && before[prefix] == after[prefix] {
+        prefix += 1;
+    }
+    let mut suffix = 0;
+    while suffix < before.len().saturating_sub(prefix)
+        && suffix < after.len().saturating_sub(prefix)
+        && before[before.len() - 1 - suffix] == after[after.len() - 1 - suffix]
+    {
+        suffix += 1;
+    }
+    let removed = &before[prefix..before.len() - suffix];
+    let added = &after[prefix..after.len() - suffix];
+    if removed.is_empty() && added.is_empty() {
+        return None;
+    }
+    let mut out = String::new();
+    for line in removed {
+        out.push_str(&format!("  - {line}\n"));
+    }
+    for line in added {
+        out.push_str(&format!("  + {line}\n"));
+    }
+    Some(out)
+}
+
 fn escape(text: &str) -> String {
     let mut out = String::with_capacity(text.len() + 8);
     for character in text.chars() {
@@ -435,5 +466,17 @@ mod tests {
         assert!(diff.contains("line 2"), "{diff}");
         assert!(diff.contains("recorded b"), "{diff}");
         assert!(diff.contains("replayed B"), "{diff}");
+    }
+
+    #[test]
+    fn a_write_back_shows_the_changed_lines() {
+        let diff = change(
+            "tsare 1\nfact F { claim: \"x\" }\n",
+            "tsare 1\nfact F { claim: \"y\" }\n",
+        )
+        .expect("a change");
+        assert!(diff.contains("- fact F { claim: \"x\" }"), "{diff}");
+        assert!(diff.contains("+ fact F { claim: \"y\" }"), "{diff}");
+        assert!(change("a\n", "a\n").is_none());
     }
 }

@@ -242,7 +242,7 @@ const COMMANDS: &[Command] = &[
         Command("checking", "status", "status PATH [--json]         the decision, the epistemic counts and the next question"),
         Command("checking", "project", "project DIR                                          the same, grouped by file"),
         Command("checking", "trace", "trace PATH [--out FILE | --append FILE]   one run, or append it to a session"),
-        Command("checking", "replay", "replay TRACE                 re-run a recorded session and compare"),
+        Command("checking", "replay", "replay TRACE [--diff]        re-run a recorded session, show the write-backs, compare"),
         Command("checking", "grow", "grow LIBRARY SOURCE NAME --out FILE   add one checked declaration to a library"),
         Command("reasoning", "engine", "engine PATH [--json]         held, conditional, blocked, chains, gates"),
         Command("reasoning", "argue", "argue PATH [--against OTHER] which conclusions survive attack"),
@@ -364,6 +364,7 @@ const FLAGS: &[&str] = &[
     "--layers",
     "--vars",
     "--dry-run",
+    "--diff",
     "--recall",
     "--help",
     "--version",
@@ -532,7 +533,7 @@ pub fn run() -> i32 {
         "engine" => cmd_engine(&path, args.has("--json")),
         "status" => cmd_status(&path, args.has("--json")),
         "trace" => cmd_trace(&path, args.option("--out"), args.option("--append")),
-        "replay" => cmd_replay(&path),
+        "replay" => cmd_replay(&path, args.has("--diff")),
         "grow" => {
             let (Some(library), Some(source), Some(name)) = (args.at(0), args.at(1), args.at(2))
             else {
