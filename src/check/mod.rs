@@ -12,6 +12,7 @@ use std::collections::{HashMap, HashSet};
 pub(crate) mod collide;
 mod confidence;
 pub mod decide;
+pub mod epistemic;
 pub(crate) mod evidence;
 pub mod fix;
 pub mod kernel;

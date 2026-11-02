@@ -1,0 +1,6 @@
+epistemic: 3 verified, 1 inferred, 1 unverified
+F_SCROLL             fact         verified    measured
+F_HEADLESS           fact         verified    measured
+C_RENDERED           concept      verified    examples on both sides
+P_THRESHOLD          proposition  unverified 
+P_SMOOTH             proposition  inferred    W_RENDER

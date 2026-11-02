@@ -804,6 +804,64 @@ pub(crate) fn cmd_decide(path: &Path, json: bool) -> i32 {
     0
 }
 
+/// Every conclusion and how it is known: verified, inferred, or unverified.
+pub(crate) fn cmd_epistemic(path: &Path, json: bool) -> i32 {
+    let loaded = match load(path) {
+        Ok(loaded) => loaded,
+        Err(error) => return fail(error),
+    };
+    let rows = crate::epistemic::report(&loaded.decls);
+    let verified = rows
+        .iter()
+        .filter(|row| row.knowing == crate::epistemic::Knowing::Verified)
+        .count();
+    let inferred = rows
+        .iter()
+        .filter(|row| row.knowing == crate::epistemic::Knowing::Inferred)
+        .count();
+    let unverified = rows.len() - verified - inferred;
+    if json {
+        let items: Vec<J> = rows
+            .iter()
+            .map(|row| {
+                obj(vec![
+                    ("name", J::Str(row.name.clone())),
+                    ("kind", J::Str(row.kind.clone())),
+                    ("knowing", J::Str(row.knowing.label().to_string())),
+                    (
+                        "basis",
+                        match &row.basis {
+                            Some(basis) => J::Str(basis.clone()),
+                            None => J::Null,
+                        },
+                    ),
+                ])
+            })
+            .collect();
+        emit(obj(vec![
+            ("verified", J::Num(verified as f64)),
+            ("inferred", J::Num(inferred as f64)),
+            ("unverified", J::Num(unverified as f64)),
+            ("rows", J::Arr(items)),
+        ]));
+        return 0;
+    }
+    println!("epistemic: {verified} verified, {inferred} inferred, {unverified} unverified");
+    for row in &rows {
+        let line = format!(
+            "{} {} {}",
+            pad(&row.name, 20),
+            pad(&row.kind, 12),
+            pad(row.knowing.label(), 11)
+        );
+        match &row.basis {
+            Some(basis) => println!("{line} {basis}"),
+            None => println!("{line}"),
+        }
+    }
+    0
+}
+
 pub(crate) fn cmd_cost(path: &Path, top: usize, json: bool) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,

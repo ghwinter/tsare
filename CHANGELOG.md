@@ -11,6 +11,9 @@ All notable changes are recorded here. The format follows
 - `decide`: whether a document is closed, closable or open, and which declarations still owe a
   witness. It reads the ledger alone; `check` keeps its output until the format freezes.
 
+- `epistemic`: each conclusion's state — verified, inferred or unverified — with the rule, fact or
+  witness behind it. It reads the finer field the three-state projection collapses.
+
 - `trace` and `replay`: one run (`check`, `ask`, `decide`) can be recorded with the ledger it read
   and each report it produced, then re-run and compared. The record is content-addressed and names
   no path.

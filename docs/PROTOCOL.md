@@ -70,6 +70,7 @@ answers `--json`.
 | `abstract FILE [--min-support N] [--max-intent N]` | concept declarations the attribute table supports but nobody wrote: extent, closed intent, and the witness pair that separates them | |
 | `cost FILE [--top N] [--json]` | external confirmations the document demands, and its longest chain | yes |
 | `decide FILE [--json]` | whether the document is closed, closable or open, and which declarations still owe a witness | yes |
+| `epistemic FILE [--json]` | each conclusion's state — verified, inferred or unverified — and the rule, fact or witness behind it | yes |
 | `weigh FILE` | confidence propagated by min/max, with no probability | |
 | `kinds` | the obligation table: what each kind owes | |
 | `induce FILE` | the clause each concept's examples support, or why none exists | |

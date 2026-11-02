@@ -128,6 +128,8 @@ const COMMANDS: &[(&str, &[&str])] = &[
     ("cost", &[]),
     ("decide", &[]),
     ("decide-json", &["--json"]),
+    ("epistemic", &[]),
+    ("epistemic-json", &["--json"]),
     ("weigh", &[]),
     ("cat", &[]),
     ("outline", &[]),

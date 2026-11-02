@@ -134,6 +134,11 @@ separately as retirement.
 `measured > confirmed > unconfirmed > asserted`. The threshold is a property of the kind and the
 use, not of the document: a verdict cannot stand on a model's word, a fact can.
 
+The grade is the witness order. A second axis is the **epistemic kind** — how a conclusion got
+here: `verified` (a machine or a person), `inferred` (a live rule or a deciding fact), or
+`unverified` (nothing, or only a model's word). `epistemic` reads it. The two axes are a product,
+not a replacement: collapsing either into the other loses information.
+
 Every other order is **declared** by the document and **checked**, not computed: a concept's
 parent, a law's refinement, a partition's dimension, a withdrawal. The core never invents an order
 over claims; it checks the order the document claims.

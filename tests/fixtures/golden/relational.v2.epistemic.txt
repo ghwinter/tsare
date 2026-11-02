@@ -1,0 +1,9 @@
+epistemic: 5 verified, 3 inferred, 0 unverified
+F_A1                 fact         verified    measured
+F_A2                 fact         verified    measured
+F_B1                 fact         verified    measured
+F_C                  fact         verified    measured
+P_ONE                proposition  inferred    W_S1
+P_TWO                proposition  inferred    W_S2
+P_THREE              proposition  inferred    W_Y
+C_SELF_SUPPORTED     concept      verified    examples on both sides
