@@ -18,9 +18,9 @@ All notable changes are recorded here. The format follows
   note records the source's content hash. It gates admissibility, not whether the abstraction
   earns its place.
 
-- `trace` and `replay`: one run (`check`, `ask`, `decide`) can be recorded with the ledger it read
-  and each report it produced, then re-run and compared. The record is content-addressed and names
-  no path.
+- `trace` and `replay`: a run (`check`, `ask`, `decide`) can be recorded, and `--append` grows a
+  session of runs; replay re-runs them in order and names the first difference. The record carries
+  the tool version, is content-addressed and names no path.
 
 ### Changed
 

@@ -240,8 +240,8 @@ const HIDDEN: &[&str] = &["mcp"];
 const COMMANDS: &[Command] = &[
         Command("checking", "check", "check PATH [--json] [--goals F] [--sugar] [--cache] [--against OTHER] [--strict]   parse and check (the default)"),
         Command("checking", "project", "project DIR                                          the same, grouped by file"),
-        Command("checking", "trace", "trace PATH [--out FILE]      a replayable record of one run"),
-        Command("checking", "replay", "replay TRACE                 re-run a recorded run and compare"),
+        Command("checking", "trace", "trace PATH [--out FILE | --append FILE]   one run, or append it to a session"),
+        Command("checking", "replay", "replay TRACE                 re-run a recorded session and compare"),
         Command("checking", "grow", "grow LIBRARY SOURCE NAME --out FILE   add one checked declaration to a library"),
         Command("reasoning", "engine", "engine PATH [--json]         held, conditional, blocked, chains, gates"),
         Command("reasoning", "argue", "argue PATH [--against OTHER] which conclusions survive attack"),
@@ -333,6 +333,7 @@ const VALUE_FLAGS: &[&str] = &[
     "--depth",
     "--threshold",
     "--out",
+    "--append",
     "--goals",
     "--k",
     "--proposals",
@@ -528,7 +529,7 @@ pub fn run() -> i32 {
             args.has("--strict"),
         ),
         "engine" => cmd_engine(&path, args.has("--json")),
-        "trace" => cmd_trace(&path, args.option("--out")),
+        "trace" => cmd_trace(&path, args.option("--out"), args.option("--append")),
         "replay" => cmd_replay(&path),
         "grow" => {
             let (Some(library), Some(source), Some(name)) = (args.at(0), args.at(1), args.at(2))

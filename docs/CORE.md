@@ -250,8 +250,8 @@ The rules above are the target. The tree today:
 - **D8.** Derived attacks are separate diagnostics; they do not enter the fixed point.
 - **D9.** Round trip is not enforced. `fix --apply` and `propose --apply` check the candidate
   before writing it; nothing re-checks the bytes that were written.
-- **D10.** No session trace: one run over one ledger is replayable (`check`, `ask`, `decide`), but a
-  session's sequence of writes and turns is not recorded as one run.
+- **D10.** No write-event trace: a session's runs are replayable (`trace --append`), but the edit
+  between two runs is only its ledger snapshot; it is not a recorded event.
 - **D11.** The growth gate checks admissibility, not benefit: `grow` keeps a declaration only if the
   library stays admissible; nothing measures whether it earns its place.
 

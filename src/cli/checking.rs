@@ -282,32 +282,76 @@ pub(crate) fn cmd_project(path: &Path) -> i32 {
     }
 }
 
-/// Record one run: the ledger, its hash, and each step's report and status.
-pub(crate) fn cmd_trace(path: &Path, out: Option<&str>) -> i32 {
-    let trace = match crate::trace::record(path) {
-        Ok(trace) => trace,
+/// Record one run, or append it to a session trace.
+pub(crate) fn cmd_trace(path: &Path, out: Option<&str>, append: Option<&str>) -> i32 {
+    if out.is_some() && append.is_some() {
+        println!("usage: tsare trace PATH [--out FILE | --append FILE]");
+        return 2;
+    }
+    let run = match crate::trace::record(path) {
+        Ok(run) => run,
         Err(error) => return fail(error),
     };
-    let text = trace.to_json();
+    if let Some(file) = append {
+        let text = match fs::read_to_string(file) {
+            Ok(text) => text,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => String::new(),
+            Err(error) => return fail(format!("{file}: {error}")),
+        };
+        let trace = if text.trim().is_empty() {
+            crate::trace::Trace::new(run)
+        } else {
+            match crate::trace::Trace::parse(&text) {
+                Ok(mut trace) => {
+                    trace.push(run);
+                    trace
+                }
+                Err(error) => {
+                    println!("not a tsare trace: {error}");
+                    return 2;
+                }
+            }
+        };
+        if let Err(error) = fs::write(file, trace.to_json()) {
+            return fail(format!("{file}: {error}"));
+        }
+        print_trace_summary(&trace, file, true);
+        return 0;
+    }
+    let trace = crate::trace::Trace::new(run);
     match out {
         Some(file) => {
-            if let Err(error) = fs::write(file, text) {
+            if let Err(error) = fs::write(file, trace.to_json()) {
                 return fail(format!("{file}: {error}"));
             }
-            let short: String = trace.ledger_sha256.chars().take(12).collect();
-            let steps: Vec<String> = trace
-                .steps
-                .iter()
-                .map(|step| format!("{} {}", step.command, step.status))
-                .collect();
-            println!("trace: {file} (ledger {short}, {})", steps.join(", "));
+            print_trace_summary(&trace, file, false);
             0
         }
         None => {
-            print!("{text}");
+            print!("{}", trace.to_json());
             0
         }
     }
+}
+
+/// The line that says what was recorded: how many runs, the last ledger, the last step statuses.
+fn print_trace_summary(trace: &crate::trace::Trace, file: &str, session: bool) {
+    let Some(last) = trace.runs.last() else {
+        println!("trace: {file} (no runs)");
+        return;
+    };
+    let short: String = last.ledger_sha256.chars().take(12).collect();
+    let steps: Vec<String> = last
+        .steps
+        .iter()
+        .map(|step| format!("{} {}", step.command, step.status))
+        .collect();
+    println!(
+        "trace: {file} ({} {}, ledger {short}, {})",
+        if session { "runs" } else { "run" },
+        trace.runs.len(),
+        steps.join(", ")
+    );
 }
 
 /// Re-run a recorded run and compare every report and status.
