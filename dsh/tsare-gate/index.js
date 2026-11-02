@@ -16,8 +16,8 @@
  *   ledger             ledger path, relative to `cwd` (default '.tsare/session.tsare')
  *   cwd                where the ledger lives (default: the process working directory)
  *   mode               'errors' (default) fails on errors, 'warnings' also on warnings (--strict)
- *   level              off | brief | remind | steer, a preset over brief, remindWhen and steerLimit;
- *                      a named level writes those keys, a missing one is inferred from them
+ *   level              off | brief | remind | steer | gate, a preset over brief, remindWhen and
+ *                      steerLimit; a named level writes those keys, a missing one is inferred
  *   steerLimit         steers per agent before the gate gives up (default 3)
  *   timeoutMs          per check (default 10000)
  *   brief              keep one line in the runtime snapshot: the next question (default true)
@@ -29,6 +29,7 @@
  *   remindLimit        how many such reminders one agent may receive (default 5)
  *   command            argv override for tests and wrappers; replaces [binary, check, ledger, --json]
  *   askCommand         argv override for the next-question call (default [binary, ask, ledger, --one])
+ *   decideCommand      argv override for the decision call (default [binary, decide, ledger, --json])
  *   debug              append one line per hook to <tmp>/tsare-gate.log (default false)
  */
 
@@ -61,11 +62,12 @@ const DEFAULTS = {
   remindLimit: 5,
   command: null,
   askCommand: null,
+  decideCommand: null,
   debug: false,
 }
 
 /** The levels, weakest to strongest.  A stronger one adds obligations; it never removes a rule. */
-const LEVELS = ['off', 'brief', 'remind', 'steer']
+const LEVELS = ['off', 'brief', 'remind', 'steer', 'gate']
 
 /** What `remind` and `steer` use when the config names no trigger of its own. */
 const DEFAULT_REMIND = ['cargo (test|build|clippy)', 'npm test', 'pytest']
@@ -217,6 +219,28 @@ async function nextQuestion(config, cwd) {
   return text.split('\n')[0]
 }
 
+/** The decide report, or null when it cannot be read.  The gate never blocks on this. */
+async function decideLedger(config, cwd) {
+  const argv =
+    config.decideCommand ?? (config.command ? null : [config.binary, 'decide', config.ledger, '--json'])
+  if (!argv) return null
+  const { error, stdout } = await run(argv, config, cwd)
+  if (error) return null
+  let report = null
+  try {
+    report = JSON.parse(stdout)
+  } catch {
+    return null
+  }
+  if (!report || typeof report !== 'object' || typeof report.decision !== 'string') return null
+  const items = Array.isArray(report.items) ? report.items : []
+  const first = items.find((item) => item && typeof item === 'object')
+  const text = first
+    ? `${first.name ?? '<declaration>'} ${first.kind ?? ''}: ${first.reason ?? ''}`.trim()
+    : ''
+  return { decision: report.decision, items, text }
+}
+
 /**
  * Install the gate.
  * @param ctx - plugin context; listeners are disposed with it.
@@ -314,6 +338,17 @@ export function apply(ctx, raw) {
           `${verdict.report?.warnings ?? 0} warning(s)); ${detail}. Fix it, or record why it cannot be checked.`,
         config.briefMaxChars,
       )
+    }
+    // `gate` reads the decision, not just the diagnostics: a checkable ledger can still owe a
+    // witness that nothing in it names.
+    if (config.level === 'gate') {
+      const decided = await decideLedger(config, cwdOf(agent))
+      if (decided && decided.decision === 'open') {
+        return oneLine(
+          `tsare[gate]: open${decided.text ? ` — ${decided.text}` : ''}; fix it, or record why it cannot be checked.`,
+          config.briefMaxChars,
+        )
+      }
     }
     const question = await nextQuestion(config, cwdOf(agent))
     if (question) {
@@ -484,6 +519,22 @@ export function apply(ctx, raw) {
     const verdict = await checkLedger(config, cwdOf(agent))
     trace(`turn-stopping status=${verdict.status}`)
     if (verdict.status === 'ok') {
+      if (config.level === 'gate') {
+        const decided = await decideLedger(config, cwdOf(agent))
+        trace(`turn-stopping decide=${decided?.decision ?? 'unavailable'}`)
+        if (decided && decided.decision === 'open') {
+          const used = steers.get(agent) ?? 0
+          const limit = Number.isFinite(config.steerLimit) && config.steerLimit >= 0 ? config.steerLimit : 3
+          if (used >= limit) return
+          steers.set(agent, used + 1)
+          const text =
+            `tsare gate: the ledger is checkable but open${decided.text ? ` — ${decided.text}` : ''}\n` +
+            'Fix it before closing the turn. If a claim cannot be checked, say so in the answer and ' +
+            'record the gap in the document.'
+          agent.steer(notice(text + growthNote(agent)))
+          return
+        }
+      }
       steers.delete(agent)
       return
     }

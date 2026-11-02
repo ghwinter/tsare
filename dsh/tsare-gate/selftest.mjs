@@ -31,6 +31,7 @@ function context() {
 
 const command = [process.execPath, fake, 'check', '.tsare/session.tsare', '--json']
 const askCommand = [process.execPath, fake, 'ask', '.tsare/session.tsare', '--one']
+const decideCommand = [process.execPath, fake, 'decide', '.tsare/session.tsare', '--json']
 const dirty = 'tsare 1\nfact F_X { claim: "a claim with nothing behind it" }\n'
 const clean = 'tsare 1\nnote N_OK { tag: conjecture, text: "OK" }\n'
 const session = { header: { cwd: dir } }
@@ -267,4 +268,38 @@ const [reminded] = await remindLevelCtx.fire('tools/post-execute', {
 assert.equal(reminded.additionalContexts.length, 1, 'level remind must supply a trigger')
 assert.match(contexts[contexts.length - 1].text(), /^tsare\[remind\]/, contexts[contexts.length - 1].text())
 
-console.log('tsare-gate selftest: 18 checks passed')
+// 19. level gate steers on an open debt even when the checker is clean
+const gateCtx = context()
+apply(gateCtx, { command, askCommand, decideCommand, level: 'gate', steerLimit: 3 })
+const gateAgent = makeAgent()
+await gateCtx.fire('agent/created', { agent: gateAgent })
+const openLedger = 'tsare 1\nnote N_OK { tag: conjecture, text: "OK OPEN_DEBT" }\n'
+writeFileSync(ledger, openLedger)
+await gateCtx.fire('tools/post-execute', { name: 'read', arguments: {}, agent: gateAgent })
+assert.match(
+  contexts[contexts.length - 1].text(),
+  /^tsare\[gate\]: open/,
+  contexts[contexts.length - 1].text(),
+)
+await gateCtx.fire('agent/turn-stopping', {
+  agent: gateAgent,
+  turn: 1,
+  signal: new AbortController().signal,
+})
+assert.equal(gateAgent.steered.length, 1, 'an open debt must steer at gate')
+assert.match(gateAgent.steered[0].content[0].text, /open/, gateAgent.steered[0].content[0].text)
+
+// 20. the same ledger at steer does not: steer reads the check, not the decision
+const strictCtx = context()
+apply(strictCtx, { command, askCommand, decideCommand, level: 'steer', steerLimit: 3 })
+const strictAgent = makeAgent()
+await strictCtx.fire('agent/created', { agent: strictAgent })
+writeFileSync(ledger, openLedger)
+await strictCtx.fire('agent/turn-stopping', {
+  agent: strictAgent,
+  turn: 1,
+  signal: new AbortController().signal,
+})
+assert.equal(strictAgent.steered.length, 0, 'steer must not read the decision')
+
+console.log('tsare-gate selftest: 20 checks passed')

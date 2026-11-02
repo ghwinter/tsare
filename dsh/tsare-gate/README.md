@@ -31,7 +31,7 @@ almost never fire. The plugin runs no model, opens no network, and writes nothin
 | `cwd` | the session's own working directory (from its header) | where the ledger lives; set it to pin one directory for every session |
 | `maxDeclarations` | `150` | after this many declarations the gate says so on every objection |
 | `mode` | `errors` | `errors` fails on errors; `warnings` also fails on warnings (`--strict`) |
-| `level` | inferred | `off`, `brief`, `remind` or `steer`: a preset that writes `brief`, `remindWhen` and `steerLimit`. A named level wins over those keys; without one the level is inferred from them. |
+| `level` | inferred | `off`, `brief`, `remind`, `steer` or `gate`: a preset that writes `brief`, `remindWhen` and `steerLimit`. A named level wins over those keys; without one the level is inferred from them. |
 | `steerLimit` | `3` | how many times one agent may be held open before the gate gives up |
 | `timeoutMs` | `10000` | per check |
 | `brief` | `true` | keep the next question in the runtime snapshot |
@@ -42,6 +42,7 @@ almost never fire. The plugin runs no model, opens no network, and writes nothin
 | `remindLimit` | `5` | how many claim reminders one agent may receive |
 | `command` | none | argv override (`[file, ...args]`) for the check, for tests and wrappers |
 | `askCommand` | none | argv override for the next-question call |
+| `decideCommand` | none | argv override for the decision call (`tsare decide LEDGER --json`) |
 | `debug` | `false` | append one line per hook (apply, created, install, post-execute, turn-stopping) to a temp file, for diagnosing a live integration |
 
 ## Levels
@@ -57,6 +58,10 @@ and whether a non-checkable ledger holds the turn open.
 | `brief` | yes | no | no |
 | `remind` | yes | default triggers | no |
 | `steer` | yes | default triggers | up to `steerLimit` |
+| `gate` | yes | default triggers | also on an `open` decision, up to `steerLimit` |
+
+`gate` adds the decision to the check: a ledger can be checkable and still be `open`, because a
+debt names nothing that could discharge it. The gate steers on that too.
 
 `mode` is orthogonal: it decides whether warnings count as failures, not whether the gate acts.
 The authority is one-way: the user sets the level; the model may act more strictly, never less.
@@ -81,7 +86,7 @@ dependency works), and the listeners are live for the next session:
 ## Test
 
 ```powershell
-node selftest.mjs                 # fake checker: 18 checks, no dependencies
+node selftest.mjs                 # fake checker: 20 checks, no dependencies
 $env:TSARE_BIN = "tsare"; node verify-real.mjs   # the real binary, same parser
 ```
 
