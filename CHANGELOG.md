@@ -12,10 +12,6 @@ All notable changes are recorded here. The format follows
   the same terms as the gate's brief. Its JSON also carries the claim count and the first debt.
   It exits 1 when the document has an error.
 
-- The MCP server gains `status`, `decide` and `epistemic`, each answering with the command's own
-  text: the loop line, the decision, and the projection. The renderer is shared, so the two cannot
-  drift.
-
 - `decide`: whether a document is closed, closable or open, and which declarations still owe a
   witness. It reads the ledger alone; `check` keeps its output until the format freezes.
 
@@ -29,6 +25,11 @@ All notable changes are recorded here. The format follows
 - `trace` and `replay`: a run (`check`, `ask`, `decide`) can be recorded, and `--append` grows a
   session of runs; replay re-runs them in order and names the first difference. The record carries
   the tool version, is content-addressed and names no path.
+
+### Deprecated
+
+- `tsare mcp`: the DSH plugin and the CLI are the supported surfaces. The server remains for
+  existing MCP clients, frozen at the nine tools it lists; it gains no new commands.
 
 ### Changed
 

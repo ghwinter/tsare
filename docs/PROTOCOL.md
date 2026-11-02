@@ -104,11 +104,14 @@ only if the document compiles better.
 
 ## MCP
 
-`tsare mcp` speaks JSON-RPC 2.0 over stdio and exposes twelve tools: `check`, `status`, `decide`,
-`epistemic`, `argue`, `derive`, `fix`, `explain`, `kinds`, `ask`, `novel`, `imply`. Each answers
-with the same text the command line prints -- one renderer per command, so the two cannot drift --
-and no tool calls a model. `tests/mcp.rs` opens the server the way a client would and checks that
-every listed tool is dispatched.
+`tsare mcp` speaks JSON-RPC 2.0 over stdio and exposes nine tools: `check`, `argue`, `derive`,
+`fix`, `explain`, `kinds`, `ask`, `novel`, `imply`. Each answers with the same text the command
+line prints -- one renderer per command, so the two cannot drift -- and no tool calls a model.
+`tests/mcp.rs` opens the server the way a client would and checks that every listed tool is
+dispatched.
+
+`tsare mcp` is deprecated: the DSH plugin and the CLI are the supported surfaces. The server
+remains for existing MCP clients and is frozen at the tools above.
 
 The server is not registered by a harness by default. Registration costs about 500 tokens of tool
 schema in every turn; the skill in `dsh/tsare/SKILL.md` costs one catalog line, which is why it is

@@ -37,18 +37,7 @@ fn every_tool_it_lists_is_dispatched() {
         r#"{"jsonrpc":"2.0","id":2,"method":"tools/list"}"#.to_string(),
     ]);
     for name in [
-        "check",
-        "status",
-        "decide",
-        "epistemic",
-        "argue",
-        "derive",
-        "fix",
-        "explain",
-        "kinds",
-        "ask",
-        "novel",
-        "imply",
+        "check", "argue", "derive", "fix", "explain", "kinds", "ask", "novel", "imply",
     ] {
         assert!(
             out.contains(&format!(r#""name":"{name}""#)),
@@ -99,24 +88,4 @@ fact F_D { claim: "four", evidence: tool("t"), attrs: { items: 5, urgent: 0 } }
         "{out}"
     );
     assert!(out.contains("implication"), "{out}");
-}
-
-#[test]
-fn the_loop_tools_answer_with_the_commands_text() {
-    let dir = std::env::temp_dir().join("tsare-mcp-loop");
-    std::fs::create_dir_all(&dir).expect("temp dir");
-    let path = dir.join("doc.tsare");
-    std::fs::write(&path, "tsare 1\nfact F { claim: \"x\", evidence: user }\n")
-        .expect("write the document");
-    let shown = path.display().to_string().replace('\\', "\\\\");
-    let out = session(&[
-        r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}"#.to_string(),
-        call(2, "status", &format!(r#"{{"path":"{shown}"}}"#)),
-        call(3, "decide", &format!(r#"{{"path":"{shown}"}}"#)),
-        call(4, "epistemic", &format!(r#"{{"path":"{shown}"}}"#)),
-    ]);
-    assert!(out.contains("closed;"), "{out}");
-    assert!(out.contains("1 verified"), "{out}");
-    assert!(out.contains("epistemic:"), "{out}");
-    assert!(out.contains("nothing to ask"), "{out}");
 }
