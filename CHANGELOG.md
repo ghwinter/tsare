@@ -11,6 +11,9 @@ All notable changes are recorded here. The format follows
 - `decide`: whether a document is closed, closable or open, and which declarations still owe a
   witness. It reads the ledger alone; `check` keeps its output until the format freezes.
 
+- `trace` and `replay`: one `check` run can be recorded with the ledger it read and the report it
+  produced, then re-run and compared. The record is content-addressed and names no path.
+
 ### Changed
 
 - The document extension is `.tsare`. `.mf` collided with Java manifests.

@@ -245,7 +245,10 @@ The rules above are the target. The tree today:
 - **D8.** Derived attacks are separate diagnostics; they do not enter the fixed point.
 - **D9.** Round trip is not enforced. `fix --apply` and `propose --apply` check the candidate
   before writing it; nothing re-checks the bytes that were written.
+- **D10.** No session trace: one `check` run is replayable (`trace`/`replay`), but the chain from a
+  write through `check`, `ask` and `decide` is not recorded as one run.
 
 The order of work follows the dependencies: D3 before D1 (a judgment needs its rules named), D1
-before D2 (the judgment first, the structure of the checker second), D4 before D5, and D6 and D9
-last because they change behavior rather than vocabulary.
+before D2 (the judgment first, the structure of the checker second), D4 before D5, D10 after D1
+(a record needs the judgment it records), and D6 and D9 last because they change behavior rather
+than vocabulary.

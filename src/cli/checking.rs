@@ -281,3 +281,55 @@ pub(crate) fn cmd_project(path: &Path) -> i32 {
         0
     }
 }
+
+/// Record one `check` run: the ledger, its hash, the exact report, and the status.
+pub(crate) fn cmd_trace(path: &Path, out: Option<&str>) -> i32 {
+    let trace = match crate::trace::record_check(path) {
+        Ok(trace) => trace,
+        Err(error) => return fail(error),
+    };
+    let text = trace.to_json();
+    match out {
+        Some(file) => {
+            if let Err(error) = fs::write(file, text) {
+                return fail(format!("{file}: {error}"));
+            }
+            let short: String = trace.ledger_sha256.chars().take(12).collect();
+            println!("trace: {file} (ledger {short}, status {})", trace.status);
+            0
+        }
+        None => {
+            print!("{text}");
+            0
+        }
+    }
+}
+
+/// Re-run a recorded check and compare the report and the status.
+pub(crate) fn cmd_replay(path: &Path) -> i32 {
+    let text = match fs::read_to_string(path) {
+        Ok(text) => text,
+        Err(error) => return fail(format!("{}: {error}", path.display())),
+    };
+    let trace = match crate::trace::Trace::parse(&text) {
+        Ok(trace) => trace,
+        Err(error) => {
+            println!("not a tsare trace: {error}");
+            return 2;
+        }
+    };
+    match crate::trace::replay(&trace) {
+        Ok(result) if result.matched => {
+            println!("match");
+            0
+        }
+        Ok(result) => {
+            println!("mismatch: {}", result.detail);
+            1
+        }
+        Err(error) => {
+            println!("cannot replay: {error}");
+            2
+        }
+    }
+}

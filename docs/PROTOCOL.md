@@ -44,6 +44,8 @@ count of work: a number that rises because a week passed says nothing about what
 loop that reads only the number then cannot ignore `W-UNCONFIRMED`, which is the engine's way of
 saying that a declaration rests on a model's word.
 
+`replay` answers `0` for a match, `1` for a mismatch, and `2` for a file that is not a trace.
+
 ## Commands
 
 Every command reads files and prints text. Where a command also has a machine contract it
@@ -82,6 +84,8 @@ answers `--json`.
 | `egraph FILE [--write]` | equivalent declarations merged, references rewritten | |
 | `cat FILE` | the pipeline read as a category, and which functors hold | |
 | `project DIR` | a directory checked as one program, grouped by file | |
+| `trace FILE [--out FILE]` | one check run as a replayable record: the ledger, its hash, the exact report, the status | yes |
+| `replay TRACE` | re-run a recorded check on the embedded ledger and compare byte for byte; `match` or the first difference | |
 | `fix FILE [--apply]` | verified repair candidates, and applying them | |
 | `suggest FILE` | repairs with an applicability | yes |
 | `apply FILE [--dry-run]` | machine repairs spliced and recompiled | |

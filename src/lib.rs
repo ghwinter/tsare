@@ -15,7 +15,7 @@ pub mod reason;
 
 pub use check::{decide, fix, kernel};
 pub use emit::{build, format, graph, mapping, outline};
-pub use io::{apply, cache, cases, session};
+pub use io::{apply, cache, cases, session, trace};
 pub use lang::{explain, hash, json, paths, program, render, specs, sugar, syntax};
 pub use reason::{
     abstraction, argue, ask, assumptions, audit, cat, closure, cost, coverage, debt, delta, derive,
