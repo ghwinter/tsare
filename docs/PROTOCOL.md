@@ -84,8 +84,8 @@ answers `--json`.
 | `egraph FILE [--write]` | equivalent declarations merged, references rewritten | |
 | `cat FILE` | the pipeline read as a category, and which functors hold | |
 | `project DIR` | a directory checked as one program, grouped by file | |
-| `trace FILE [--out FILE]` | one check run as a replayable record: the ledger, its hash, the exact report, the status | yes |
-| `replay TRACE` | re-run a recorded check on the embedded ledger and compare byte for byte; `match` or the first difference | |
+| `trace FILE [--out FILE]` | one run as a replayable record: the ledger, its hash, and `check`, `ask` and `decide` with their reports and statuses | yes |
+| `replay TRACE` | re-run every recorded step on the embedded ledger and compare byte for byte; `match` or the first difference | |
 | `fix FILE [--apply]` | verified repair candidates, and applying them | |
 | `suggest FILE` | repairs with an applicability | yes |
 | `apply FILE [--dry-run]` | machine repairs spliced and recompiled | |

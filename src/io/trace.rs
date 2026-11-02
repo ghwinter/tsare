@@ -1,52 +1,73 @@
-//! A record of one check run, and the replay that proves it is still the same run.
+//! A record of one run, and the replay that proves it is still the same run.
 //!
-//! The record embeds the ledger it read and the report it produced, so a later reader can run the
-//! same command again and compare bytes without trusting the machine that wrote the record.  A
-//! path is replaced by `<ledger>` on both sides: the record names content, not a place.
+//! A run is the ledger it read plus the commands it ran — `check`, `ask` and `decide` — with the
+//! exact report and status of each.  The record embeds the source, so a later reader can re-run
+//! the run and compare bytes without trusting the machine that wrote it.  Paths are replaced by
+//! `<ledger>` on both sides: the record names content, not a place.
 
 use std::fs;
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Output};
 
 use crate::hash::hex;
 use crate::json::{self, Json};
 
 /// The only format this build writes and reads.
-pub const FORMAT: &str = "tsare-trace 1";
+pub const FORMAT: &str = "tsare-trace 2";
 
 /// A trace larger than this is a corpus, not a document.
 const MAX_LEDGER: usize = 1 << 20;
 
-/// One check run: the source, the exact report, and the status it exited with.
-pub struct Trace {
+/// The commands a run records, in order, with the flags their report is compared on.
+const STEPS: &[(&str, &[&str])] = &[
+    ("check", &["--json"]),
+    ("ask", &["--one"]),
+    ("decide", &["--json"]),
+];
+
+/// One command in a run: what was run, the exact report, and the status.
+pub struct Step {
     pub command: String,
     pub status: i32,
-    pub ledger_sha256: String,
-    pub ledger: String,
     pub report: String,
 }
 
+/// A run over one ledger: the source, its hash, and the steps in the order they ran.
+pub struct Trace {
+    pub ledger_sha256: String,
+    pub ledger: String,
+    pub steps: Vec<Step>,
+}
+
 impl Trace {
-    pub fn new(command: &str, ledger: &str, report: &str, status: i32) -> Trace {
+    pub fn new(ledger: &str, steps: Vec<Step>) -> Trace {
         Trace {
-            command: command.to_string(),
-            status,
             ledger_sha256: digest(ledger),
             ledger: ledger.to_string(),
-            report: report.to_string(),
+            steps,
         }
     }
 
     /// The trace as one JSON object, keys in a fixed order, so the bytes are stable.
     pub fn to_json(&self) -> String {
+        let steps: Vec<String> = self
+            .steps
+            .iter()
+            .map(|step| {
+                format!(
+                    "{{\"command\":\"{}\",\"status\":{},\"report\":\"{}\"}}",
+                    escape(&step.command),
+                    step.status,
+                    escape(&step.report),
+                )
+            })
+            .collect();
         format!(
-            "{{\"format\":\"{}\",\"command\":\"{}\",\"status\":{},\"ledger_sha256\":\"{}\",\"ledger\":\"{}\",\"report\":\"{}\"}}\n",
+            "{{\"format\":\"{}\",\"ledger_sha256\":\"{}\",\"ledger\":\"{}\",\"steps\":[{}]}}\n",
             escape(FORMAT),
-            escape(&self.command),
-            self.status,
             escape(&self.ledger_sha256),
             escape(&self.ledger),
-            escape(&self.report),
+            steps.join(","),
         )
     }
 
@@ -58,15 +79,6 @@ impl Trace {
         if format != FORMAT {
             return Err(format!("the record is not a {FORMAT} trace"));
         }
-        let command = value
-            .get("command")
-            .and_then(Json::as_str)
-            .ok_or("the record names no command")?
-            .to_string();
-        let status = value
-            .get("status")
-            .and_then(Json::as_f64)
-            .ok_or("the record has no status")? as i32;
         let ledger_sha256 = value
             .get("ledger_sha256")
             .and_then(Json::as_str)
@@ -77,32 +89,54 @@ impl Trace {
             .and_then(Json::as_str)
             .ok_or("the record embeds no ledger")?
             .to_string();
-        let report = value
-            .get("report")
-            .and_then(Json::as_str)
-            .ok_or("the record embeds no report")?
-            .to_string();
         if digest(&ledger) != ledger_sha256 {
             return Err("the embedded ledger does not match its hash".to_string());
         }
+        let steps = value
+            .get("steps")
+            .and_then(Json::as_arr)
+            .ok_or("the record has no steps")?;
+        if steps.is_empty() {
+            return Err("the record has no steps".to_string());
+        }
+        let mut out = Vec::new();
+        for step in steps {
+            let command = step
+                .get("command")
+                .and_then(Json::as_str)
+                .ok_or("a step names no command")?
+                .to_string();
+            let status = step
+                .get("status")
+                .and_then(Json::as_f64)
+                .ok_or("a step has no status")? as i32;
+            let report = step
+                .get("report")
+                .and_then(Json::as_str)
+                .ok_or("a step embeds no report")?
+                .to_string();
+            out.push(Step {
+                command,
+                status,
+                report,
+            });
+        }
         Ok(Trace {
-            command,
-            status,
             ledger_sha256,
             ledger,
-            report,
+            steps: out,
         })
     }
 }
 
-/// The outcome of a replay: whether the report and the status came back the same.
+/// The outcome of a replay: whether every report and status came back the same.
 pub struct Replay {
     pub matched: bool,
     pub detail: String,
 }
 
-/// Run `check --json` on `path` and record it.
-pub fn record_check(path: &Path) -> Result<Trace, String> {
+/// Run the recorded steps on `path` and record the ledger with them.
+pub fn record(path: &Path) -> Result<Trace, String> {
     let ledger =
         fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
     if ledger.len() > MAX_LEDGER {
@@ -113,26 +147,23 @@ pub fn record_check(path: &Path) -> Result<Trace, String> {
     }
     let exe =
         std::env::current_exe().map_err(|error| format!("cannot find the checker: {error}"))?;
-    let output = Command::new(exe)
-        .arg("check")
-        .arg(path)
-        .arg("--json")
-        .output()
-        .map_err(|error| format!("cannot run the checker: {error}"))?;
-    let status = output.status.code().unwrap_or(-1);
-    let report = normalize(&String::from_utf8_lossy(&output.stdout), path);
-    Ok(Trace::new("check", &ledger, &report, status))
+    let mut steps = Vec::new();
+    for &(command, flags) in STEPS {
+        let output = run(&exe, command, flags, path)?;
+        let status = output.status.code().unwrap_or(-1);
+        let report = normalize(&String::from_utf8_lossy(&output.stdout), path);
+        steps.push(Step {
+            command: command.to_string(),
+            status,
+            report,
+        });
+    }
+    Ok(Trace::new(&ledger, steps))
 }
 
-/// Re-run the recorded command on the embedded ledger and compare.  The path is a temporary file,
-/// so it is normalized away on both sides; what is compared is the report and the status.
+/// Re-run every recorded step on the embedded ledger and compare.  The path is a temporary file,
+/// so it is normalized away on both sides; what is compared is each report and status.
 pub fn replay(trace: &Trace) -> Result<Replay, String> {
-    if trace.command != "check" {
-        return Err(format!(
-            "the record runs `{}`, which this build cannot replay",
-            trace.command
-        ));
-    }
     let exe =
         std::env::current_exe().map_err(|error| format!("cannot find the checker: {error}"))?;
     let suffix: String = trace.ledger_sha256.chars().take(16).collect();
@@ -142,31 +173,59 @@ pub fn replay(trace: &Trace) -> Result<Replay, String> {
         std::process::id()
     ));
     fs::write(&path, &trace.ledger).map_err(|error| format!("{}: {error}", path.display()))?;
-    let output = Command::new(exe)
-        .arg("check")
-        .arg(&path)
-        .arg("--json")
-        .output();
-    let _ = fs::remove_file(&path);
-    let output = output.map_err(|error| format!("cannot run the checker: {error}"))?;
-    let status = output.status.code().unwrap_or(-1);
-    let actual = normalize(&String::from_utf8_lossy(&output.stdout), &path);
-    if status != trace.status {
-        return Ok(Replay {
-            matched: false,
-            detail: format!("status {status}, recorded {}", trace.status),
-        });
-    }
-    if actual != trace.report {
-        return Ok(Replay {
-            matched: false,
-            detail: first_diff(&trace.report, &actual),
-        });
-    }
-    Ok(Replay {
+    let mut outcome = Ok(Replay {
         matched: true,
         detail: String::new(),
-    })
+    });
+    for step in &trace.steps {
+        let Some(&(command, flags)) = STEPS
+            .iter()
+            .find(|(name, _)| *name == step.command.as_str())
+        else {
+            outcome = Err(format!(
+                "the record runs `{}`, which this build cannot replay",
+                step.command
+            ));
+            break;
+        };
+        let output = match run(&exe, command, flags, &path) {
+            Ok(output) => output,
+            Err(error) => {
+                outcome = Err(error);
+                break;
+            }
+        };
+        let status = output.status.code().unwrap_or(-1);
+        let actual = normalize(&String::from_utf8_lossy(&output.stdout), &path);
+        if status != step.status {
+            outcome = Ok(Replay {
+                matched: false,
+                detail: format!(
+                    "{}: status {status}, recorded {}",
+                    step.command, step.status
+                ),
+            });
+            break;
+        }
+        if actual != step.report {
+            outcome = Ok(Replay {
+                matched: false,
+                detail: format!("{}: {}", step.command, first_diff(&step.report, &actual)),
+            });
+            break;
+        }
+    }
+    let _ = fs::remove_file(&path);
+    outcome
+}
+
+fn run(exe: &Path, command: &str, flags: &[&str], path: &Path) -> Result<Output, String> {
+    Command::new(exe)
+        .arg(command)
+        .arg(path)
+        .args(flags)
+        .output()
+        .map_err(|error| format!("cannot run `{command}`: {error}"))
 }
 
 /// Replace the path the report prints, in every spelling JSON gives it, with a stable placeholder.
@@ -230,26 +289,36 @@ fn escape(text: &str) -> String {
 mod tests {
     use super::*;
 
+    fn step(command: &str, status: i32, report: &str) -> Step {
+        Step {
+            command: command.to_string(),
+            status,
+            report: report.to_string(),
+        }
+    }
+
     #[test]
     fn a_trace_survives_a_round_trip() {
         let trace = Trace::new(
-            "check",
             "tsare 1\nfact F { claim: \"x\", evidence: user }\n",
-            "{\"errors\":0}\n",
-            0,
+            vec![
+                step("check", 0, "{\"errors\":0}\n"),
+                step("ask", 0, "nothing to ask\n"),
+                step("decide", 0, "{\"decision\":\"closed\"}\n"),
+            ],
         );
         let text = trace.to_json();
         let read = Trace::parse(&text).expect("the trace parses");
-        assert_eq!(read.command, "check");
-        assert_eq!(read.status, 0);
         assert_eq!(read.ledger, trace.ledger);
-        assert_eq!(read.report, trace.report);
         assert_eq!(read.ledger_sha256, trace.ledger_sha256);
+        assert_eq!(read.steps.len(), 3);
+        assert_eq!(read.steps[0].command, "check");
+        assert_eq!(read.steps[2].report, "{\"decision\":\"closed\"}\n");
     }
 
     #[test]
     fn a_ledger_that_no_longer_matches_its_hash_is_refused() {
-        let trace = Trace::new("check", "tsare 1\n", "report\n", 0);
+        let trace = Trace::new("tsare 1\n", vec![step("check", 0, "report\n")]);
         let tampered = "tsare 1\\nnote N { tag: conjecture, text: \\\"x\\\" }\\n";
         let text = trace.to_json().replace("tsare 1\\n", tampered);
         let error = Trace::parse(&text).err().expect("the hash must be checked");
@@ -275,5 +344,14 @@ mod tests {
         assert!(diff.contains("line 2"), "{diff}");
         assert!(diff.contains("recorded b"), "{diff}");
         assert!(diff.contains("replayed B"), "{diff}");
+    }
+
+    #[test]
+    fn a_trace_without_steps_is_refused() {
+        let trace = Trace::new("tsare 1\n", Vec::new());
+        let error = Trace::parse(&trace.to_json())
+            .err()
+            .expect("steps are required");
+        assert!(error.contains("no steps"), "{error}");
     }
 }

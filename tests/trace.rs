@@ -1,4 +1,4 @@
-//! A recorded check is still the same run when it is replayed.
+//! A recorded run is still the same run when it is replayed.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -9,7 +9,7 @@ fn binary() -> &'static str {
 }
 
 fn work(name: &str) -> PathBuf {
-    let path = std::env::temp_dir().join(format!("tsare-trace-{name}-{}", std::process::id()));
+    let path = std::env::temp_dir().join(format!("tsare-run-trace-{name}-{}", std::process::id()));
     let _ = fs::remove_dir_all(&path);
     fs::create_dir_all(&path).expect("temp dir");
     path
@@ -40,13 +40,22 @@ fn record(ledger: &Path, trace: &Path) -> (String, String, i32) {
 }
 
 #[test]
-fn a_recorded_check_replays_to_the_same_report() {
+fn a_recorded_run_replays_to_the_same_reports() {
     let dir = work("match");
     let ledger = write_ledger(&dir, "tsare 1\nfact F { claim: \"x\", evidence: user }\n");
     let trace = dir.join("run.trace.json");
     let (out, err, status) = record(&ledger, &trace);
     assert_eq!(status, 0, "{out}{err}");
-    assert!(out.starts_with("trace:"), "{out}");
+    assert!(out.contains("check 0"), "{out}");
+    assert!(out.contains("ask 0"), "{out}");
+    assert!(out.contains("decide 0"), "{out}");
+    let text = fs::read_to_string(&trace).expect("read trace");
+    for command in ["check", "ask", "decide"] {
+        assert!(
+            text.contains(&format!("\"command\":\"{command}\"")),
+            "the trace has no {command} step: {text}"
+        );
+    }
     let (out, err, status) = run(&["replay", trace.to_str().expect("trace path")]);
     assert_eq!(status, 0, "{out}{err}");
     assert_eq!(out, "match\n", "{out}");
@@ -65,7 +74,7 @@ fn a_report_that_changed_is_a_mismatch() {
     fs::write(&trace, tampered).expect("write trace");
     let (out, _, status) = run(&["replay", trace.to_str().expect("trace path")]);
     assert_eq!(status, 1, "{out}");
-    assert!(out.starts_with("mismatch"), "{out}");
+    assert!(out.starts_with("mismatch: check"), "{out}");
 }
 
 #[test]
@@ -76,7 +85,10 @@ fn an_erroring_check_is_recorded_with_its_status() {
     let (_, _, status) = record(&ledger, &trace);
     assert_eq!(status, 0);
     let text = fs::read_to_string(&trace).expect("read trace");
-    assert!(text.contains("\"status\":1"), "{text}");
+    assert!(
+        text.contains("\"command\":\"check\",\"status\":1"),
+        "{text}"
+    );
     let (out, _, status) = run(&["replay", trace.to_str().expect("trace path")]);
     assert_eq!(status, 0);
     assert_eq!(out, "match\n");

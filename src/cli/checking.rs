@@ -282,9 +282,9 @@ pub(crate) fn cmd_project(path: &Path) -> i32 {
     }
 }
 
-/// Record one `check` run: the ledger, its hash, the exact report, and the status.
+/// Record one run: the ledger, its hash, and each step's report and status.
 pub(crate) fn cmd_trace(path: &Path, out: Option<&str>) -> i32 {
-    let trace = match crate::trace::record_check(path) {
+    let trace = match crate::trace::record(path) {
         Ok(trace) => trace,
         Err(error) => return fail(error),
     };
@@ -295,7 +295,12 @@ pub(crate) fn cmd_trace(path: &Path, out: Option<&str>) -> i32 {
                 return fail(format!("{file}: {error}"));
             }
             let short: String = trace.ledger_sha256.chars().take(12).collect();
-            println!("trace: {file} (ledger {short}, status {})", trace.status);
+            let steps: Vec<String> = trace
+                .steps
+                .iter()
+                .map(|step| format!("{} {}", step.command, step.status))
+                .collect();
+            println!("trace: {file} (ledger {short}, {})", steps.join(", "));
             0
         }
         None => {
@@ -305,7 +310,7 @@ pub(crate) fn cmd_trace(path: &Path, out: Option<&str>) -> i32 {
     }
 }
 
-/// Re-run a recorded check and compare the report and the status.
+/// Re-run a recorded run and compare every report and status.
 pub(crate) fn cmd_replay(path: &Path) -> i32 {
     let text = match fs::read_to_string(path) {
         Ok(text) => text,

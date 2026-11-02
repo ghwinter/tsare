@@ -240,8 +240,8 @@ const HIDDEN: &[&str] = &["mcp"];
 const COMMANDS: &[Command] = &[
         Command("checking", "check", "check PATH [--json] [--goals F] [--sugar] [--cache] [--against OTHER] [--strict]   parse and check (the default)"),
         Command("checking", "project", "project DIR                                          the same, grouped by file"),
-        Command("checking", "trace", "trace PATH [--out FILE]      a replayable record of one check run"),
-        Command("checking", "replay", "replay TRACE                 re-run a recorded check and compare"),
+        Command("checking", "trace", "trace PATH [--out FILE]      a replayable record of one run"),
+        Command("checking", "replay", "replay TRACE                 re-run a recorded run and compare"),
         Command("reasoning", "engine", "engine PATH [--json]         held, conditional, blocked, chains, gates"),
         Command("reasoning", "argue", "argue PATH [--against OTHER] which conclusions survive attack"),
         Command("reasoning", "confront", "confront LEFT RIGHT          which rules attack which, and which attacks nobody answered"),
