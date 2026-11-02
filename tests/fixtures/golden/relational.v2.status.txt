@@ -1,0 +1,1 @@
+open; 5 verified, 3 inferred, 0 unverified, 4 warning(s); next question — F_A1, F_A2 and F_B1 record the same evidence and the same attributes; which recorded attribute differs?

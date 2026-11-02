@@ -1,6 +1,7 @@
 //! Commands that read a document and say what is wrong with it.
 
 use super::*;
+use crate::json::Json as J;
 
 /// Errors decide the exit code.  `--strict` lets a warning decide it too: a warning is the engine
 /// saying the document states something it cannot settle, and a loop that reads only the number
@@ -381,6 +382,101 @@ pub(crate) fn cmd_replay(path: &Path) -> i32 {
             2
         }
     }
+}
+
+/// The loop's one line: the decision, the epistemic counts, and the next question.  Errors decide
+/// the exit code; warnings are reported but do not.
+pub(crate) fn cmd_status(path: &Path, json: bool) -> i32 {
+    let loaded = match load(path) {
+        Ok(loaded) => loaded,
+        Err(error) => return fail(error),
+    };
+    let diagnostics = crate::check::check(&loaded.decls);
+    let errors = diagnostics
+        .iter()
+        .filter(|item| item.code.starts_with('E'))
+        .count();
+    let warnings = diagnostics
+        .iter()
+        .filter(|item| item.code.starts_with('W'))
+        .count();
+    let verdict = crate::decide::report(&loaded.decls);
+    let rows = crate::epistemic::report(&loaded.decls);
+    let verified = rows
+        .iter()
+        .filter(|row| row.knowing == crate::epistemic::Knowing::Verified)
+        .count();
+    let inferred = rows
+        .iter()
+        .filter(|row| row.knowing == crate::epistemic::Knowing::Inferred)
+        .count();
+    let unverified = rows.len() - verified - inferred;
+    let program = crate::program::Program::new(&loaded.decls);
+    let question = crate::ask::questions(&program)
+        .into_iter()
+        .next()
+        .map(|item| item.question);
+    if json {
+        let first = match diagnostics.first() {
+            Some(item) => J::Obj(vec![
+                ("code".to_string(), J::Str(item.code.to_string())),
+                (
+                    "name".to_string(),
+                    J::Str(item.witness.clone().unwrap_or_default()),
+                ),
+                ("message".to_string(), J::Str(item.message.clone())),
+            ]),
+            None => J::Null,
+        };
+        let value = J::Obj(vec![
+            (
+                "decision".to_string(),
+                J::Str(verdict.decision.label().to_string()),
+            ),
+            ("verified".to_string(), J::Num(verified as f64)),
+            ("inferred".to_string(), J::Num(inferred as f64)),
+            ("unverified".to_string(), J::Num(unverified as f64)),
+            ("errors".to_string(), J::Num(errors as f64)),
+            ("warnings".to_string(), J::Num(warnings as f64)),
+            (
+                "question".to_string(),
+                match &question {
+                    Some(text) => J::Str(text.clone()),
+                    None => J::Null,
+                },
+            ),
+            ("first".to_string(), first),
+        ]);
+        println!("{}", crate::json::serialize(&value));
+        return if errors > 0 { 1 } else { 0 };
+    }
+    if errors > 0 {
+        let detail = match diagnostics.first() {
+            Some(item) => format!(
+                "first {} {}: {}",
+                item.code,
+                item.witness.as_deref().unwrap_or(""),
+                item.message
+            ),
+            None => "no diagnostic rows".to_string(),
+        };
+        println!("not checkable; {errors} error(s), {warnings} warning(s); {detail}");
+        return 1;
+    }
+    let warning = if warnings > 0 {
+        format!(", {warnings} warning(s)")
+    } else {
+        String::new()
+    };
+    let next = match question {
+        Some(text) => format!("next question — {text}"),
+        None => "nothing to ask".to_string(),
+    };
+    println!(
+        "{}; {verified} verified, {inferred} inferred, {unverified} unverified{warning}; {next}",
+        verdict.decision.label()
+    );
+    0
 }
 
 /// Add one declaration from a source document to a library, if the library stays admissible.

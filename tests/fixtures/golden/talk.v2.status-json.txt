@@ -1,0 +1,1 @@
+{"decision": "open", "verified": 12, "inferred": 0, "unverified": 7, "errors": 0, "warnings": 12, "question": null, "first": {"code": "W-OVERCLAIM", "name": "F_MULTI", "message": "fact F_MULTI is universal and binds no domain: `scope:` is prose, so it cannot be enumerated; bind it with `over:`"}}

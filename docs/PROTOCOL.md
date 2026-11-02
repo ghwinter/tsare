@@ -54,6 +54,7 @@ answers `--json`.
 | command | what it answers | JSON |
 | --- | --- | --- |
 | `check FILE\|DIR` | which declarations are well formed; `--goals`, `--sugar`, `--cache`, `--against OTHER`, `--strict` | yes |
+| `status FILE [--json]` | one line: the decision, the epistemic counts, and the next question; errors exit 1 | yes |
 | `engine FILE\|DIR` | held, conditional, blocked, chains, gates | yes |
 | `argue FILE [--against OTHER]` | which conclusions survive attack; with `--against`, the attack graph is the merge | |
 | `confront LEFT RIGHT` | which rules attack across the pair, and which attacks nobody answered; exit 1 when `LEFT` leaves one unanswered | |

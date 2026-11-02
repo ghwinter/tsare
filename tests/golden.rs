@@ -112,6 +112,8 @@ fn stem(path: &Path) -> String {
 const COMMANDS: &[(&str, &[&str])] = &[
     ("check", &[]),
     ("check-json", &["--json"]),
+    ("status", &[]),
+    ("status-json", &["--json"]),
     ("engine-json", &["--json"]),
     ("suggest-json", &["--json"]),
     ("apply-dry", &["--dry-run"]),
