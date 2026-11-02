@@ -461,31 +461,10 @@ pub(crate) fn cmd_status(path: &Path, json: bool) -> i32 {
         return if errors > 0 { 1 } else { 0 };
     }
     if errors > 0 {
-        let detail = match diagnostics.first() {
-            Some(item) => format!(
-                "first {} {}: {}",
-                item.code,
-                item.witness.as_deref().unwrap_or(""),
-                item.message
-            ),
-            None => "no diagnostic rows".to_string(),
-        };
-        println!("not checkable; {errors} error(s), {warnings} warning(s); {detail}");
+        println!("{}", crate::status::line(&loaded.decls));
         return 1;
     }
-    let warning = if warnings > 0 {
-        format!(", {warnings} warning(s)")
-    } else {
-        String::new()
-    };
-    let next = match question {
-        Some(text) => format!("next question — {text}"),
-        None => "nothing to ask".to_string(),
-    };
-    println!(
-        "{}; {verified} verified, {inferred} inferred, {unverified} unverified{warning}; {next}",
-        verdict.decision.label()
-    );
+    println!("{}", crate::status::line(&loaded.decls));
     0
 }
 

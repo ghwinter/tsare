@@ -17,6 +17,7 @@ pub(crate) mod evidence;
 pub mod fix;
 pub mod kernel;
 mod partition;
+pub mod status;
 
 use crate::closure;
 use crate::specs::spec;

@@ -32,6 +32,9 @@ fn text_result(text: String, failed: bool) -> String {
 
 const TOOLS: &str = r#"{"tools":[
 {"name":"check","description":"Parse and check a .tsare document or directory; returns the diagnostics as text.","inputSchema":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"]}},
+{"name":"status","description":"One line: the decision, the verified/inferred/unverified counts, and the next question (or the first error).","inputSchema":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"]}},
+{"name":"decide","description":"Whether the document is closed, closable or open, and which declarations still owe a witness.","inputSchema":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"]}},
+{"name":"epistemic","description":"How each conclusion is known: verified, inferred or unverified.","inputSchema":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"]}},
 {"name":"argue","description":"Which conclusions survive attack.","inputSchema":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"]}},
 {"name":"derive","description":"Which conclusions are grounded in facts.","inputSchema":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"]}},
 {"name":"fix","description":"Verified repair candidates, with what each would cost.","inputSchema":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"]}},
@@ -105,6 +108,11 @@ fn call(name: &str, params: &Json) -> Result<String, (String, bool)> {
                     out.push('\n');
                     Ok(out)
                 }
+                "status" => Ok(crate::status::line(&loaded.decls)),
+                "decide" => Ok(crate::decide::text(&crate::decide::report(&loaded.decls))),
+                "epistemic" => Ok(crate::epistemic::text(&crate::epistemic::report(
+                    &loaded.decls,
+                ))),
                 "argue" => {
                     let rows = crate::argue::conclusions(&program);
                     let mut out = String::new();

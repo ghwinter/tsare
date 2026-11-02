@@ -791,16 +791,7 @@ pub(crate) fn cmd_decide(path: &Path, json: bool) -> i32 {
         ]));
         return 0;
     }
-    println!("{}", verdict.decision.label());
-    for item in &verdict.items {
-        println!(
-            "{} {} {}: {}",
-            pad(&item.name, 20),
-            pad(item.decision.label(), 9),
-            item.kind,
-            item.reason
-        );
-    }
+    print!("{}", crate::decide::text(&verdict));
     0
 }
 
@@ -846,19 +837,7 @@ pub(crate) fn cmd_epistemic(path: &Path, json: bool) -> i32 {
         ]));
         return 0;
     }
-    println!("epistemic: {verified} verified, {inferred} inferred, {unverified} unverified");
-    for row in &rows {
-        let line = format!(
-            "{} {} {}",
-            pad(&row.name, 20),
-            pad(&row.kind, 12),
-            pad(row.knowing.label(), 11)
-        );
-        match &row.basis {
-            Some(basis) => println!("{line} {basis}"),
-            None => println!("{line}"),
-        }
-    }
+    print!("{}", crate::epistemic::text(&rows));
     0
 }
 

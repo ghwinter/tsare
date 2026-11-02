@@ -12,6 +12,10 @@ All notable changes are recorded here. The format follows
   the same terms as the gate's brief. Its JSON also carries the claim count and the first debt.
   It exits 1 when the document has an error.
 
+- The MCP server gains `status`, `decide` and `epistemic`, each answering with the command's own
+  text: the loop line, the decision, and the projection. The renderer is shared, so the two cannot
+  drift.
+
 - `decide`: whether a document is closed, closable or open, and which declarations still owe a
   witness. It reads the ledger alone; `check` keeps its output until the format freezes.
 

@@ -209,6 +209,21 @@ fn judge(
     }
 }
 
+/// The decision as one block of text: the word, then each declaration that still owes a witness.
+pub fn text(verdict: &Verdict) -> String {
+    let mut out = format!("{}\n", verdict.decision.label());
+    for item in &verdict.items {
+        out.push_str(&format!(
+            "{:<20} {:<9} {}: {}\n",
+            item.name,
+            item.decision.label(),
+            item.kind,
+            item.reason
+        ));
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

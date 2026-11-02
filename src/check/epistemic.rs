@@ -109,6 +109,34 @@ pub fn report(decls: &[Decl]) -> Vec<Row> {
     rows
 }
 
+/// The projection as one block of text: the counts, then one row per conclusion.
+pub fn text(rows: &[Row]) -> String {
+    let verified = rows
+        .iter()
+        .filter(|row| row.knowing == Knowing::Verified)
+        .count();
+    let inferred = rows
+        .iter()
+        .filter(|row| row.knowing == Knowing::Inferred)
+        .count();
+    let unverified = rows.len() - verified - inferred;
+    let mut out =
+        format!("epistemic: {verified} verified, {inferred} inferred, {unverified} unverified\n");
+    for row in rows {
+        let line = format!(
+            "{:<20} {:<12} {:<11}",
+            row.name,
+            row.kind,
+            row.knowing.label()
+        );
+        match &row.basis {
+            Some(basis) => out.push_str(&format!("{line} {basis}\n")),
+            None => out.push_str(&format!("{line}\n")),
+        }
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
