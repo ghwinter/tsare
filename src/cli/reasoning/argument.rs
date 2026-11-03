@@ -1,6 +1,6 @@
 use super::*;
 
-pub(crate) fn cmd_argue(path: &Path, against: Option<&Path>) -> i32 {
+pub(crate) fn cmd_argue(path: &Path, against: Option<&Path>, json: bool) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -31,20 +31,39 @@ pub(crate) fn cmd_argue(path: &Path, against: Option<&Path>) -> i32 {
         .map(|row| row.name.chars().count())
         .max()
         .unwrap_or(10);
-    for row in &rows {
-        println!(
-            "{}  {} {}",
-            pad(&row.name, width),
-            pad(row.status, 10),
-            row.why
-        );
-    }
     let errors = error_count(&diagnostics);
+    if json {
+        let items: Vec<J> = rows
+            .iter()
+            .map(|row| {
+                obj(vec![
+                    ("name", J::Str(row.name.clone())),
+                    ("status", J::Str(row.status.to_string())),
+                    ("why", J::Str(row.why.clone())),
+                ])
+            })
+            .collect();
+        emit(obj(vec![
+            ("conclusions", J::Arr(items)),
+            ("errors", J::Num(errors as f64)),
+        ]));
+    } else {
+        for row in &rows {
+            println!(
+                "{}  {} {}",
+                pad(&row.name, width),
+                pad(row.status, 10),
+                row.why
+            );
+        }
+    }
     if errors > 0 {
-        println!(
-            "note: {errors} error(s) in {}; conclusions are computed on the resolved graph",
-            path.display()
-        );
+        if !json {
+            println!(
+                "note: {errors} error(s) in {}; conclusions are computed on the resolved graph",
+                path.display()
+            );
+        }
         1
     } else {
         0

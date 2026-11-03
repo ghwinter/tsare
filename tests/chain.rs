@@ -116,3 +116,18 @@ fn a_write_back_with_an_open_chain_is_refused() {
     assert!(combined.contains("refused"), "{combined}");
     assert!(!out.exists(), "nothing is written on a refusal");
 }
+
+#[test]
+fn argue_answers_json() {
+    let dir = work("argue-json");
+    let path = dir.join("doc.tsare");
+    fs::write(
+        &path,
+        "tsare 1\nfact F { claim: \"f\", evidence: user }\nproposition P { statement: \"p\", from: [F] }\nwarrant W { claim: \"w\", from: [F], to: P, basis: [F] }\n",
+    )
+    .expect("doc");
+    let (out, err, status) = run(&["argue", path.to_str().expect("path"), "--json"]);
+    assert_eq!(status, 0, "{out}{err}");
+    assert!(out.contains("\"conclusions\""), "{out}");
+    assert!(out.contains("\"status\": \"supported\""), "{out}");
+}

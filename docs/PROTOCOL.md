@@ -57,7 +57,7 @@ answers `--json`.
 | `status FILE [--json] [--trace FILE]` | one line: the decision, the epistemic counts, the next question, and — when any — the first open chain; the JSON also carries the first debt, the claim count, the number of conclusions standing on an unbacked hypothesis, and the first chain's name and hypotheses; `--trace` appends the report as a replayable run; errors exit 1 | yes |
 | `provenance FILE [--json]` | where each quoted claim sits in its source: the source, the line and the column | yes |
 | `engine FILE\|DIR` | held, conditional, blocked, chains, gates | yes |
-| `argue FILE [--against OTHER]` | which conclusions survive attack; with `--against`, the attack graph is the merge | |
+| `argue FILE [--against OTHER] [--json]` | which conclusions survive attack; with `--against`, the attack graph is the merge; the JSON carries each conclusion's status and why | |
 | `confront LEFT RIGHT` | which rules attack across the pair, and which attacks nobody answered; exit 1 when `LEFT` leaves one unanswered | |
 | `derive FILE` | which conclusions are grounded in facts | |
 | `debt FILE [--all]` | which facts transitively gate a conclusion | |

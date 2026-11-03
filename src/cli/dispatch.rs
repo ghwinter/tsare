@@ -43,7 +43,11 @@ pub(crate) fn dispatch(path: &Path, command: &str, args: &Args) -> i32 {
         }
         "suggest" => cmd_suggest(path, args.has("--json")),
         "apply" => cmd_apply(path, args.has("--dry-run")),
-        "argue" => cmd_argue(path, args.option("--against").map(Path::new)),
+        "argue" => cmd_argue(
+            path,
+            args.option("--against").map(Path::new),
+            args.has("--json"),
+        ),
         "confront" => {
             let Some(other) = args.at(1) else {
                 println!("usage: tsare confront LEFT RIGHT");

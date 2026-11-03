@@ -8,6 +8,9 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `argue --json` carries each conclusion's status and why, so the attack graph can be read by a
+  caller.
+
 - `apply`, `fix --apply` and `propose --apply` refuse to write a document whose conclusions still
   stand on an unbacked hypothesis; the G3 gate now covers every in-place write-back.
 

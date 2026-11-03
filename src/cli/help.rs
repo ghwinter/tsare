@@ -22,7 +22,7 @@ const COMMANDS: &[Command] = &[
         Command("checking", "log", "log STORE                    the content hashes the store holds"),
         Command("checking", "restore", "restore HASH [--store DIR] --out FILE   write a stored ledger back"),
         Command("reasoning", "engine", "engine PATH [--json]         held, conditional, blocked, chains, gates"),
-        Command("reasoning", "argue", "argue PATH [--against OTHER] which conclusions survive attack"),
+        Command("reasoning", "argue", "argue PATH [--against OTHER] [--json]   which conclusions survive attack"),
         Command("reasoning", "confront", "confront LEFT RIGHT          which rules attack which, and which attacks nobody answered"),
         Command("reasoning", "derive", "derive PATH                  which conclusions are grounded in facts"),
         Command("reasoning", "debt", "debt PATH [--all]            which facts transitively gate a conclusion"),
