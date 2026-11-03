@@ -54,7 +54,7 @@ answers `--json`.
 | command | what it answers | JSON |
 | --- | --- | --- |
 | `check FILE\|DIR` | which declarations are well formed; `--goals`, `--sugar`, `--cache`, `--against OTHER`, `--strict` | yes |
-| `status FILE [--json] [--trace FILE]` | one line: the decision, the epistemic counts, the next question, and — when any — the first open chain; the JSON also carries the first debt, the claim count, the number of conclusions standing on an unbacked hypothesis, and the first chain's name and hypotheses; `--trace` appends the report as a replayable run; errors exit 1 | yes |
+| `status FILE [--json] [--trace FILE] [--budget N]` | one line: the decision, the epistemic counts, the next question, and — when any — the first open chain; over the budget the line is `unfinished`; the JSON also carries the first debt, the claim count, the number of conclusions standing on an unbacked hypothesis, and the first chain's name and hypotheses; `--trace` appends the report as a replayable run; errors exit 1 | yes |
 | `provenance FILE [--json]` | where each quoted claim sits in its source: the source, the line and the column | yes |
 | `engine FILE\|DIR` | held, conditional, blocked, chains, gates | yes |
 | `argue FILE [--against OTHER] [--json]` | which conclusions survive attack; with `--against`, the attack graph is the merge; the JSON carries each conclusion's status and why | |

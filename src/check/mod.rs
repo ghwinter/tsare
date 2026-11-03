@@ -9,6 +9,7 @@
 
 use std::collections::{HashMap, HashSet};
 
+pub mod budget;
 pub(crate) mod collide;
 mod confidence;
 pub mod decide;

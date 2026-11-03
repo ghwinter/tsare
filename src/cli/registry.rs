@@ -19,16 +19,19 @@ pub const GROUPS: &[&str] = &["checking", "reasoning", "repairing", "emitting"];
 pub const HIDDEN: &[&str] = &["mcp"];
 
 pub const COMMANDS: &[Command] = &[
-    Command { group: "checking", name: "check", usage: "check PATH [--json] [--goals F] [--sugar] [--cache] [--against OTHER] [--strict]   parse and check (the default)", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_check(
+    Command { group: "checking", name: "check", usage: "check PATH [--json] [--goals F] [--sugar] [--cache] [--against OTHER] [--strict] [--budget N]   parse and check (the default)", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_check(
             path,
-            args.has("--json"),
-            args.has("--sugar"),
-            args.option("--goals"),
-            args.has("--cache"),
-            args.option("--against"),
-            args.has("--strict"),
+            CheckOptions {
+                json: args.has("--json"),
+                sugar: args.has("--sugar"),
+                goals: args.option("--goals").map(str::to_string),
+                cache: args.has("--cache"),
+                against: args.option("--against").map(str::to_string),
+                strict: args.has("--strict"),
+                budget: args.option("--budget").and_then(|value| value.parse().ok()),
+            },
         ) } },
-    Command { group: "checking", name: "status", usage: "status PATH [--json] [--trace FILE]   the decision, the counts and the next question", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_status(path, args.has("--json"), args.option("--trace")) } },
+    Command { group: "checking", name: "status", usage: "status PATH [--json] [--trace FILE] [--budget N]   the decision, the counts and the next question", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_status(path, args.has("--json"), args.option("--trace"), args.option("--budget").and_then(|value| value.parse().ok())) } },
     Command { group: "checking", name: "provenance", usage: "provenance PATH [--json]    where each quoted claim sits in its source", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_provenance(path, args.has("--json")) } },
     Command { group: "checking", name: "project", usage: "project DIR                                          the same, grouped by file", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_project(path) } },
     Command { group: "checking", name: "trace", usage: "trace PATH [--out FILE | --append FILE]   one run, or append it to a session", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_trace(path, args.option("--out"), args.option("--append")) } },
