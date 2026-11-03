@@ -7,7 +7,7 @@ pub(crate) fn cmd_delta(
     record: Option<&str>,
     doc: Option<&str>,
     action: Option<&str>,
-) -> i32 {
+) -> Outcome {
     let read = |path: &Path| -> Result<String, String> {
         fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))
     };
@@ -24,7 +24,7 @@ pub(crate) fn cmd_delta(
         Some("manual") => "manual",
         Some(other) => {
             println!("--action is mechanical, model or manual; got {other}");
-            return 2;
+            return Outcome::Usage;
         }
     };
     let difference = match crate::delta::compare(&left, &right) {
@@ -35,7 +35,7 @@ pub(crate) fn cmd_delta(
     if let Some(store) = record {
         let Some(doc) = doc else {
             println!("usage: tsare delta BEFORE AFTER --record STORE --doc DOC [--action A]");
-            return 2;
+            return Outcome::Usage;
         };
         let entry = match crate::cases::entry(&left, &right, doc, action, crate::cache::SALT) {
             Ok(entry) => entry,
@@ -51,17 +51,17 @@ pub(crate) fn cmd_delta(
             "{}",
             crate::delta::to_json(&difference, recorded.as_deref())
         );
-        return 0;
+        return Outcome::Ok;
     }
     print!("{}", crate::delta::text(&difference));
     if let Some(store) = recorded {
         println!("recorded: {store} (action {action})");
     }
-    0
+    Outcome::Ok
 }
 
 /// The semantic diff between two ledgers: declarations added, removed, and fields changed.
-pub(crate) fn cmd_diff(before: &Path, after: &Path, json: bool) -> i32 {
+pub(crate) fn cmd_diff(before: &Path, after: &Path, json: bool) -> Outcome {
     let read = |path: &Path| -> Result<String, String> {
         fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))
     };
@@ -69,21 +69,21 @@ pub(crate) fn cmd_diff(before: &Path, after: &Path, json: bool) -> i32 {
         (Ok(left), Ok(right)) => (left, right),
         (Err(error), _) | (_, Err(error)) => {
             println!("{error}");
-            return 2;
+            return Outcome::Usage;
         }
     };
     let old = match crate::syntax::parse(&left) {
         Ok(decls) => decls,
         Err(error) => {
             println!("{}: {error}", before.display());
-            return 2;
+            return Outcome::Usage;
         }
     };
     let new = match crate::syntax::parse(&right) {
         Ok(decls) => decls,
         Err(error) => {
             println!("{}: {error}", after.display());
-            return 2;
+            return Outcome::Usage;
         }
     };
     let difference = crate::diff::diff(&old, &new);
@@ -156,12 +156,12 @@ pub(crate) fn cmd_diff(before: &Path, after: &Path, json: bool) -> i32 {
             ("removed", J::Arr(removed)),
             ("changed", J::Arr(changed)),
         ]));
-        return code;
+        return Outcome::from_code(code);
     }
     println!("diff {old_hash} -> {new_hash}");
     if difference.is_empty() {
         println!("no semantic change");
-        return 0;
+        return Outcome::Ok;
     }
     for (name, kind) in &difference.added {
         println!("+ {name} {kind}");
@@ -187,7 +187,7 @@ pub(crate) fn cmd_diff(before: &Path, after: &Path, json: bool) -> i32 {
             );
         }
     }
-    code
+    Outcome::from_code(code)
 }
 
 /// A three-way structural merge; writes only when nothing conflicts.
@@ -197,7 +197,7 @@ pub(crate) fn cmd_merge(
     theirs: &Path,
     out: Option<&str>,
     json: bool,
-) -> i32 {
+) -> Outcome {
     let parse = |path: &Path| -> Result<Vec<crate::syntax::Decl>, String> {
         let text =
             fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
@@ -207,13 +207,13 @@ pub(crate) fn cmd_merge(
         (Ok(before), Ok(mine), Ok(other)) => (before, mine, other),
         (Err(error), _, _) | (_, Err(error), _) | (_, _, Err(error)) => {
             println!("{error}");
-            return 2;
+            return Outcome::Usage;
         }
     };
     let merged = crate::merge::merge(&before, &mine, &other);
     let Some(out) = out else {
         println!("usage: tsare merge BASE OURS THEIRS --out FILE [--json]");
-        return 2;
+        return Outcome::Usage;
     };
     let text = merge_text(&merged);
     if json {
@@ -267,7 +267,7 @@ pub(crate) fn cmd_merge(
                 merged.conflicts.len()
             );
         }
-        return 1;
+        return Outcome::Failed;
     }
     if let Err(error) = fs::write(out, text) {
         return fail(format!("{out}: {error}"));
@@ -275,11 +275,11 @@ pub(crate) fn cmd_merge(
     if !json {
         println!("merged {} declaration(s) -> {out}", merged.views.len());
     }
-    0
+    Outcome::Ok
 }
 
 /// Which version on the store's HEAD chain last changed each field of a declaration.
-pub(crate) fn cmd_blame(store: &Path, name: &str, json: bool) -> i32 {
+pub(crate) fn cmd_blame(store: &Path, name: &str, json: bool) -> Outcome {
     let blame = match crate::blame::blame(store, name) {
         Ok(blame) => blame,
         Err(error) => return fail(error),
@@ -302,7 +302,7 @@ pub(crate) fn cmd_blame(store: &Path, name: &str, json: bool) -> i32 {
             ("version", J::Str(blame.version.clone())),
             ("charges", J::Arr(charges)),
         ]));
-        return 0;
+        return Outcome::Ok;
     }
     println!("blame {} at {}", blame.name, short(&blame.version));
     for charge in &blame.charges {
@@ -313,11 +313,11 @@ pub(crate) fn cmd_blame(store: &Path, name: &str, json: bool) -> i32 {
             charge.value.as_deref().unwrap_or("-")
         );
     }
-    0
+    Outcome::Ok
 }
 
 /// The support path behind a declaration, from the claim to the evidence.
-pub(crate) fn cmd_chain(path: &Path, name: &str, json: bool) -> i32 {
+pub(crate) fn cmd_chain(path: &Path, name: &str, json: bool) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -331,11 +331,11 @@ pub(crate) fn cmd_chain(path: &Path, name: &str, json: bool) -> i32 {
     } else {
         print_link(&link, 0);
     }
-    0
+    Outcome::Ok
 }
 
 /// Every conclusion whose support path rests on an unbacked hypothesis.
-pub(crate) fn cmd_chains(path: &Path, json: bool) -> i32 {
+pub(crate) fn cmd_chains(path: &Path, json: bool) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -370,8 +370,8 @@ pub(crate) fn cmd_chains(path: &Path, json: bool) -> i32 {
         }
     }
     if rows.is_empty() {
-        0
+        Outcome::Ok
     } else {
-        1
+        Outcome::Failed
     }
 }

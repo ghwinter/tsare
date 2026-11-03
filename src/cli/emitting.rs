@@ -8,7 +8,7 @@ fn write_file(path: &Path, text: &str) -> Result<(), String> {
     fs::write(path, text).map_err(|error| format!("{}: {error}", path.display()))
 }
 
-pub(crate) fn cmd_audit(path: &Path) -> i32 {
+pub(crate) fn cmd_audit(path: &Path) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -46,10 +46,10 @@ pub(crate) fn cmd_audit(path: &Path) -> i32 {
             pad(&added_text, 22)
         );
     }
-    0
+    Outcome::Ok
 }
 
-pub(crate) fn cmd_egraph(path: &Path, write: Option<&str>) -> i32 {
+pub(crate) fn cmd_egraph(path: &Path, write: Option<&str>) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -71,7 +71,7 @@ pub(crate) fn cmd_egraph(path: &Path, write: Option<&str>) -> i32 {
             Ok(reloaded) => reloaded,
             Err(error) => {
                 println!("rewritten document does not parse: {error}");
-                return 1;
+                return Outcome::Failed;
             }
         };
         let before = crate::check::check(&loaded.decls);
@@ -86,10 +86,10 @@ pub(crate) fn cmd_egraph(path: &Path, write: Option<&str>) -> i32 {
             new_decls.len()
         );
     }
-    0
+    Outcome::Ok
 }
 
-pub(crate) fn cmd_graph(path: &Path, out: Option<&str>) -> i32 {
+pub(crate) fn cmd_graph(path: &Path, out: Option<&str>) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -109,13 +109,13 @@ pub(crate) fn cmd_graph(path: &Path, out: Option<&str>) -> i32 {
     let errors = error_count(&diagnostics);
     if errors > 0 {
         println!("note: {errors} error(s); dangling edges are part of the picture");
-        1
+        Outcome::Failed
     } else {
-        0
+        Outcome::Ok
     }
 }
 
-pub(crate) fn cmd_map(left: &Path, right: &Path, top: usize) -> i32 {
+pub(crate) fn cmd_map(left: &Path, right: &Path, top: usize) -> Outcome {
     let left_doc = match load(left) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -131,7 +131,7 @@ pub(crate) fn cmd_map(left: &Path, right: &Path, top: usize) -> i32 {
     );
     if rows.is_empty() {
         println!("no shared structure");
-        return 0;
+        return Outcome::Ok;
     }
     for row in &rows {
         let shown: Vec<String> = row
@@ -152,10 +152,10 @@ pub(crate) fn cmd_map(left: &Path, right: &Path, top: usize) -> i32 {
     if total > rows.len() {
         println!("… {} more pair(s); raise --top", total - rows.len());
     }
-    0
+    Outcome::Ok
 }
 
-pub(crate) fn cmd_induce(path: &Path) -> i32 {
+pub(crate) fn cmd_induce(path: &Path) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -201,13 +201,13 @@ pub(crate) fn cmd_induce(path: &Path) -> i32 {
         }
     }
     if errors > 0 {
-        1
+        Outcome::Failed
     } else {
-        0
+        Outcome::Ok
     }
 }
 
-pub(crate) fn cmd_pattern(path: &Path, name: &str, with_vars: bool) -> i32 {
+pub(crate) fn cmd_pattern(path: &Path, name: &str, with_vars: bool) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -215,11 +215,11 @@ pub(crate) fn cmd_pattern(path: &Path, name: &str, with_vars: bool) -> i32 {
     let program = Program::new(&loaded.decls);
     let Some(concept) = program.get(name) else {
         println!("{name}: not a concept");
-        return 1;
+        return Outcome::Failed;
     };
     if concept.kind != "concept" {
         println!("{name}: not a concept");
-        return 1;
+        return Outcome::Failed;
     }
     let positives = program::pos(concept);
     let negatives = program::neg(concept);
@@ -246,7 +246,7 @@ pub(crate) fn cmd_pattern(path: &Path, name: &str, with_vars: bool) -> i32 {
             Some(pattern) => println!("  structure: {}", crate::patterns::render(&pattern)),
             None => println!("  structure: none found with variables"),
         }
-        return 0;
+        return Outcome::Ok;
     }
     let exclude: std::collections::HashSet<String> = [concept.name.clone()].into_iter().collect();
     let rule = crate::paths::learn(&program, &positives, &negatives, 2, &exclude);
@@ -285,10 +285,10 @@ pub(crate) fn cmd_pattern(path: &Path, name: &str, with_vars: bool) -> i32 {
             }
         );
     }
-    0
+    Outcome::Ok
 }
 
-pub(crate) fn cmd_build(path: &Path, out: &str, goals_path: Option<&str>) -> i32 {
+pub(crate) fn cmd_build(path: &Path, out: &str, goals_path: Option<&str>) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -334,7 +334,7 @@ pub(crate) fn cmd_build(path: &Path, out: &str, goals_path: Option<&str>) -> i32
     }
     if error_count(&all) > 0 {
         println!("not emitted: fix the errors first");
-        return 1;
+        return Outcome::Failed;
     }
 
     let learnings = crate::build::learnings_of(&program);
@@ -401,7 +401,7 @@ pub(crate) fn cmd_build(path: &Path, out: &str, goals_path: Option<&str>) -> i32
         for problem in &problems {
             println!("  {problem}");
         }
-        return 1;
+        return Outcome::Failed;
     }
     println!(
         "predicates: {defined} attribute + {structured} structural, verified on every example"
@@ -413,10 +413,10 @@ pub(crate) fn cmd_build(path: &Path, out: &str, goals_path: Option<&str>) -> i32
         }
         println!("emitted {}", out_dir.join("COVERAGE.md").display());
     }
-    0
+    Outcome::Ok
 }
 
-pub(crate) fn cmd_outline(path: &Path) -> i32 {
+pub(crate) fn cmd_outline(path: &Path) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -427,15 +427,15 @@ pub(crate) fn cmd_outline(path: &Path) -> i32 {
         "{}",
         crate::outline::markdown(&program, &diagnostics, &path.display().to_string())
     );
-    0
+    Outcome::Ok
 }
 
-pub(crate) fn cmd_mem(store: &Path, recall: Option<&[String]>, k: usize) -> i32 {
+pub(crate) fn cmd_mem(store: &Path, recall: Option<&[String]>, k: usize) -> Outcome {
     if let Some(codes) = recall {
         let entries = crate::cases::recall(store, codes, k);
         if entries.is_empty() {
             println!("no similar case in {}", store.display());
-            return 0;
+            return Outcome::Ok;
         }
         for entry in entries {
             let outcome = if entry.improved {
@@ -469,7 +469,7 @@ pub(crate) fn cmd_mem(store: &Path, recall: Option<&[String]>, k: usize) -> i32 
                 crate::program::fmt_g(errors("after"))
             );
         }
-        return 0;
+        return Outcome::Ok;
     }
     let report = crate::cases::audit(store);
     println!("store: {}", store.display());
@@ -491,20 +491,20 @@ pub(crate) fn cmd_mem(store: &Path, recall: Option<&[String]>, k: usize) -> i32 
         "orphans:     {}  (document no longer exists)",
         report.orphans
     );
-    0
+    Outcome::Ok
 }
 
-pub(crate) fn cmd_fmt(path: &Path) -> i32 {
+pub(crate) fn cmd_fmt(path: &Path) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
     };
     print!("{}", crate::format::document(&loaded.decls));
-    0
+    Outcome::Ok
 }
 
 /// Five projections of one document: tree, graph, hypergraph, matrix and logic.
-pub(crate) fn cmd_views(path: &Path, json: bool, only: Option<&str>, check: bool) -> i32 {
+pub(crate) fn cmd_views(path: &Path, json: bool, only: Option<&str>, check: bool) -> Outcome {
     use crate::json::Json as J;
 
     let loaded = match load(path) {
@@ -527,7 +527,11 @@ pub(crate) fn cmd_views(path: &Path, json: bool, only: Option<&str>, check: bool
                 println!("{issue}");
             }
         }
-        return if issues.is_empty() { 0 } else { 1 };
+        return if issues.is_empty() {
+            Outcome::Ok
+        } else {
+            Outcome::Failed
+        };
     }
     let views = crate::views::json(&loaded.decls);
     if let Some(name) = only {
@@ -536,7 +540,7 @@ pub(crate) fn cmd_views(path: &Path, json: bool, only: Option<&str>, check: bool
                 "views: unknown view {name}; views are {}",
                 crate::views::VIEWS.join(", ")
             );
-            return 2;
+            return Outcome::Usage;
         }
     }
     fn count(value: &J) -> usize {
@@ -589,7 +593,7 @@ pub(crate) fn cmd_views(path: &Path, json: bool, only: Option<&str>, check: bool
     if let Some(name) = only {
         let Some(data) = views.get(name) else {
             println!("views: unknown view {name}");
-            return 2;
+            return Outcome::Usage;
         };
         if json {
             let selected = J::Obj(vec![
@@ -604,17 +608,17 @@ pub(crate) fn cmd_views(path: &Path, json: bool, only: Option<&str>, check: bool
                 ("data".to_string(), data.clone()),
             ]);
             println!("{}", crate::json::serialize(&selected));
-            return 0;
+            return Outcome::Ok;
         }
         println!("{}", summary(name, data));
         if let Some(fidelity) = fidelity.and_then(|all| all.get(name)) {
             println!("fidelity: {}", declared(fidelity));
         }
-        return 0;
+        return Outcome::Ok;
     }
     if json {
         println!("{}", crate::json::serialize(&views));
-        return 0;
+        return Outcome::Ok;
     }
     for name in crate::views::VIEWS {
         if let Some(data) = views.get(name) {
@@ -622,5 +626,5 @@ pub(crate) fn cmd_views(path: &Path, json: bool, only: Option<&str>, check: bool
         }
     }
     println!("fidelity: declared for all five views (--json has preserves/loses)");
-    0
+    Outcome::Ok
 }

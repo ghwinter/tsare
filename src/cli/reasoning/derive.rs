@@ -1,6 +1,6 @@
 use super::*;
 
-pub(crate) fn cmd_derive(path: &Path) -> i32 {
+pub(crate) fn cmd_derive(path: &Path) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -30,10 +30,10 @@ pub(crate) fn cmd_derive(path: &Path) -> i32 {
             }
         }
     }
-    0
+    Outcome::Ok
 }
 
-pub(crate) fn cmd_next(path: &Path, json: bool) -> i32 {
+pub(crate) fn cmd_next(path: &Path, json: bool) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -52,11 +52,11 @@ pub(crate) fn cmd_next(path: &Path, json: bool) -> i32 {
             })
             .collect();
         emit(obj(vec![("decisions", J::Arr(decisions))]));
-        return 0;
+        return Outcome::Ok;
     }
     if rows.is_empty() {
         println!("no open decisions");
-        return 0;
+        return Outcome::Ok;
     }
     let width = rows
         .iter()
@@ -66,10 +66,10 @@ pub(crate) fn cmd_next(path: &Path, json: bool) -> i32 {
     for row in &rows {
         println!("{}  touches {} claim(s)", pad(&row.label, width), row.count);
     }
-    0
+    Outcome::Ok
 }
 
-pub(crate) fn cmd_ask(path: &Path, args: &Args) -> i32 {
+pub(crate) fn cmd_ask(path: &Path, args: &Args) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -116,16 +116,16 @@ pub(crate) fn cmd_ask(path: &Path, args: &Args) -> i32 {
                 crate::json::Json::Arr(items)
             )]))
         );
-        return 0;
+        return Outcome::Ok;
     }
     print!("{}", crate::ask::text(&program, one));
-    0
+    Outcome::Ok
 }
 
-pub(crate) fn cmd_novel(path: &Path, args: &Args) -> i32 {
+pub(crate) fn cmd_novel(path: &Path, args: &Args) -> Outcome {
     let Some(attribute) = args.option("--attribute") else {
         println!("novel needs --attribute NAME; add --holds F_A,F_B for the facts it is true of");
-        return 2;
+        return Outcome::Usage;
     };
     let loaded = match load(path) {
         Ok(loaded) => loaded,
@@ -144,15 +144,15 @@ pub(crate) fn cmd_novel(path: &Path, args: &Args) -> i32 {
     for id in &holds {
         if !program.has(id) {
             println!("no such declaration: {id}");
-            return 1;
+            return Outcome::Failed;
         }
     }
     let verdict = crate::novel::decide(&program, &holds);
     print!("{}", crate::novel::text(&verdict, attribute));
-    0
+    Outcome::Ok
 }
 
-pub(crate) fn cmd_abstract(path: &Path, args: &Args) -> i32 {
+pub(crate) fn cmd_abstract(path: &Path, args: &Args) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -162,14 +162,14 @@ pub(crate) fn cmd_abstract(path: &Path, args: &Args) -> i32 {
     let max_intent = args.count("--max-intent", 3);
     let (found, truncated) = crate::abstraction::candidates(&program, support, max_intent);
     print!("{}", crate::abstraction::text(&found, truncated));
-    0
+    Outcome::Ok
 }
 
 /// The forms a document's declarations share, and the positions that vary inside each form.
 /// A form with one instance is not a structure, so only shared ones are printed.
 /// The meet of two declarations: the most general form both satisfy, and the draft that fills the
 /// remaining positions.  Content is invisible here -- this generalises over shapes.
-pub(crate) fn cmd_meet(path: &Path, args: &Args) -> i32 {
+pub(crate) fn cmd_meet(path: &Path, args: &Args) -> Outcome {
     let (Some(left), Some(right)) = (args.at(1), args.at(2)) else {
         return fail("usage: meet PATH LEFT RIGHT".to_string());
     };
@@ -192,13 +192,13 @@ pub(crate) fn cmd_meet(path: &Path, args: &Args) -> i32 {
                 "{left} and {right} have no meet: {} and {}",
                 first.kind, second.kind
             );
-            1
+            Outcome::Failed
         }
         Some(joined) => {
             println!("{}", crate::generalize::text(&joined));
             println!();
             print!("{}", crate::generalize::draft(&joined, "NAME"));
-            0
+            Outcome::Ok
         }
     }
 }
@@ -210,7 +210,7 @@ pub(crate) fn cmd_shape(
     against: Option<&str>,
     near: usize,
     json: bool,
-) -> i32 {
+) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -218,13 +218,13 @@ pub(crate) fn cmd_shape(
     let program = Program::new(&loaded.decls);
     if near > 0 && against.is_none() {
         println!("--near needs --against: there is nothing to be near without a second document");
-        return 2;
+        return Outcome::Usage;
     }
     // `--layers` reads one document's forms and `--near` reads two documents' forms: an answer to
     // both questions is two answers, and answering only one of them silently is not one of them.
     if near > 0 && layers {
         println!("--near and --layers read different things; ask for one at a time");
-        return 2;
+        return Outcome::Usage;
     }
     if let Some(other) = against {
         let other = match load(Path::new(other)) {
@@ -255,13 +255,13 @@ pub(crate) fn cmd_shape(
                 fields.push(("near", J::Arr(rows)));
             }
             emit(obj(fields));
-            return 0;
+            return Outcome::Ok;
         }
         print!("{}", crate::shape::difference_text(&difference, depth));
         if near > 0 {
             print!("{}", crate::shape::near_text(&misses));
         }
-        return 0;
+        return Outcome::Ok;
     }
     if layers {
         let fibres = crate::shape::fibres(&program, depth);
@@ -290,10 +290,10 @@ pub(crate) fn cmd_shape(
                 ("depth", J::Num(depth as f64)),
                 ("fibres", J::Arr(items)),
             ]));
-            return 0;
+            return Outcome::Ok;
         }
         print!("{}", crate::shape::fibre_text(&fibres, depth));
-        return 0;
+        return Outcome::Ok;
     }
     let groups = crate::shape::shapes_at(&program, depth);
     if json {
@@ -323,15 +323,15 @@ pub(crate) fn cmd_shape(
             ("total", J::Num(loaded.decls.len() as f64)),
             ("forms", J::Arr(forms)),
         ]));
-        return 0;
+        return Outcome::Ok;
     }
     print!(
         "{}",
         crate::shape::text(&groups, loaded.decls.len(), top, depth)
     );
-    0
+    Outcome::Ok
 }
-pub(crate) fn cmd_imply(path: &Path, args: &Args) -> i32 {
+pub(crate) fn cmd_imply(path: &Path, args: &Args) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -383,13 +383,13 @@ pub(crate) fn cmd_imply(path: &Path, args: &Args) -> i32 {
                 crate::json::Json::Arr(items)
             )]))
         );
-        return 0;
+        return Outcome::Ok;
     }
     print!("{}", crate::imply::text(&found, &search));
-    0
+    Outcome::Ok
 }
 
-pub(crate) fn cmd_hint(path: &Path, json: bool) -> i32 {
+pub(crate) fn cmd_hint(path: &Path, json: bool) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -421,8 +421,8 @@ pub(crate) fn cmd_hint(path: &Path, json: bool) -> i32 {
             })
             .collect();
         emit(obj(vec![("hints", J::Arr(rows))]));
-        return 0;
+        return Outcome::Ok;
     }
     print!("{}", crate::hint::text(&found));
-    0
+    Outcome::Ok
 }

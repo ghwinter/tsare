@@ -1,6 +1,6 @@
 use super::*;
 
-pub(crate) fn cmd_decide(path: &Path, json: bool) -> i32 {
+pub(crate) fn cmd_decide(path: &Path, json: bool) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -23,14 +23,14 @@ pub(crate) fn cmd_decide(path: &Path, json: bool) -> i32 {
             ("decision", J::Str(verdict.decision.label().to_string())),
             ("items", J::Arr(items)),
         ]));
-        return 0;
+        return Outcome::Ok;
     }
     print!("{}", crate::decide::text(&verdict));
-    0
+    Outcome::Ok
 }
 
 /// Every conclusion and how it is known: verified, inferred, or unverified.
-pub(crate) fn cmd_epistemic(path: &Path, json: bool) -> i32 {
+pub(crate) fn cmd_epistemic(path: &Path, json: bool) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -69,13 +69,13 @@ pub(crate) fn cmd_epistemic(path: &Path, json: bool) -> i32 {
             ("unverified", J::Num(unverified as f64)),
             ("rows", J::Arr(items)),
         ]));
-        return 0;
+        return Outcome::Ok;
     }
     print!("{}", crate::epistemic::text(&rows));
-    0
+    Outcome::Ok
 }
 
-pub(crate) fn cmd_cost(path: &Path, top: usize, json: bool) -> i32 {
+pub(crate) fn cmd_cost(path: &Path, top: usize, json: bool) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -110,7 +110,7 @@ pub(crate) fn cmd_cost(path: &Path, top: usize, json: bool) -> i32 {
             ("by_kind", J::Arr(by_kind)),
             ("rows", J::Arr(rows)),
         ]));
-        return 0;
+        return Outcome::Ok;
     }
     println!(
         "decompression cost: {} external confirmation(s), depth {}",
@@ -133,5 +133,5 @@ pub(crate) fn cmd_cost(path: &Path, top: usize, json: bool) -> i32 {
     if cost.depth > 0 {
         println!("chain: {}", cost.chain.join(" -> "));
     }
-    0
+    Outcome::Ok
 }

@@ -83,7 +83,11 @@ pub fn run() -> i32 {
     } else {
         PathBuf::new()
     };
-    registry::dispatch(&path, &command, &args)
+    let outcome = registry::dispatch(&path, &command, &args);
+    if let Some(message) = outcome.message() {
+        println!("{message}");
+    }
+    outcome.code()
 }
 
 mod args;
@@ -95,3 +99,4 @@ use self::help::{is_command, looks_like_a_document, usage};
 
 pub(crate) use self::args::Args;
 pub(crate) use self::support::*;
+pub(crate) use crate::out::Outcome;

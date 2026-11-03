@@ -110,9 +110,8 @@ pub fn load(path: &Path) -> Result<Loaded, String> {
     Ok(loaded)
 }
 
-pub(crate) fn fail(error: String) -> i32 {
-    println!("{error}");
-    1
+pub(crate) fn fail(error: String) -> Outcome {
+    Outcome::Unavailable(error)
 }
 
 pub fn escape(text: &str) -> String {

@@ -28,6 +28,47 @@ impl Sink for Buffer {
     }
 }
 
+/// What a command returns: the exit code, and the message that belongs to it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Outcome {
+    /// No errors.
+    Ok,
+    /// The invocation is wrong (exit 2).
+    Usage,
+    /// The command failed and already reported why (exit 1).
+    Failed,
+    /// The command refused to write, with the reason (exit 1).
+    Refused(String),
+    /// The command could not run, with the reason (exit 1).
+    Unavailable(String),
+}
+
+impl Outcome {
+    pub fn code(&self) -> i32 {
+        match self {
+            Outcome::Ok => 0,
+            Outcome::Usage => 2,
+            Outcome::Failed | Outcome::Refused(_) | Outcome::Unavailable(_) => 1,
+        }
+    }
+
+    pub fn message(&self) -> Option<&str> {
+        match self {
+            Outcome::Refused(message) | Outcome::Unavailable(message) => Some(message),
+            Outcome::Ok | Outcome::Usage | Outcome::Failed => None,
+        }
+    }
+
+    /// The outcome a raw exit code names, for the callers that still count in integers.
+    pub fn from_code(code: i32) -> Self {
+        match code {
+            0 => Outcome::Ok,
+            2 => Outcome::Usage,
+            _ => Outcome::Failed,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

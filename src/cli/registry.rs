@@ -10,7 +10,7 @@ pub struct Command {
     pub name: &'static str,
     pub usage: &'static str,
     pub needs_target: bool,
-    pub run: fn(&Path, &Args) -> i32,
+    pub run: fn(&Path, &Args) -> Outcome,
 }
 
 pub const GROUPS: &[&str] = &["checking", "reasoning", "repairing", "emitting"];
@@ -37,11 +37,11 @@ pub const COMMANDS: &[Command] = &[
             let (Some(library), Some(source), Some(name)) = (args.at(0), args.at(1), args.at(2))
             else {
                 println!("usage: tsare grow LIBRARY SOURCE NAME --out FILE");
-                return 2;
+                return Outcome::Usage;
             };
             let Some(out) = args.option("--out") else {
                 println!("usage: tsare grow LIBRARY SOURCE NAME --out FILE");
-                return 2;
+                return Outcome::Usage;
             };
             cmd_grow(Path::new(library), Path::new(source), name, out)
         } } },
@@ -50,7 +50,7 @@ pub const COMMANDS: &[Command] = &[
     Command { group: "checking", name: "restore", usage: "restore HASH [--store DIR] --out FILE   write a stored ledger back", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); {
             let Some(out) = args.option("--out") else {
                 println!("usage: tsare restore HASH [--store DIR] --out FILE");
-                return 2;
+                return Outcome::Usage;
             };
             cmd_restore(
                 args.at(0).unwrap_or(""),
@@ -67,7 +67,7 @@ pub const COMMANDS: &[Command] = &[
     Command { group: "reasoning", name: "confront", usage: "confront LEFT RIGHT          which rules attack which, and which attacks nobody answered", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); {
             let Some(other) = args.at(1) else {
                 println!("usage: tsare confront LEFT RIGHT");
-                return 2;
+                return Outcome::Usage;
             };
             cmd_confront(path, Path::new(other))
         } } },
@@ -101,7 +101,7 @@ pub const COMMANDS: &[Command] = &[
     Command { group: "reasoning", name: "delta", usage: "delta BEFORE AFTER [--json] [--record STORE --doc DOC [--action A]]  what changed between two `check --json` reports", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); {
             let Some(after) = args.at(1) else {
                 println!("usage: tsare delta BEFORE.json AFTER.json");
-                return 2;
+                return Outcome::Usage;
             };
             cmd_delta(
                 path,
@@ -115,14 +115,14 @@ pub const COMMANDS: &[Command] = &[
     Command { group: "reasoning", name: "diff", usage: "diff BEFORE AFTER [--json]   what changed between two ledgers", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); {
             let Some(after) = args.at(1) else {
                 println!("usage: tsare diff BEFORE AFTER");
-                return 2;
+                return Outcome::Usage;
             };
             cmd_diff(path, Path::new(after), args.has("--json"))
         } } },
     Command { group: "reasoning", name: "merge", usage: "merge BASE OURS THEIRS --out FILE [--json]   structural three-way merge", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); {
             let (Some(ours), Some(theirs)) = (args.at(1), args.at(2)) else {
                 println!("usage: tsare merge BASE OURS THEIRS --out FILE [--json]");
-                return 2;
+                return Outcome::Usage;
             };
             cmd_merge(
                 path,
@@ -135,14 +135,14 @@ pub const COMMANDS: &[Command] = &[
     Command { group: "reasoning", name: "blame", usage: "blame STORE NAME [--json]   which version last changed each field", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); {
             let Some(name) = args.at(1) else {
                 println!("usage: tsare blame STORE NAME [--json]");
-                return 2;
+                return Outcome::Usage;
             };
             cmd_blame(path, name, args.has("--json"))
         } } },
     Command { group: "reasoning", name: "chain", usage: "chain FILE NAME [--json]   the support path from a claim to its evidence", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); {
             let Some(name) = args.at(1) else {
                 println!("usage: tsare chain FILE NAME [--json]");
-                return 2;
+                return Outcome::Usage;
             };
             cmd_chain(path, name, args.has("--json"))
         } } },
@@ -150,7 +150,7 @@ pub const COMMANDS: &[Command] = &[
     Command { group: "reasoning", name: "whatif", usage: "whatif PATH NAME             what falls when one assumption is removed", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); {
             let Some(name) = args.at(1) else {
                 println!("usage: tsare whatif FILE NAME");
-                return 2;
+                return Outcome::Usage;
             };
             cmd_whatif(path, name)
         } } },
@@ -161,7 +161,7 @@ pub const COMMANDS: &[Command] = &[
     Command { group: "repairing", name: "propose", usage: "propose PATH --proposals F [--policy P] [--apply]\n                                  gate values an outside model wants to fill in\n                                  policies: harmless (default), strict, improve", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); {
             let Some(proposals) = args.option("--proposals") else {
                 println!("usage: tsare propose FILE --proposals FILE.json [--apply]");
-                return 2;
+                return Outcome::Usage;
             };
             cmd_propose(
                 path,
@@ -187,7 +187,7 @@ pub const COMMANDS: &[Command] = &[
     Command { group: "emitting", name: "map", usage: "map LEFT RIGHT [--top N]            structure mapping between two documents", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); {
             let Some(right) = args.at(1) else {
                 println!("usage: tsare map LEFT RIGHT");
-                return 2;
+                return Outcome::Usage;
             };
             cmd_map(path, Path::new(right), args.count("--top", 8))
         } } },
@@ -195,7 +195,7 @@ pub const COMMANDS: &[Command] = &[
     Command { group: "emitting", name: "pattern", usage: "pattern PATH CONCEPT [--vars]       the structure that separates the examples", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); {
             let Some(name) = args.at(1) else {
                 println!("usage: tsare pattern FILE CONCEPT");
-                return 2;
+                return Outcome::Usage;
             };
             cmd_pattern(path, name, args.has("--vars"))
         } } },
@@ -208,12 +208,12 @@ pub fn find(name: &str) -> Option<&'static Command> {
     COMMANDS.iter().find(|command| command.name == name)
 }
 
-pub(crate) fn dispatch(path: &Path, command: &str, args: &Args) -> i32 {
+pub(crate) fn dispatch(path: &Path, command: &str, args: &Args) -> Outcome {
     match find(command) {
         Some(entry) => (entry.run)(path, args),
         None => {
             println!("unknown command {command}");
-            2
+            Outcome::Usage
         }
     }
 }
