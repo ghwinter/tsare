@@ -115,7 +115,13 @@ fn templates(applied: &[String]) -> Vec<String> {
     out
 }
 
-pub(crate) fn cmd_apply(path: &Path, dry: bool, record: Option<&str>, action: &str) -> Outcome {
+pub(crate) fn cmd_apply(
+    path: &Path,
+    dry: bool,
+    record: Option<&str>,
+    action: &str,
+    library: Option<&str>,
+) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -131,7 +137,8 @@ pub(crate) fn cmd_apply(path: &Path, dry: bool, record: Option<&str>, action: &s
         let after = crate::syntax::parse(&updated).unwrap_or_default();
         let before_report = report(&loaded.decls, &loaded.text, &path.display().to_string());
         let after_report = report(&after, &updated, &path.display().to_string());
-        let process = describe(&crate::diff::diff(&loaded.decls, &after));
+        let difference = crate::diff::diff(&loaded.decls, &after);
+        let process = describe(&difference);
         let witness = templates(&applied);
         let signature = crate::cases::signature(&witness, &process);
         let lines = |items: &[String]| {
@@ -144,6 +151,36 @@ pub(crate) fn cmd_apply(path: &Path, dry: bool, record: Option<&str>, action: &s
         };
         let process_json = lines(&process);
         let witness_json = lines(&witness);
+        let abstracts_json = match library {
+            Some(library_path) => {
+                let library = match load(Path::new(library_path)) {
+                    Ok(library) => library,
+                    Err(error) => return fail(error),
+                };
+                // The applied suggestions name the declarations they touched; the diff adds
+                // the ones an edit changed without a suggestion.
+                let names: Vec<&str> = applied
+                    .iter()
+                    .map(|message| match message.split_once(": ") {
+                        Some((name, _)) => name,
+                        None => message.as_str(),
+                    })
+                    .chain(difference.added.iter().map(|(name, _)| name.as_str()))
+                    .chain(difference.removed.iter().map(|(name, _)| name.as_str()))
+                    .chain(difference.changed.iter().map(|change| change.name.as_str()))
+                    .collect();
+                let mut used: Vec<String> = library
+                    .decls
+                    .iter()
+                    .filter(|decl| names.contains(&decl.name.as_str()))
+                    .map(|decl| decl.name.clone())
+                    .collect();
+                used.sort();
+                used.dedup();
+                lines(&used)
+            }
+            None => "[]".to_string(),
+        };
         let entry = match crate::cases::entry(&crate::cases::Record {
             before: &before_report,
             after: &after_report,
@@ -153,6 +190,7 @@ pub(crate) fn cmd_apply(path: &Path, dry: bool, record: Option<&str>, action: &s
             process: Some(&process_json),
             witness: Some(&witness_json),
             signature: Some(&signature),
+            abstracts: Some(&abstracts_json),
             refused: refused.as_deref(),
         }) {
             Ok(entry) => entry,

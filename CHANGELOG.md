@@ -8,6 +8,8 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `library LIBRARY [--cases STORE]`: each grown abstract's bytes, the cases' uses, and the compression; `apply --library` records the abstracts a process touched, so the library and the case store report the same reuse.
+
 - Process-level memory: `apply --record` writes the step descriptors (add/remove/edit, field keys, value presence) and the witness template; `mem` reports distinct processes, cross-task reuse, vetoed processes and refusals; `mem --process SIG` recalls by the process signature, so the same steps over different documents reuse each other.
 
 - `mem --json`: the case store's reuse metrics — distinct situations (the process signature), the reuse rate, the compression, the orphan signatures and the regressions (R5's measurable form).
@@ -226,6 +228,8 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `library LIBRARY [--cases STORE]`: each grown abstract's bytes, the cases' uses, and the compression; `apply --library` records the abstracts a process touched, so the library and the case store report the same reuse.
+
 - Process-level memory: `apply --record` writes the step descriptors (add/remove/edit, field keys, value presence) and the witness template; `mem` reports distinct processes, cross-task reuse, vetoed processes and refusals; `mem --process SIG` recalls by the process signature, so the same steps over different documents reuse each other.
 
 - `mem --json`: the case store's reuse metrics — distinct situations (the process signature), the reuse rate, the compression, the orphan signatures and the regressions (R5's measurable form).
@@ -264,6 +268,8 @@ All notable changes are recorded here. The format follows
 - `W-UNWARRANTED-BASIS` pointed its caret at `claim`, blaming the sentence for a missing licence.
   It points at `basis` when the field exists and at the declaration otherwise.
 ### Added
+
+- `library LIBRARY [--cases STORE]`: each grown abstract's bytes, the cases' uses, and the compression; `apply --library` records the abstracts a process touched, so the library and the case store report the same reuse.
 
 - Process-level memory: `apply --record` writes the step descriptors (add/remove/edit, field keys, value presence) and the witness template; `mem` reports distinct processes, cross-task reuse, vetoed processes and refusals; `mem --process SIG` recalls by the process signature, so the same steps over different documents reuse each other.
 
@@ -373,6 +379,8 @@ which observation would decide an open list, and what the attribute table alread
 
 ### Added
 
+- `library LIBRARY [--cases STORE]`: each grown abstract's bytes, the cases' uses, and the compression; `apply --library` records the abstracts a process touched, so the library and the case store report the same reuse.
+
 - Process-level memory: `apply --record` writes the step descriptors (add/remove/edit, field keys, value presence) and the witness template; `mem` reports distinct processes, cross-task reuse, vetoed processes and refusals; `mem --process SIG` recalls by the process signature, so the same steps over different documents reuse each other.
 
 - `mem --json`: the case store's reuse metrics — distinct situations (the process signature), the reuse rate, the compression, the orphan signatures and the regressions (R5's measurable form).
@@ -424,6 +432,8 @@ The version that learns to say what it cannot tell apart, and to say which forma
 
 ### Added
 
+- `library LIBRARY [--cases STORE]`: each grown abstract's bytes, the cases' uses, and the compression; `apply --library` records the abstracts a process touched, so the library and the case store report the same reuse.
+
 - Process-level memory: `apply --record` writes the step descriptors (add/remove/edit, field keys, value presence) and the witness template; `mem` reports distinct processes, cross-task reuse, vetoed processes and refusals; `mem --process SIG` recalls by the process signature, so the same steps over different documents reuse each other.
 
 - `mem --json`: the case store's reuse metrics — distinct situations (the process signature), the reuse rate, the compression, the orphan signatures and the regressions (R5's measurable form).
@@ -455,6 +465,8 @@ The version that learns to say what it cannot tell apart, and to say which forma
 The version that can be published: one crate, no dependencies, MIT.
 
 ### Added
+
+- `library LIBRARY [--cases STORE]`: each grown abstract's bytes, the cases' uses, and the compression; `apply --library` records the abstracts a process touched, so the library and the case store report the same reuse.
 
 - Process-level memory: `apply --record` writes the step descriptors (add/remove/edit, field keys, value presence) and the witness template; `mem` reports distinct processes, cross-task reuse, vetoed processes and refusals; `mem --process SIG` recalls by the process signature, so the same steps over different documents reuse each other.
 

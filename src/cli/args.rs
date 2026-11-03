@@ -14,6 +14,8 @@ const VALUE_FLAGS: &[&str] = &[
     "--trace",
     "--budget",
     "--process",
+    "--cases",
+    "--library",
     "--as",
     "--goals",
     "--k",

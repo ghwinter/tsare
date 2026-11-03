@@ -49,6 +49,7 @@ pub const COMMANDS: &[Command] = &[
             };
             cmd_grow(Path::new(library), Path::new(source), name, out)
         } } },
+    Command { group: "checking", name: "library", usage: "library LIBRARY [--cases STORE] [--json]  what the grown abstracts cover, and how often they are used", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_library(path, args.option("--cases"), args.has("--json")) } },
     Command { group: "checking", name: "save", usage: "save FILE [--store DIR]      store a ledger under its content hash", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_save(path, args.option("--store").unwrap_or(".tsare/versions")) } },
     Command { group: "checking", name: "log", usage: "log STORE                    the content hashes the store holds", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_log(path) } },
     Command { group: "checking", name: "restore", usage: "restore HASH [--store DIR] --out FILE   write a stored ledger back", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); {
@@ -168,7 +169,7 @@ pub const COMMANDS: &[Command] = &[
     Command { group: "reasoning", name: "kinds", usage: "kinds                        the obligation table: what each kind owes", needs_target: false, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_kinds() } },
     Command { group: "repairing", name: "fix", usage: "fix PATH [--apply OUT]          verified repair candidates, and applying them", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_fix(path, args.option("--apply")) } },
     Command { group: "repairing", name: "suggest", usage: "suggest PATH [--json]           repairs with an applicability", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_suggest(path, args.has("--json")) } },
-    Command { group: "repairing", name: "apply", usage: "apply PATH [--dry-run] [--record STORE] [--action A]  splice machine repairs and recompile, recording the process", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_apply(path, args.has("--dry-run"), args.option("--record"), args.option("--action").unwrap_or("apply")) } },
+    Command { group: "repairing", name: "apply", usage: "apply PATH [--dry-run] [--record STORE] [--action A] [--library FILE]  splice machine repairs and recompile, recording the process", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_apply(path, args.has("--dry-run"), args.option("--record"), args.option("--action").unwrap_or("apply"), args.option("--library")) } },
     Command { group: "repairing", name: "propose", usage: "propose PATH --proposals F [--policy P] [--apply]\n                                  gate values an outside model wants to fill in\n                                  policies: harmless (default), strict, improve", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); {
             let Some(proposals) = args.option("--proposals") else {
                 println!("usage: tsare propose FILE --proposals FILE.json [--apply]");

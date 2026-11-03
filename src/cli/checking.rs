@@ -588,3 +588,15 @@ pub(crate) fn cmd_contracts(json: bool) -> Outcome {
     crate::out::render(&crate::contracts::ContractsReport, json, &mut sink);
     Outcome::Ok
 }
+
+/// What the grown abstracts cover, and how often the cases use each.
+pub(crate) fn cmd_library(path: &Path, cases: Option<&str>, json: bool) -> Outcome {
+    let loaded = match load(path) {
+        Ok(loaded) => loaded,
+        Err(error) => return fail(error),
+    };
+    let report = crate::growth::report(&loaded.decls, &loaded.text, cases.map(Path::new));
+    let mut sink = crate::out::Stdout;
+    crate::out::render(&report, json, &mut sink);
+    Outcome::Ok
+}

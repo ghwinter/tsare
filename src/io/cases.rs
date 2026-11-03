@@ -74,6 +74,7 @@ pub struct Record<'a> {
     pub process: Option<&'a str>,
     pub witness: Option<&'a str>,
     pub signature: Option<&'a str>,
+    pub abstracts: Option<&'a str>,
     pub refused: Option<&'a str>,
 }
 
@@ -113,6 +114,7 @@ pub fn entry(record: &Record) -> Result<String, String> {
     };
     let process = parsed(record.process).map_err(|error| format!("not a process: {error}"))?;
     let witness = parsed(record.witness).map_err(|error| format!("not a witness: {error}"))?;
+    let abstracts = parsed(record.abstracts).map_err(|error| format!("not abstracts: {error}"))?;
     Ok(json::serialize(&Json::Obj(vec![
         ("doc".to_string(), Json::Str(record.doc.to_string())),
         ("codes".to_string(), codes),
@@ -125,6 +127,7 @@ pub fn entry(record: &Record) -> Result<String, String> {
                 None => Json::Null,
             },
         ),
+        ("abstracts".to_string(), abstracts),
         (
             "refused".to_string(),
             match record.refused {
@@ -262,6 +265,8 @@ pub struct Audit {
     pub refused: usize,
     /// Process signatures that carry a refusal: the vetoed processes.
     pub vetoed: usize,
+    /// How many cases instantiated each library abstract.
+    pub abstracts: Vec<(String, usize)>,
 }
 
 pub fn audit(store: &Path) -> Audit {
@@ -368,6 +373,17 @@ pub fn audit(store: &Path) -> Audit {
         .values()
         .filter(|docs| docs.iter().collect::<HashSet<_>>().len() > 1)
         .count();
+    let mut abstract_uses: BTreeMap<String, usize> = BTreeMap::new();
+    for entry in &entries {
+        for name in entry
+            .get("abstracts")
+            .map(|value| value.strings())
+            .unwrap_or_default()
+        {
+            *abstract_uses.entry(name).or_insert(0) += 1;
+        }
+    }
+    let abstracts: Vec<(String, usize)> = abstract_uses.into_iter().collect();
     let vetoed = process_docs
         .iter()
         .filter(|(signature, _)| {
@@ -397,6 +413,7 @@ pub fn audit(store: &Path) -> Audit {
         cross_task,
         refused,
         vetoed,
+        abstracts,
     }
 }
 
@@ -511,6 +528,16 @@ impl Audit {
             "vetoed:      {}  (a process signature with a refusal)\n",
             self.vetoed
         ));
+        let abstracts = if self.abstracts.is_empty() {
+            "-".to_string()
+        } else {
+            self.abstracts
+                .iter()
+                .map(|(name, count)| format!("{name} {count}"))
+                .collect::<Vec<_>>()
+                .join(", ")
+        };
+        out.push_str(&format!("abstracts:   {abstracts}\n"));
         out.push_str(&format!("actions:     {actions}\n"));
         out
     }
@@ -556,6 +583,20 @@ impl Audit {
             ("cross_task".to_string(), Json::Num(self.cross_task as f64)),
             ("refused".to_string(), Json::Num(self.refused as f64)),
             ("vetoed".to_string(), Json::Num(self.vetoed as f64)),
+            (
+                "abstracts".to_string(),
+                Json::Arr(
+                    self.abstracts
+                        .iter()
+                        .map(|(name, count)| {
+                            Json::Obj(vec![
+                                ("name".to_string(), Json::Str(name.clone())),
+                                ("count".to_string(), Json::Num(*count as f64)),
+                            ])
+                        })
+                        .collect(),
+                ),
+            ),
             ("actions".to_string(), Json::Arr(actions)),
         ])
     }
