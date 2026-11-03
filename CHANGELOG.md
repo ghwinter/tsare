@@ -8,6 +8,10 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `contracts [--json]`: every command's operator contract (input, output, effect), so a caller can see what will be read or written before running it.
+
+- `check`/`status` take `--budget N`: a document over the limit is not checked, and the output says `unfinished` instead of a silent truncation.
+
 - `argue --json` carries each conclusion's status and why, so the attack graph can be read by a
   caller.
 
@@ -216,6 +220,10 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `contracts [--json]`: every command's operator contract (input, output, effect), so a caller can see what will be read or written before running it.
+
+- `check`/`status` take `--budget N`: a document over the limit is not checked, and the output says `unfinished` instead of a silent truncation.
+
 - `E-SUPERSEDE-CYCLE` — a `supersedes` graph that closes on itself. A withdraws B and B withdraws
   A, so each is withdrawn because of the other and neither stands; `check` reported only the
   missing `because:` lines, `engine` reported nothing held, and `derive` said every conclusion was
@@ -244,6 +252,10 @@ All notable changes are recorded here. The format follows
 - `W-UNWARRANTED-BASIS` pointed its caret at `claim`, blaming the sentence for a missing licence.
   It points at `basis` when the field exists and at the declaration otherwise.
 ### Added
+
+- `contracts [--json]`: every command's operator contract (input, output, effect), so a caller can see what will be read or written before running it.
+
+- `check`/`status` take `--budget N`: a document over the limit is not checked, and the output says `unfinished` instead of a silent truncation.
 
 - `prelude/` — the documents this project admits, and one it does not: the six principles
   (`KERNEL.tsare`), a claim that skips them (`VIOLATION.tsare`), the categories
@@ -343,6 +355,10 @@ which observation would decide an open list, and what the attribute table alread
 
 ### Added
 
+- `contracts [--json]`: every command's operator contract (input, output, effect), so a caller can see what will be read or written before running it.
+
+- `check`/`status` take `--budget N`: a document over the limit is not checked, and the output says `unfinished` instead of a silent truncation.
+
 - `ask`: the next question the document needs, from three families that are one defect in three
   places -- a list that does not cover its dimension, two facts that record the same evidence and
   the same attributes, and a concept whose positive and negative examples look alike. Each
@@ -384,6 +400,10 @@ The version that learns to say what it cannot tell apart, and to say which forma
 
 ### Added
 
+- `contracts [--json]`: every command's operator contract (input, output, effect), so a caller can see what will be read or written before running it.
+
+- `check`/`status` take `--budget N`: a document over the limit is not checked, and the output says `unfinished` instead of a silent truncation.
+
 - `W-COLLIDE`: two facts that record the same evidence and the same attributes are reported,
   because nothing a machine can read tells them apart. A fact with no attributes never collides.
 - A document may declare its format on the first line, `tsare 1`. The line is optional and its
@@ -405,6 +425,10 @@ The version that learns to say what it cannot tell apart, and to say which forma
 The version that can be published: one crate, no dependencies, MIT.
 
 ### Added
+
+- `contracts [--json]`: every command's operator contract (input, output, effect), so a caller can see what will be read or written before running it.
+
+- `check`/`status` take `--budget N`: a document over the limit is not checked, and the output says `unfinished` instead of a silent truncation.
 
 - `partition`: a list must name the concept its elements share, say whether it is closed, and
   give a reason when it is. A list with no dimension may be written only as `unknown`, names

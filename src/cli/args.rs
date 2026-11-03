@@ -12,6 +12,7 @@ const VALUE_FLAGS: &[&str] = &[
     "--out",
     "--append",
     "--trace",
+    "--budget",
     "--as",
     "--goals",
     "--k",

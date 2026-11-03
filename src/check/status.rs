@@ -38,6 +38,7 @@ pub struct StatusReport {
     pub claims: usize,
     pub debt: Option<Debt>,
     pub open: Vec<(String, String, Vec<String>)>,
+    pub budget: Option<crate::budget::BudgetState>,
 }
 
 /// Read a document once; the two renderings read this, not the document again.
@@ -88,12 +89,44 @@ pub fn report(decls: &[Decl]) -> StatusReport {
         claims: decls.len(),
         debt,
         open: crate::chain::open(decls),
+        budget: None,
     }
 }
 
+/// Read a document against a limit: over the limit it is not checked, and says so.
+pub fn report_with_budget(decls: &[Decl], limit: usize) -> StatusReport {
+    let state = crate::budget::assess(decls.len(), limit);
+    if state.exceeded {
+        return StatusReport {
+            decision: "unfinished".to_string(),
+            verified: 0,
+            inferred: 0,
+            unverified: 0,
+            errors: 0,
+            warnings: 0,
+            question: None,
+            first: None,
+            claims: decls.len(),
+            debt: None,
+            open: Vec::new(),
+            budget: Some(state),
+        };
+    }
+    let mut report = report(decls);
+    report.budget = Some(state);
+    report
+}
 impl StatusReport {
     /// The one line: the first error, or the decision, the counts, the open chains and the question.
     pub fn text(&self) -> String {
+        if let Some(budget) = &self.budget {
+            if budget.exceeded {
+                return format!(
+                    "unfinished; {} declarations over the budget {}; not checked",
+                    budget.declarations, budget.limit
+                );
+            }
+        }
         if self.errors > 0 {
             let detail = match &self.first {
                 Some(item) => format!("first {} {}: {}", item.code, item.name, item.message),
@@ -156,6 +189,17 @@ impl StatusReport {
             ]),
             None => J::Null,
         };
+        let budget = match &self.budget {
+            Some(state) => J::Obj(vec![
+                ("limit".to_string(), J::Num(state.limit as f64)),
+                (
+                    "declarations".to_string(),
+                    J::Num(state.declarations as f64),
+                ),
+                ("exceeded".to_string(), J::Bool(state.exceeded)),
+            ]),
+            None => J::Null,
+        };
         J::Obj(vec![
             ("decision".to_string(), J::Str(self.decision.clone())),
             ("verified".to_string(), J::Num(self.verified as f64)),
@@ -175,6 +219,7 @@ impl StatusReport {
             ("debt".to_string(), debt),
             ("open_chains".to_string(), J::Num(self.open.len() as f64)),
             ("open_chain".to_string(), open_first),
+            ("budget".to_string(), budget),
         ])
     }
 }
@@ -219,5 +264,6 @@ mod tests {
         assert!(json.contains("\"decision\": \"closed\""), "{json}");
         assert!(json.contains("\"open_chains\": 0"), "{json}");
         assert!(json.contains("\"open_chain\": null"), "{json}");
+        assert!(json.contains("\"budget\": null"), "{json}");
     }
 }

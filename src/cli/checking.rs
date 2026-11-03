@@ -14,15 +14,27 @@ fn exit_code(session: &crate::session::Session, strict: bool) -> Outcome {
     }
 }
 
-pub(crate) fn cmd_check(
-    path: &Path,
-    json: bool,
-    sugar: bool,
-    goals_path: Option<&str>,
-    use_cache: bool,
-    against: Option<&str>,
-    strict: bool,
-) -> Outcome {
+/// The flags the check accepts, in one value so the call site stays readable.
+pub(crate) struct CheckOptions {
+    pub json: bool,
+    pub sugar: bool,
+    pub goals: Option<String>,
+    pub cache: bool,
+    pub against: Option<String>,
+    pub strict: bool,
+    pub budget: Option<usize>,
+}
+
+pub(crate) fn cmd_check(path: &Path, options: CheckOptions) -> Outcome {
+    let CheckOptions {
+        json,
+        sugar,
+        goals: goals_path,
+        cache: use_cache,
+        against,
+        strict,
+        budget,
+    } = options;
     let loaded = if sugar {
         let raw = match fs::read_to_string(path) {
             Ok(raw) => raw,
@@ -67,7 +79,16 @@ pub(crate) fn cmd_check(
             Err(error) => return fail(error),
         }
     };
-    if let Some(kernel_path) = against {
+    if let Some(limit) = budget {
+        if loaded.decls.len() > limit {
+            println!(
+                "unfinished: {} declarations over the budget {limit}; not checked",
+                loaded.decls.len()
+            );
+            return Outcome::Failed;
+        }
+    }
+    if let Some(kernel_path) = against.as_deref() {
         return check_against(path, &loaded, Path::new(kernel_path), json, strict);
     }
     let display = path.display().to_string();
@@ -119,7 +140,7 @@ pub(crate) fn cmd_check(
         };
         session.extend(diagnostics);
         if let Some(goals_file) = goals_path {
-            let text = match fs::read_to_string(goals_file) {
+            let text = match fs::read_to_string(&goals_file) {
                 Ok(text) => text,
                 Err(error) => return fail(format!("{goals_file}: {error}")),
             };
@@ -381,17 +402,34 @@ pub(crate) fn cmd_replay(path: &Path, diff: bool) -> Outcome {
 
 /// The loop's one line: the decision, the epistemic counts, and the next question.  Errors decide
 /// the exit code; warnings are reported but do not.
-pub(crate) fn cmd_status(path: &Path, json: bool, trace: Option<&str>) -> Outcome {
+pub(crate) fn cmd_status(
+    path: &Path,
+    json: bool,
+    trace: Option<&str>,
+    budget: Option<usize>,
+) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
     };
-    let report = crate::status::report(&loaded.decls);
+    let report = match budget {
+        Some(limit) => crate::status::report_with_budget(&loaded.decls, limit),
+        None => crate::status::report(&loaded.decls),
+    };
     let mut sink = crate::out::Stdout;
     crate::out::render(&report, json, &mut sink);
     let rendered_json = crate::json::serialize(&report.json());
+    let unfinished = report
+        .budget
+        .as_ref()
+        .map(|state| state.exceeded)
+        .unwrap_or(false);
     if let Some(file) = trace {
-        let status = if report.errors > 0 { 1 } else { 0 };
+        let status = if report.errors > 0 || unfinished {
+            1
+        } else {
+            0
+        };
         let step = crate::trace::Step {
             command: "status".to_string(),
             status,
@@ -402,7 +440,7 @@ pub(crate) fn cmd_status(path: &Path, json: bool, trace: Option<&str>) -> Outcom
             eprintln!("trace: {error}");
         }
     }
-    if report.errors > 0 {
+    if report.errors > 0 || unfinished {
         Outcome::Failed
     } else {
         Outcome::Ok
@@ -542,4 +580,11 @@ pub(crate) fn cmd_grow(library: &Path, source: &Path, name: &str, out: &str) -> 
             Outcome::Failed
         }
     }
+}
+
+/// The operator contracts: what each command receives, returns and touches.
+pub(crate) fn cmd_contracts(json: bool) -> Outcome {
+    let mut sink = crate::out::Stdout;
+    crate::out::render(&crate::contracts::ContractsReport, json, &mut sink);
+    Outcome::Ok
 }

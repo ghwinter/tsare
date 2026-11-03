@@ -124,3 +124,32 @@ fn the_line_names_the_first_open_chain() {
     assert_eq!(status, 0, "{out}{err}");
     assert!(out.contains("1 open chain(s) (P on H)"), "{out}");
 }
+
+#[test]
+fn a_budget_over_the_document_is_unfinished() {
+    let dir = work("budget");
+    let path = dir.join("doc.tsare");
+    fs::write(
+        &path,
+        "tsare 1\nfact F { claim: \"a\", evidence: user }\nfact G { claim: \"b\", evidence: user }\nfact H { claim: \"c\", evidence: user }\n",
+    )
+    .expect("doc");
+    let (out, err, status) = run(&["status", path.to_str().expect("path"), "--budget", "2"]);
+    assert_eq!(status, 1, "{out}{err}");
+    assert!(out.starts_with("unfinished;"), "{out}");
+    let (out, err, status) = run(&[
+        "status",
+        path.to_str().expect("path"),
+        "--budget",
+        "2",
+        "--json",
+    ]);
+    assert_eq!(status, 1, "{out}{err}");
+    assert!(out.contains("\"exceeded\": true"), "{out}");
+    let (out, err, status) = run(&["check", path.to_str().expect("path"), "--budget", "2"]);
+    assert_eq!(status, 1, "{out}{err}");
+    assert!(out.contains("unfinished"), "{out}");
+    let (out, _, status) = run(&["status", path.to_str().expect("path"), "--budget", "3"]);
+    assert_eq!(status, 0, "{out}");
+    assert!(out.starts_with("closed;"), "{out}");
+}
