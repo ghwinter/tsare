@@ -125,7 +125,7 @@ fn the_extractor_says_what_it_did_not_read() {
 fn a_quote_the_page_does_not_contain_is_a_compile_error() {
     // The extraction is only a claim about the page if the checker can refuse it: the written
     // document carries the page text and quotes the words, so a fabricated quote is an error and
-    // not a matter of opinion.  This is the property the whitepaper's R1 asks for.
+    // not a matter of opinion.
     let dir = std::env::temp_dir().join(format!("tsare-span-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).expect("temp dir");

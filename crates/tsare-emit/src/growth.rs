@@ -1,9 +1,8 @@
 //! The growth gate: a declaration enters a library only if the library stays admissible.
 //!
-//! The gate is the verifier half of the whitepaper's growth law: it copies one declaration out of
-//! a source document, appends it with a content-addressed entry note, and keeps the result only
-//! if `check` finds no error.  Whether the abstraction earns its place (the benefit half) is not
-//! measured here.
+//! The gate is the verifier half of growth: it copies one declaration out of a source document,
+//! appends it with a content-addressed entry note, and keeps the result only if `check` finds no
+//! error.  Whether the abstraction earns its place (the benefit half) is not measured here.
 
 use std::path::Path;
 
