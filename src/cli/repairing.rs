@@ -2,7 +2,7 @@
 
 use super::*;
 
-pub(crate) fn cmd_suggest(path: &Path, json: bool) -> i32 {
+pub(crate) fn cmd_suggest(path: &Path, json: bool) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -11,12 +11,12 @@ pub(crate) fn cmd_suggest(path: &Path, json: bool) -> i32 {
     if !json {
         if items.is_empty() {
             println!("no verified suggestion");
-            return 0;
+            return Outcome::Ok;
         }
         for item in &items {
             println!("{} {}", pad(item.applicability, 18), item.message);
         }
-        return 0;
+        return Outcome::Ok;
     }
     let rendered: Vec<String> = items
         .iter()
@@ -42,7 +42,7 @@ pub(crate) fn cmd_suggest(path: &Path, json: bool) -> i32 {
         })
         .collect();
     println!("{{\"suggestions\": [{}]}}", rendered.join(", "));
-    0
+    Outcome::Ok
 }
 
 /// A conclusion written back must reach evidence: the G3 gate for in-place writes.
@@ -57,7 +57,7 @@ fn open_chain(text: &str) -> Option<String> {
     })
 }
 
-pub(crate) fn cmd_apply(path: &Path, dry: bool) -> i32 {
+pub(crate) fn cmd_apply(path: &Path, dry: bool) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -66,7 +66,7 @@ pub(crate) fn cmd_apply(path: &Path, dry: bool) -> i32 {
     let (updated, applied) = crate::apply::apply_best(&loaded.text, &items);
     if !dry && updated != loaded.text {
         if let Some(reason) = open_chain(&updated) {
-            return fail(format!("refused: {reason}; resolve it, or record why"));
+            return Outcome::Refused(format!("refused: {reason}; resolve it, or record why"));
         }
         if let Err(error) = crate::apply::replace(path, &updated) {
             return fail(format!("{}: {error}", path.display()));
@@ -77,7 +77,7 @@ pub(crate) fn cmd_apply(path: &Path, dry: bool) -> i32 {
         .map(|item| format!("\"{}\"", escape(item)))
         .collect();
     println!("{{\"applied\": [{}]}}", list.join(", "));
-    0
+    Outcome::Ok
 }
 
 /// Codes whose repair needs a value only the author can choose.  Naming them is the honest
@@ -114,7 +114,7 @@ const NO_REPAIR: &[(&str, &str)] = &[
     ),
 ];
 
-pub(crate) fn cmd_fix(path: &Path, apply: Option<&str>) -> i32 {
+pub(crate) fn cmd_fix(path: &Path, apply: Option<&str>) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -182,17 +182,17 @@ pub(crate) fn cmd_fix(path: &Path, apply: Option<&str>) -> i32 {
         let (after_e, after_w) = crate::fix::score_without_holes(&current);
         let text = crate::fix::render(&current);
         if let Some(reason) = open_chain(&text) {
-            return fail(format!("refused: {reason}; resolve it, or record why"));
+            return Outcome::Refused(format!("refused: {reason}; resolve it, or record why"));
         }
         if let Err(error) = fs::write(out, &text) {
             return fail(format!("{out}: {error}"));
         }
         println!("applied {rounds} fix(es) -> {out} ({after_e} errors, {after_w} warnings)");
     }
-    0
+    Outcome::Ok
 }
 
-pub(crate) fn cmd_propose(path: &Path, proposals_path: &str, apply: bool, policy: &str) -> i32 {
+pub(crate) fn cmd_propose(path: &Path, proposals_path: &str, apply: bool, policy: &str) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -215,7 +215,7 @@ pub(crate) fn cmd_propose(path: &Path, proposals_path: &str, apply: bool, policy
     };
     if items.is_empty() {
         println!("no proposals in {proposals_path}");
-        return 2;
+        return Outcome::Usage;
     }
 
     let mut current = loaded.text.clone();
@@ -273,7 +273,7 @@ pub(crate) fn cmd_propose(path: &Path, proposals_path: &str, apply: bool, policy
     }
     if apply && current != loaded.text {
         if let Some(reason) = open_chain(&current) {
-            return fail(format!("refused: {reason}; resolve it, or record why"));
+            return Outcome::Refused(format!("refused: {reason}; resolve it, or record why"));
         }
         if let Err(error) = crate::apply::replace(path, &current) {
             return fail(format!("{}: {error}", path.display()));
@@ -283,5 +283,5 @@ pub(crate) fn cmd_propose(path: &Path, proposals_path: &str, apply: bool, policy
         "{admitted} admitted, {needs_review} review, {} rejected",
         items.len() - admitted - needs_review
     );
-    0
+    Outcome::Ok
 }

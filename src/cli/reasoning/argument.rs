@@ -1,6 +1,6 @@
 use super::*;
 
-pub(crate) fn cmd_argue(path: &Path, against: Option<&Path>, json: bool) -> i32 {
+pub(crate) fn cmd_argue(path: &Path, against: Option<&Path>, json: bool) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -26,37 +26,13 @@ pub(crate) fn cmd_argue(path: &Path, against: Option<&Path>, json: bool) -> i32 
         .into_iter()
         .filter(|row| mine.contains(row.name.as_str()))
         .collect();
-    let width = rows
-        .iter()
-        .map(|row| row.name.chars().count())
-        .max()
-        .unwrap_or(10);
     let errors = error_count(&diagnostics);
-    if json {
-        let items: Vec<J> = rows
-            .iter()
-            .map(|row| {
-                obj(vec![
-                    ("name", J::Str(row.name.clone())),
-                    ("status", J::Str(row.status.to_string())),
-                    ("why", J::Str(row.why.clone())),
-                ])
-            })
-            .collect();
-        emit(obj(vec![
-            ("conclusions", J::Arr(items)),
-            ("errors", J::Num(errors as f64)),
-        ]));
-    } else {
-        for row in &rows {
-            println!(
-                "{}  {} {}",
-                pad(&row.name, width),
-                pad(row.status, 10),
-                row.why
-            );
-        }
-    }
+    let report = crate::argue::ArgueReport {
+        conclusions: rows,
+        errors,
+    };
+    let mut sink = crate::out::Stdout;
+    crate::out::render(&report, json, &mut sink);
     if errors > 0 {
         if !json {
             println!(
@@ -64,16 +40,16 @@ pub(crate) fn cmd_argue(path: &Path, against: Option<&Path>, json: bool) -> i32 
                 path.display()
             );
         }
-        1
+        Outcome::Failed
     } else {
-        0
+        Outcome::Ok
     }
 }
 
 /// Two documents attacking each other.  The report is the argument, not a verdict: `check
 /// --against` decides admissibility, this shows which rules point at which, and which attacks
 /// nobody answered.  Exit 1 when the first document leaves an attack unanswered.
-pub(crate) fn cmd_confront(left: &Path, right: &Path) -> i32 {
+pub(crate) fn cmd_confront(left: &Path, right: &Path) -> Outcome {
     let loads = [load(left), load(right)];
     let [ours, theirs] = match loads {
         [Ok(ours), Ok(theirs)] => [ours, theirs],
@@ -161,13 +137,13 @@ pub(crate) fn cmd_confront(left: &Path, right: &Path) -> i32 {
         }
     }
     if unanswered > 0 {
-        1
+        Outcome::Failed
     } else {
-        0
+        Outcome::Ok
     }
 }
 
-pub(crate) fn cmd_debt(path: &Path, all: bool) -> i32 {
+pub(crate) fn cmd_debt(path: &Path, all: bool) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -176,7 +152,7 @@ pub(crate) fn cmd_debt(path: &Path, all: bool) -> i32 {
     let rows = crate::debt::report(&program, !all);
     if rows.is_empty() {
         println!("every claim rests on measured facts");
-        return 0;
+        return Outcome::Ok;
     }
     for row in &rows {
         println!(
@@ -193,10 +169,10 @@ pub(crate) fn cmd_debt(path: &Path, all: bool) -> i32 {
             println!("    … {} more", row.lines.len() - 3);
         }
     }
-    0
+    Outcome::Ok
 }
 
-pub(crate) fn cmd_impact(path: &Path) -> i32 {
+pub(crate) fn cmd_impact(path: &Path) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -216,13 +192,13 @@ pub(crate) fn cmd_impact(path: &Path) -> i32 {
     let errors = error_count(&diagnostics);
     if errors > 0 {
         println!("note: {errors} error(s); analyses ran on the resolved part");
-        1
+        Outcome::Failed
     } else {
-        0
+        Outcome::Ok
     }
 }
 
-pub(crate) fn cmd_weigh(path: &Path, threshold: f64) -> i32 {
+pub(crate) fn cmd_weigh(path: &Path, threshold: f64) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -255,13 +231,13 @@ pub(crate) fn cmd_weigh(path: &Path, threshold: f64) -> i32 {
         );
     }
     if errors > 0 {
-        1
+        Outcome::Failed
     } else {
-        0
+        Outcome::Ok
     }
 }
 
-pub(crate) fn cmd_assumptions(path: &Path, top: usize) -> i32 {
+pub(crate) fn cmd_assumptions(path: &Path, top: usize) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -270,7 +246,7 @@ pub(crate) fn cmd_assumptions(path: &Path, top: usize) -> i32 {
     let (rows, total) = crate::assumptions::report(&program, top);
     if rows.is_empty() {
         println!("no load-bearing unsupported declarations");
-        return 0;
+        return Outcome::Ok;
     }
     println!("{total} load-bearing assumption(s):");
     for row in &rows {
@@ -285,10 +261,10 @@ pub(crate) fn cmd_assumptions(path: &Path, top: usize) -> i32 {
     if total > rows.len() {
         println!("  … {} more; raise --top", total - rows.len());
     }
-    0
+    Outcome::Ok
 }
 
-pub(crate) fn cmd_whatif(path: &Path, name: &str) -> i32 {
+pub(crate) fn cmd_whatif(path: &Path, name: &str) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -297,7 +273,7 @@ pub(crate) fn cmd_whatif(path: &Path, name: &str) -> i32 {
         Ok(reduced) => reduced,
         Err(error) => {
             println!("{error}");
-            return 1;
+            return Outcome::Failed;
         }
     };
     let result = crate::whatif::compare(&loaded.decls, &reduced);
@@ -322,5 +298,5 @@ pub(crate) fn cmd_whatif(path: &Path, name: &str) -> i32 {
     if !result.newly_asserted.is_empty() {
         println!("  newly asserted: {}", result.newly_asserted.join(", "));
     }
-    0
+    Outcome::Ok
 }

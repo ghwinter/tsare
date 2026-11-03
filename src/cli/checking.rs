@@ -6,11 +6,11 @@ use crate::json::Json as J;
 /// Errors decide the exit code.  `--strict` lets a warning decide it too: a warning is the engine
 /// saying the document states something it cannot settle, and a loop that reads only the number
 /// should not be able to ignore that.
-fn exit_code(session: &crate::session::Session, strict: bool) -> i32 {
+fn exit_code(session: &crate::session::Session, strict: bool) -> Outcome {
     if strict && session.warnings() > 0 {
-        1
+        Outcome::Failed
     } else {
-        session.exit_code()
+        Outcome::from_code(session.exit_code())
     }
 }
 
@@ -22,7 +22,7 @@ pub(crate) fn cmd_check(
     use_cache: bool,
     against: Option<&str>,
     strict: bool,
-) -> i32 {
+) -> Outcome {
     let loaded = if sugar {
         let raw = match fs::read_to_string(path) {
             Ok(raw) => raw,
@@ -58,7 +58,7 @@ pub(crate) fn cmd_check(
                     print!("{}", session.text());
                     println!("{}", session.summary());
                 }
-                return session.exit_code();
+                return Outcome::from_code(session.exit_code());
             }
         }
     } else {
@@ -157,7 +157,7 @@ pub(crate) fn check_against(
     kernel_path: &Path,
     json: bool,
     strict: bool,
-) -> i32 {
+) -> Outcome {
     let kernel = match load_for_check(kernel_path) {
         Ok(kernel) => kernel,
         Err(error) => return fail(error),
@@ -185,14 +185,14 @@ pub(crate) fn check_against(
         session.extend(other_errors);
         if json {
             println!("{}", session.json());
-            return 1;
+            return Outcome::Failed;
         }
         print!("{}", session.text());
         println!("{}", session.summary());
         println!(
             "the other document does not compile in this context; fix it before checking against it"
         );
-        return 1;
+        return Outcome::Failed;
     }
 
     let shadows = crate::kernel::check(&kernel_decls, &target_decls);
@@ -234,7 +234,7 @@ pub(crate) fn check_against(
     exit_code(&session, strict)
 }
 
-pub(crate) fn cmd_project(path: &Path) -> i32 {
+pub(crate) fn cmd_project(path: &Path) -> Outcome {
     // `project` is `check`, grouped by file: it must use the same loading path, so it sees the
     // recovered declarations and every syntax diagnostic, not just the first one.
     let loaded = match load_for_check(path) {
@@ -276,17 +276,17 @@ pub(crate) fn cmd_project(path: &Path) -> i32 {
         warning_count(&diagnostics)
     );
     if error_count(&diagnostics) > 0 {
-        1
+        Outcome::Failed
     } else {
-        0
+        Outcome::Ok
     }
 }
 
 /// Record one run, or append it to a session trace.
-pub(crate) fn cmd_trace(path: &Path, out: Option<&str>, append: Option<&str>) -> i32 {
+pub(crate) fn cmd_trace(path: &Path, out: Option<&str>, append: Option<&str>) -> Outcome {
     if out.is_some() && append.is_some() {
         println!("usage: tsare trace PATH [--out FILE | --append FILE]");
-        return 2;
+        return Outcome::Usage;
     }
     let run = match crate::trace::record(path) {
         Ok(run) => run,
@@ -298,7 +298,7 @@ pub(crate) fn cmd_trace(path: &Path, out: Option<&str>, append: Option<&str>) ->
             Err(error) => return fail(error),
         };
         print_trace_summary(&trace, file, true);
-        return 0;
+        return Outcome::Ok;
     }
     let trace = crate::trace::Trace::new(run);
     match out {
@@ -307,11 +307,11 @@ pub(crate) fn cmd_trace(path: &Path, out: Option<&str>, append: Option<&str>) ->
                 return fail(format!("{file}: {error}"));
             }
             print_trace_summary(&trace, file, false);
-            0
+            Outcome::Ok
         }
         None => {
             print!("{}", trace.to_json());
-            0
+            Outcome::Ok
         }
     }
 }
@@ -337,7 +337,7 @@ fn print_trace_summary(trace: &crate::trace::Trace, file: &str, session: bool) {
 }
 
 /// Re-run a recorded session and compare every report and status; `diff` shows the write-backs.
-pub(crate) fn cmd_replay(path: &Path, diff: bool) -> i32 {
+pub(crate) fn cmd_replay(path: &Path, diff: bool) -> Outcome {
     let text = match fs::read_to_string(path) {
         Ok(text) => text,
         Err(error) => return fail(format!("{}: {error}", path.display())),
@@ -346,7 +346,7 @@ pub(crate) fn cmd_replay(path: &Path, diff: bool) -> i32 {
         Ok(trace) => trace,
         Err(error) => {
             println!("not a tsare trace: {error}");
-            return 2;
+            return Outcome::Usage;
         }
     };
     if diff {
@@ -366,132 +366,51 @@ pub(crate) fn cmd_replay(path: &Path, diff: bool) -> i32 {
     match crate::trace::replay(&trace) {
         Ok(result) if result.matched => {
             println!("match");
-            0
+            Outcome::Ok
         }
         Ok(result) => {
             println!("mismatch: {}", result.detail);
-            1
+            Outcome::Failed
         }
         Err(error) => {
             println!("cannot replay: {error}");
-            2
+            Outcome::Usage
         }
     }
 }
 
 /// The loop's one line: the decision, the epistemic counts, and the next question.  Errors decide
 /// the exit code; warnings are reported but do not.
-pub(crate) fn cmd_status(path: &Path, json: bool, trace: Option<&str>) -> i32 {
+pub(crate) fn cmd_status(path: &Path, json: bool, trace: Option<&str>) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
     };
-    let diagnostics = crate::check::check(&loaded.decls);
-    let errors = diagnostics
-        .iter()
-        .filter(|item| item.code.starts_with('E'))
-        .count();
-    let warnings = diagnostics
-        .iter()
-        .filter(|item| item.code.starts_with('W'))
-        .count();
-    let verdict = crate::decide::report(&loaded.decls);
-    let rows = crate::epistemic::report(&loaded.decls);
-    let verified = rows
-        .iter()
-        .filter(|row| row.knowing == crate::epistemic::Knowing::Verified)
-        .count();
-    let inferred = rows
-        .iter()
-        .filter(|row| row.knowing == crate::epistemic::Knowing::Inferred)
-        .count();
-    let unverified = rows.len() - verified - inferred;
-    let program = crate::program::Program::new(&loaded.decls);
-    let question = crate::ask::questions(&program)
-        .into_iter()
-        .next()
-        .map(|item| item.question);
-    let first = match diagnostics.first() {
-        Some(item) => J::Obj(vec![
-            ("code".to_string(), J::Str(item.code.to_string())),
-            (
-                "name".to_string(),
-                J::Str(item.witness.clone().unwrap_or_default()),
-            ),
-            ("message".to_string(), J::Str(item.message.clone())),
-        ]),
-        None => J::Null,
-    };
-    let debt = match verdict.items.first() {
-        Some(item) => J::Obj(vec![
-            ("name".to_string(), J::Str(item.name.clone())),
-            ("kind".to_string(), J::Str(item.kind.clone())),
-            ("reason".to_string(), J::Str(item.reason.to_string())),
-        ]),
-        None => J::Null,
-    };
-    let open = crate::chain::open(&loaded.decls);
-    let open_first = match open.first() {
-        Some((name, kind, hypotheses)) => J::Obj(vec![
-            ("name".to_string(), J::Str(name.clone())),
-            ("kind".to_string(), J::Str(kind.clone())),
-            (
-                "hypotheses".to_string(),
-                J::Arr(hypotheses.iter().map(|h| J::Str(h.clone())).collect()),
-            ),
-        ]),
-        None => J::Null,
-    };
-    let value = J::Obj(vec![
-        (
-            "decision".to_string(),
-            J::Str(verdict.decision.label().to_string()),
-        ),
-        ("verified".to_string(), J::Num(verified as f64)),
-        ("inferred".to_string(), J::Num(inferred as f64)),
-        ("unverified".to_string(), J::Num(unverified as f64)),
-        ("errors".to_string(), J::Num(errors as f64)),
-        ("warnings".to_string(), J::Num(warnings as f64)),
-        (
-            "question".to_string(),
-            match &question {
-                Some(text) => J::Str(text.clone()),
-                None => J::Null,
-            },
-        ),
-        ("first".to_string(), first),
-        ("claims".to_string(), J::Num(loaded.decls.len() as f64)),
-        ("debt".to_string(), debt),
-        ("open_chains".to_string(), J::Num(open.len() as f64)),
-        ("open_chain".to_string(), open_first),
-    ]);
-    let report = format!("{}\n", crate::json::serialize(&value));
-    if json {
-        print!("{report}");
-    } else {
-        println!("{}", crate::status::line(&loaded.decls));
-    }
+    let report = crate::status::report(&loaded.decls);
+    let mut sink = crate::out::Stdout;
+    crate::out::render(&report, json, &mut sink);
+    let rendered_json = crate::json::serialize(&report.json());
     if let Some(file) = trace {
-        let status = if errors > 0 { 1 } else { 0 };
+        let status = if report.errors > 0 { 1 } else { 0 };
         let step = crate::trace::Step {
             command: "status".to_string(),
             status,
-            report: report.clone(),
+            report: format!("{rendered_json}\n"),
         };
         let run = crate::trace::Run::new(&loaded.text, vec![step]);
         if let Err(error) = crate::trace::append(Path::new(file), run) {
             eprintln!("trace: {error}");
         }
     }
-    if errors > 0 {
-        1
+    if report.errors > 0 {
+        Outcome::Failed
     } else {
-        0
+        Outcome::Ok
     }
 }
 
 /// Where each quoted claim sits in its source: the source, the line and the column.
-pub(crate) fn cmd_provenance(path: &Path, json: bool) -> i32 {
+pub(crate) fn cmd_provenance(path: &Path, json: bool) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -522,11 +441,11 @@ pub(crate) fn cmd_provenance(path: &Path, json: bool) -> i32 {
             .collect();
         let value = J::Obj(vec![("rows".to_string(), J::Arr(items))]);
         println!("{}", crate::json::serialize(&value));
-        return 0;
+        return Outcome::Ok;
     }
     if rows.is_empty() {
         println!("no quoted claims");
-        return 0;
+        return Outcome::Ok;
     }
     for row in &rows {
         let place = match (row.line, row.col) {
@@ -542,52 +461,52 @@ pub(crate) fn cmd_provenance(path: &Path, json: bool) -> i32 {
             row.quote
         );
     }
-    0
+    Outcome::Ok
 }
 
 /// Store a ledger under its content hash.
-pub(crate) fn cmd_save(path: &Path, store: &str) -> i32 {
+pub(crate) fn cmd_save(path: &Path, store: &str) -> Outcome {
     match crate::version::save(path, Path::new(store)) {
         Ok(hash) => {
             let short: String = hash.chars().take(12).collect();
             println!("saved {short} ({store})");
-            0
+            Outcome::Ok
         }
         Err(error) => fail(error),
     }
 }
 
 /// The content hashes the store holds.
-pub(crate) fn cmd_log(store: &Path) -> i32 {
+pub(crate) fn cmd_log(store: &Path) -> Outcome {
     match crate::version::list(store) {
         Ok(hashes) if hashes.is_empty() => {
             println!("no saved versions");
-            0
+            Outcome::Ok
         }
         Ok(hashes) => {
             for hash in hashes {
                 println!("{hash}");
             }
-            0
+            Outcome::Ok
         }
         Err(error) => fail(error),
     }
 }
 
 /// Write a stored ledger back, refusing bytes that do not match the hash.
-pub(crate) fn cmd_restore(hash: &str, store: &str, out: &str) -> i32 {
+pub(crate) fn cmd_restore(hash: &str, store: &str, out: &str) -> Outcome {
     match crate::version::restore(Path::new(store), hash, Path::new(out)) {
         Ok(()) => {
             let short: String = hash.chars().take(12).collect();
             println!("restored {short} -> {out}");
-            0
+            Outcome::Ok
         }
         Err(error) => fail(error),
     }
 }
 
 /// Add one declaration from a source document to a library, if the library stays admissible.
-pub(crate) fn cmd_grow(library: &Path, source: &Path, name: &str, out: &str) -> i32 {
+pub(crate) fn cmd_grow(library: &Path, source: &Path, name: &str, out: &str) -> Outcome {
     let library_text = match fs::read_to_string(library) {
         Ok(text) => text,
         Err(error) => return fail(format!("{}: {error}", library.display())),
@@ -606,7 +525,7 @@ pub(crate) fn cmd_grow(library: &Path, source: &Path, name: &str, out: &str) -> 
                 "accepted {} (source {short}, {} warning(s)) -> {out}",
                 grown.name, grown.warnings
             );
-            0
+            Outcome::Ok
         }
         crate::growth::Verdict::Rejected {
             reason,
@@ -620,7 +539,7 @@ pub(crate) fn cmd_grow(library: &Path, source: &Path, name: &str, out: &str) -> 
                     item.code, witness, item.line, item.message
                 );
             }
-            1
+            Outcome::Failed
         }
     }
 }

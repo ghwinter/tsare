@@ -5,6 +5,7 @@
 
 use std::path::Path;
 
+use crate::json::Json as J;
 use crate::syntax::Decl;
 
 /// One field and the version that last changed it.
@@ -90,4 +91,61 @@ fn value_at(decls: &[Decl], name: &str, key: &str) -> Option<String> {
         .find(|(field, _)| field == key)
         .map(|(_, value)| value)?;
     Some(crate::format::value_of(value))
+}
+
+impl Blame {
+    /// The short form of a hash, as the other version commands show it.
+    fn short(hash: &str) -> String {
+        hash.chars().take(12).collect()
+    }
+
+    /// The report as the CLI prints it: the head, then one line per field.
+    pub fn text(&self) -> String {
+        let mut out = format!("blame {} at {}\n", self.name, Self::short(&self.version));
+        for charge in &self.charges {
+            out.push_str(&format!(
+                "  {:<12} {:<14} {}\n",
+                charge.field,
+                Self::short(&charge.version),
+                charge.value.as_deref().unwrap_or("-")
+            ));
+        }
+        out
+    }
+
+    /// The same reading as data.
+    pub fn json(&self) -> J {
+        let charges: Vec<J> = self
+            .charges
+            .iter()
+            .map(|charge| {
+                J::Obj(vec![
+                    ("field".to_string(), J::Str(charge.field.clone())),
+                    ("version".to_string(), J::Str(charge.version.clone())),
+                    (
+                        "value".to_string(),
+                        match &charge.value {
+                            Some(value) => J::Str(value.clone()),
+                            None => J::Null,
+                        },
+                    ),
+                ])
+            })
+            .collect();
+        J::Obj(vec![
+            ("name".to_string(), J::Str(self.name.clone())),
+            ("version".to_string(), J::Str(self.version.clone())),
+            ("charges".to_string(), J::Arr(charges)),
+        ])
+    }
+}
+
+impl crate::out::Report for Blame {
+    fn text(&self) -> String {
+        Blame::text(self)
+    }
+
+    fn json(&self) -> J {
+        Blame::json(self)
+    }
 }

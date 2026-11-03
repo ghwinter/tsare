@@ -70,37 +70,33 @@ pub fn run() -> i32 {
     if command == "mcp" {
         return crate::mcp::serve();
     }
-    if command == "kinds" {
-        return cmd_kinds();
-    }
-    if command == "mem" {
-        let store = args
-            .option("--store")
-            .map(PathBuf::from)
-            .unwrap_or_else(crate::cases::store_path);
-        let codes: Vec<String> = args.positional.clone();
-        let recall = if args.has("--recall") {
-            Some(codes.as_slice())
-        } else {
-            None
-        };
-        return cmd_mem(&store, recall, args.count("--k", 3));
-    }
-    let Some(target) = args.at(0) else {
-        println!("usage: tsare {command} FILE");
+    let Some(entry) = registry::find(&command) else {
+        println!("unknown command {command}; `tsare help` lists them");
         return 2;
     };
-    let path = PathBuf::from(target);
-    dispatch(&path, &command, &args)
+    let path = if entry.needs_target {
+        let Some(target) = args.at(0) else {
+            println!("usage: tsare {command} FILE");
+            return 2;
+        };
+        PathBuf::from(target)
+    } else {
+        PathBuf::new()
+    };
+    let outcome = registry::dispatch(&path, &command, &args);
+    if let Some(message) = outcome.message() {
+        println!("{message}");
+    }
+    outcome.code()
 }
 
 mod args;
-mod dispatch;
 mod help;
+mod registry;
 mod support;
 
-use self::dispatch::dispatch;
 use self::help::{is_command, looks_like_a_document, usage};
 
 pub(crate) use self::args::Args;
 pub(crate) use self::support::*;
+pub(crate) use crate::out::Outcome;

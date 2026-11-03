@@ -1,6 +1,6 @@
 use super::*;
 
-pub(crate) fn cmd_cat(path: &Path) -> i32 {
+pub(crate) fn cmd_cat(path: &Path) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -43,13 +43,13 @@ pub(crate) fn cmd_cat(path: &Path) -> i32 {
         );
     }
     if errors > 0 {
-        1
+        Outcome::Failed
     } else {
-        0
+        Outcome::Ok
     }
 }
 
-pub(crate) fn cmd_moves(path: &Path) -> i32 {
+pub(crate) fn cmd_moves(path: &Path) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -58,7 +58,7 @@ pub(crate) fn cmd_moves(path: &Path) -> i32 {
     let rows = crate::moves::suggest(&program);
     if rows.is_empty() {
         println!("no representation move suggested");
-        return 0;
+        return Outcome::Ok;
     }
     let names = crate::moves::moves();
     for row in &rows {
@@ -75,10 +75,10 @@ pub(crate) fn cmd_moves(path: &Path) -> i32 {
             row.why
         );
     }
-    0
+    Outcome::Ok
 }
 
-pub(crate) fn cmd_fca(path: &Path) -> i32 {
+pub(crate) fn cmd_fca(path: &Path) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -111,13 +111,13 @@ pub(crate) fn cmd_fca(path: &Path) -> i32 {
     if printed == 0 {
         println!("no concept or pile to analyse");
     }
-    0
+    Outcome::Ok
 }
 
-pub(crate) fn cmd_kinds() -> i32 {
+pub(crate) fn cmd_kinds() -> Outcome {
     println!("{} {} discharge", pad("kind", 12), pad("obligation", 52));
     for (kind, obligation, discharge) in program::TABLE {
         println!("{} {} {}", pad(kind, 12), pad(obligation, 52), discharge);
     }
-    0
+    Outcome::Ok
 }

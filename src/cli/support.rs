@@ -28,7 +28,7 @@ pub(crate) fn syntax_diagnostic(
 
 /// Load and parse, keeping syntax errors as diagnostics.  Callers that cannot analyse a
 /// broken document use `load`, which turns the first one into a printed message.
-pub fn load_for_check(path: &Path) -> Result<Loaded, String> {
+fn read(path: &Path) -> Result<Loaded, String> {
     if path.as_os_str() == "-" {
         // a document from a pipe: editors and CI both want this
         let mut text = String::new();
@@ -96,23 +96,48 @@ pub fn load_for_check(path: &Path) -> Result<Loaded, String> {
     })
 }
 
-pub fn load(path: &Path) -> Result<Loaded, String> {
-    let loaded = load_for_check(path)?;
-    if let Some(first) = loaded.syntax.first() {
-        return Err(format!(
-            "{}:{}:{}: error[E-SYNTAX]: {}",
-            path.display(),
-            first.line,
-            first.col,
-            first.message
-        ));
-    }
-    Ok(loaded)
+/// How a document is read: strictly (a syntax error is an error) or recoveringly (it becomes a
+/// diagnostic).  The reading itself is one implementation.
+pub struct Loader {
+    strict: bool,
 }
 
-pub(crate) fn fail(error: String) -> i32 {
-    println!("{error}");
-    1
+impl Loader {
+    pub fn strict() -> Self {
+        Self { strict: true }
+    }
+
+    pub fn recovering() -> Self {
+        Self { strict: false }
+    }
+
+    pub fn load(&self, path: &Path) -> Result<Loaded, String> {
+        let loaded = read(path)?;
+        if self.strict {
+            if let Some(first) = loaded.syntax.first() {
+                return Err(format!(
+                    "{}:{}:{}: error[E-SYNTAX]: {}",
+                    path.display(),
+                    first.line,
+                    first.col,
+                    first.message
+                ));
+            }
+        }
+        Ok(loaded)
+    }
+}
+
+pub fn load(path: &Path) -> Result<Loaded, String> {
+    Loader::strict().load(path)
+}
+
+pub fn load_for_check(path: &Path) -> Result<Loaded, String> {
+    Loader::recovering().load(path)
+}
+
+pub(crate) fn fail(error: String) -> Outcome {
+    Outcome::Unavailable(error)
 }
 
 pub fn escape(text: &str) -> String {

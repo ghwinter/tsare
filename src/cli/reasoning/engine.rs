@@ -1,6 +1,6 @@
 use super::*;
 
-pub(crate) fn cmd_engine(path: &Path, json: bool) -> i32 {
+pub(crate) fn cmd_engine(path: &Path, json: bool) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -47,7 +47,7 @@ pub(crate) fn cmd_engine(path: &Path, json: bool) -> i32 {
             .collect();
         println!("  \"gates\": {{{}}}", gates.join(", "));
         println!("}}");
-        return 0;
+        return Outcome::Ok;
     }
     println!(
         "held {}  conditional {}  blocked {}",
@@ -89,5 +89,5 @@ pub(crate) fn cmd_engine(path: &Path, json: bool) -> i32 {
     for (warrant, missing) in &result.blocked {
         println!("  blocked {warrant} needs {}", missing.join(", "));
     }
-    0
+    Outcome::Ok
 }
