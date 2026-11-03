@@ -284,34 +284,10 @@ pub(crate) fn cmd_blame(store: &Path, name: &str, json: bool) -> Outcome {
         Ok(blame) => blame,
         Err(error) => return fail(error),
     };
-    let short = |hash: &str| -> String { hash.chars().take(12).collect() };
     if json {
-        let charges: Vec<J> = blame
-            .charges
-            .iter()
-            .map(|charge| {
-                obj(vec![
-                    ("field", J::Str(charge.field.clone())),
-                    ("version", J::Str(charge.version.clone())),
-                    ("value", optional(charge.value.clone())),
-                ])
-            })
-            .collect();
-        emit(obj(vec![
-            ("name", J::Str(blame.name.clone())),
-            ("version", J::Str(blame.version.clone())),
-            ("charges", J::Arr(charges)),
-        ]));
-        return Outcome::Ok;
-    }
-    println!("blame {} at {}", blame.name, short(&blame.version));
-    for charge in &blame.charges {
-        println!(
-            "  {:<12} {:<14} {}",
-            charge.field,
-            short(&charge.version),
-            charge.value.as_deref().unwrap_or("-")
-        );
+        println!("{}", crate::json::serialize(&blame.json()));
+    } else {
+        print!("{}", blame.text());
     }
     Outcome::Ok
 }
@@ -340,36 +316,13 @@ pub(crate) fn cmd_chains(path: &Path, json: bool) -> Outcome {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
     };
-    let rows = crate::chain::open(&loaded.decls);
+    let report = crate::chain::chains(&loaded.decls);
     if json {
-        let items: Vec<J> = rows
-            .iter()
-            .map(|(name, kind, hypotheses)| {
-                obj(vec![
-                    ("name", J::Str(name.clone())),
-                    ("kind", J::Str(kind.clone())),
-                    (
-                        "hypotheses",
-                        J::Arr(hypotheses.iter().map(|h| J::Str(h.clone())).collect()),
-                    ),
-                ])
-            })
-            .collect();
-        emit(obj(vec![
-            ("count", J::Num(rows.len() as f64)),
-            ("open", J::Arr(items)),
-        ]));
-    } else if rows.is_empty() {
-        println!("no open chains");
+        println!("{}", crate::json::serialize(&report.json()));
     } else {
-        for (name, kind, hypotheses) in &rows {
-            println!(
-                "{name} {kind} stands on the unbacked hypothesis {}",
-                hypotheses.join(", ")
-            );
-        }
+        print!("{}", report.text());
     }
-    if rows.is_empty() {
+    if report.rows.is_empty() {
         Outcome::Ok
     } else {
         Outcome::Failed

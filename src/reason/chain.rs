@@ -2,6 +2,7 @@
 
 use std::collections::HashSet;
 
+use crate::json::Json as J;
 use crate::program::{f_id, f_ids, grade};
 use crate::syntax::Decl;
 
@@ -133,4 +134,51 @@ fn supports(decls: &[Decl], decl: &Decl) -> Vec<String> {
         _ => add("because"),
     }
     out
+}
+
+/// Every conclusion whose support path reaches an unbacked hypothesis.
+pub struct ChainsReport {
+    pub rows: Vec<(String, String, Vec<String>)>,
+}
+
+/// Read the open chains of a document.
+pub fn chains(decls: &[Decl]) -> ChainsReport {
+    ChainsReport { rows: open(decls) }
+}
+
+impl ChainsReport {
+    pub fn text(&self) -> String {
+        if self.rows.is_empty() {
+            return "no open chains\n".to_string();
+        }
+        let mut out = String::new();
+        for (name, kind, hypotheses) in &self.rows {
+            out.push_str(&format!(
+                "{name} {kind} stands on the unbacked hypothesis {}\n",
+                hypotheses.join(", ")
+            ));
+        }
+        out
+    }
+
+    pub fn json(&self) -> J {
+        let items: Vec<J> = self
+            .rows
+            .iter()
+            .map(|(name, kind, hypotheses)| {
+                J::Obj(vec![
+                    ("name".to_string(), J::Str(name.clone())),
+                    ("kind".to_string(), J::Str(kind.clone())),
+                    (
+                        "hypotheses".to_string(),
+                        J::Arr(hypotheses.iter().map(|h| J::Str(h.clone())).collect()),
+                    ),
+                ])
+            })
+            .collect();
+        J::Obj(vec![
+            ("count".to_string(), J::Num(self.rows.len() as f64)),
+            ("open".to_string(), J::Arr(items)),
+        ])
+    }
 }

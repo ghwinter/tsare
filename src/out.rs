@@ -74,6 +74,20 @@ mod tests {
     use super::*;
 
     #[test]
+    fn the_outcome_maps_to_the_exit_codes() {
+        assert_eq!(Outcome::Ok.code(), 0);
+        assert_eq!(Outcome::Usage.code(), 2);
+        assert_eq!(Outcome::Failed.code(), 1);
+        assert_eq!(Outcome::Refused("r".into()).code(), 1);
+        assert_eq!(Outcome::Unavailable("u".into()).code(), 1);
+        assert_eq!(Outcome::from_code(0), Outcome::Ok);
+        assert_eq!(Outcome::from_code(2), Outcome::Usage);
+        assert_eq!(Outcome::from_code(1), Outcome::Failed);
+        assert_eq!(Outcome::Refused("r".into()).message(), Some("r"));
+        assert_eq!(Outcome::Ok.message(), None);
+    }
+
+    #[test]
     fn a_buffer_keeps_every_line() {
         let mut buffer = Buffer::default();
         buffer.line("a");

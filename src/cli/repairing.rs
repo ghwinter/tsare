@@ -66,7 +66,7 @@ pub(crate) fn cmd_apply(path: &Path, dry: bool) -> Outcome {
     let (updated, applied) = crate::apply::apply_best(&loaded.text, &items);
     if !dry && updated != loaded.text {
         if let Some(reason) = open_chain(&updated) {
-            return fail(format!("refused: {reason}; resolve it, or record why"));
+            return Outcome::Refused(format!("refused: {reason}; resolve it, or record why"));
         }
         if let Err(error) = crate::apply::replace(path, &updated) {
             return fail(format!("{}: {error}", path.display()));
@@ -182,7 +182,7 @@ pub(crate) fn cmd_fix(path: &Path, apply: Option<&str>) -> Outcome {
         let (after_e, after_w) = crate::fix::score_without_holes(&current);
         let text = crate::fix::render(&current);
         if let Some(reason) = open_chain(&text) {
-            return fail(format!("refused: {reason}; resolve it, or record why"));
+            return Outcome::Refused(format!("refused: {reason}; resolve it, or record why"));
         }
         if let Err(error) = fs::write(out, &text) {
             return fail(format!("{out}: {error}"));
@@ -273,7 +273,7 @@ pub(crate) fn cmd_propose(path: &Path, proposals_path: &str, apply: bool, policy
     }
     if apply && current != loaded.text {
         if let Some(reason) = open_chain(&current) {
-            return fail(format!("refused: {reason}; resolve it, or record why"));
+            return Outcome::Refused(format!("refused: {reason}; resolve it, or record why"));
         }
         if let Err(error) = crate::apply::replace(path, &current) {
             return fail(format!("{}: {error}", path.display()));
