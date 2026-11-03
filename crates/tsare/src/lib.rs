@@ -14,7 +14,7 @@ pub mod lang;
 pub mod mcp;
 pub mod out;
 pub mod reason;
-pub mod util;
+pub use tsare_util as util;
 
 pub use check::render;
 pub use check::{budget, decide, epistemic, fix, kernel, provenance, status};

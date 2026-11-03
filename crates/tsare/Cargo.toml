@@ -28,3 +28,4 @@ path = "src/main.rs"
 workspace = true
 
 [dependencies]
+tsare-util = { path = "../tsare-util" }
