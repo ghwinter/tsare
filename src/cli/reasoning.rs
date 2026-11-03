@@ -85,7 +85,8 @@ mod engine;
 mod structure;
 
 pub(crate) use argument::{
-    cmd_argue, cmd_assumptions, cmd_confront, cmd_debt, cmd_impact, cmd_weigh, cmd_whatif,
+    cmd_argue, cmd_assumptions, cmd_confront, cmd_debt, cmd_impact, cmd_retract, cmd_weigh,
+    cmd_whatif,
 };
 pub(crate) use catalog::{cmd_cat, cmd_fca, cmd_kinds, cmd_moves};
 pub(crate) use decide::{cmd_cost, cmd_decide, cmd_epistemic};

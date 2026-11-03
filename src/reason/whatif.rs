@@ -10,6 +10,7 @@ use std::collections::HashSet;
 
 use crate::check::check;
 use crate::derive::proposition_statuses;
+use crate::json::Json as J;
 use crate::program::Program;
 use crate::syntax::{Decl, Val};
 
@@ -121,5 +122,98 @@ pub fn compare(before: &[Decl], after: &[Decl]) -> Counterfactual {
         lost_codes,
         changed,
         newly_asserted,
+    }
+}
+
+/// The record of a retraction: the assumption removed, and the conclusions whose status changed.
+pub struct RetractReport {
+    pub name: String,
+    pub counterfactual: Counterfactual,
+}
+
+impl RetractReport {
+    pub fn text(&self) -> String {
+        let result = &self.counterfactual;
+        let mut out = format!("retracted {}:\n", self.name);
+        out.push_str(&format!(
+            "  errors {} -> {}, warnings {} -> {}\n",
+            result.errors_before,
+            result.errors_after,
+            result.warnings_before,
+            result.warnings_after
+        ));
+        if !result.new_codes.is_empty() {
+            out.push_str(&format!("  new codes: {}\n", result.new_codes.join(", ")));
+        }
+        if !result.lost_codes.is_empty() {
+            out.push_str(&format!("  lost codes: {}\n", result.lost_codes.join(", ")));
+        }
+        if result.changed.is_empty() {
+            out.push_str("  no proposition changed status\n");
+        } else {
+            for (name, before, after) in &result.changed {
+                out.push_str(&format!("  {name}: {before} -> {after}\n"));
+            }
+        }
+        if !result.newly_asserted.is_empty() {
+            out.push_str(&format!(
+                "  newly asserted: {}\n",
+                result.newly_asserted.join(", ")
+            ));
+        }
+        out
+    }
+
+    pub fn json(&self) -> J {
+        let result = &self.counterfactual;
+        let dependents: Vec<J> = result
+            .changed
+            .iter()
+            .map(|(name, before, after)| {
+                J::Obj(vec![
+                    ("name".to_string(), J::Str(name.clone())),
+                    ("before".to_string(), J::Str(before.clone())),
+                    ("after".to_string(), J::Str(after.clone())),
+                ])
+            })
+            .collect();
+        let strings =
+            |items: &[String]| J::Arr(items.iter().map(|item| J::Str(item.clone())).collect());
+        J::Obj(vec![
+            ("retracted".to_string(), J::Str(self.name.clone())),
+            ("dependents".to_string(), J::Arr(dependents)),
+            (
+                "newly_asserted".to_string(),
+                strings(&result.newly_asserted),
+            ),
+            ("new_codes".to_string(), strings(&result.new_codes)),
+            ("lost_codes".to_string(), strings(&result.lost_codes)),
+            (
+                "errors_before".to_string(),
+                J::Num(result.errors_before as f64),
+            ),
+            (
+                "errors_after".to_string(),
+                J::Num(result.errors_after as f64),
+            ),
+            (
+                "warnings_before".to_string(),
+                J::Num(result.warnings_before as f64),
+            ),
+            (
+                "warnings_after".to_string(),
+                J::Num(result.warnings_after as f64),
+            ),
+        ])
+    }
+}
+
+impl crate::out::Report for RetractReport {
+    fn text(&self) -> String {
+        RetractReport::text(self)
+    }
+
+    fn json(&self) -> J {
+        RetractReport::json(self)
     }
 }

@@ -158,6 +158,13 @@ pub const COMMANDS: &[Command] = &[
             };
             cmd_whatif(path, name)
         } } },
+    Command { group: "reasoning", name: "retract", usage: "retract FILE NAME [--out FILE] [--json]   remove one assumption and enumerate the conclusions whose status changes", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); {
+            let Some(name) = args.at(1) else {
+                println!("usage: tsare retract FILE NAME [--out FILE] [--json]");
+                return Outcome::Usage;
+            };
+            cmd_retract(path, name, args.option("--out"), args.has("--json"))
+        } } },
     Command { group: "reasoning", name: "kinds", usage: "kinds                        the obligation table: what each kind owes", needs_target: false, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_kinds() } },
     Command { group: "repairing", name: "fix", usage: "fix PATH [--apply OUT]          verified repair candidates, and applying them", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_fix(path, args.option("--apply")) } },
     Command { group: "repairing", name: "suggest", usage: "suggest PATH [--json]           repairs with an applicability", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_suggest(path, args.has("--json")) } },
