@@ -99,14 +99,14 @@ answers `--json`.
 | `blame STORE NAME [--json]` | which version on the store's HEAD chain last changed each field of a declaration | |
 | `chain FILE NAME [--json]` | the support path from a declaration to its evidence: premises, the rules that conclude it, and the leaves | |
 | `chains FILE [--json]` | every proposition or warrant whose support path rests on a hypothesis no verdict has decided | |
-| `fix FILE [--apply]` | verified repair candidates, and applying them | |
+| `fix FILE [--apply]` | verified repair candidates, and applying them; applying is refused while a conclusion stands on an unbacked hypothesis | |
 | `suggest FILE` | repairs with an applicability | yes |
-| `apply FILE [--dry-run]` | machine repairs spliced and recompiled | |
+| `apply FILE [--dry-run]` | machine repairs spliced and recompiled; refused while a conclusion stands on an unbacked hypothesis | |
 | `build FILE\|DIR [--out] [--goals]` | obligations, learned clauses, open items, notes, predicates | |
 | `fmt FILE` | the document in one spelling: one field per line, one separator everywhere, for a diff and a hash that mean something | |
 | `outline FILE` | the document read as prose: each field quoted, its ground and its diagnostics in the margin | |
 | `mem [--store FILE] [--recall CODE...] [--k N]` | the case store: audit it, or recall similar situations | |
-| `propose FILE --proposals FILE.json [--policy ...]` | gate values an outside model wants to fill into holes | |
+| `propose FILE --proposals FILE.json [--policy ...]` | gate values an outside model wants to fill into holes; applying is refused while a conclusion stands on an unbacked hypothesis | |
 | `fca FILE` | what a concept's positives share, and which facts the attributes imply | |
 
 `suggest` and `apply` are the engine's own shape: `apply` splices a span and keeps the result

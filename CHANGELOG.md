@@ -8,6 +8,9 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `apply`, `fix --apply` and `propose --apply` refuse to write a document whose conclusions still
+  stand on an unbacked hypothesis; the G3 gate now covers every in-place write-back.
+
 - `status` (the text line) also names the first open chain: `1 open chain(s) (P on H)`.
 
 - the brief names the first open chain (`P on H`) after the count, so the live line says which

@@ -94,3 +94,25 @@ fn a_closed_document_has_no_open_chains() {
     assert_eq!(status, 0, "{out}{err}");
     assert!(out.contains("no open chains"), "{out}");
 }
+
+#[test]
+fn a_write_back_with_an_open_chain_is_refused() {
+    let dir = work("apply-gate");
+    let path = dir.join("doc.tsare");
+    let out = dir.join("fixed.tsare");
+    fs::write(
+        &path,
+        "tsare 1\nfact F { claim: \"same\", evidence: user }\nfact G { claim: \"same\", evidence: user }\nfact H0 { claim: \"f\", evidence: user }\nhypothesis H { assumes: [H0], predicts: \"p\", test: \"t\" }\nproposition P { statement: \"s\", from: [H] }\n",
+    )
+    .expect("doc");
+    let (out_text, err, status) = run(&[
+        "fix",
+        path.to_str().expect("path"),
+        "--apply",
+        out.to_str().expect("out"),
+    ]);
+    assert_eq!(status, 1, "{out_text}{err}");
+    let combined = format!("{out_text}{err}");
+    assert!(combined.contains("refused"), "{combined}");
+    assert!(!out.exists(), "nothing is written on a refusal");
+}
