@@ -63,7 +63,27 @@ fn detail_of(decl: &Decl) -> String {
             .find(|(key, _)| key == "measured_by")
             .map(|(_, value)| crate::format::value_of(value))
             .unwrap_or_default(),
+        "hypothesis" => match f_id(decl, "verdict_by") {
+            Some(verdict) => format!("decided by {verdict}"),
+            None => "unbacked".to_string(),
+        },
         _ => String::new(),
+    }
+}
+
+/// The hypotheses on a support path that no verdict fact has decided.
+pub fn undecided(link: &Link) -> Vec<String> {
+    let mut out = Vec::new();
+    walk_undecided(link, &mut out);
+    out
+}
+
+fn walk_undecided(link: &Link, out: &mut Vec<String>) {
+    if link.kind == "hypothesis" && link.detail == "unbacked" {
+        out.push(link.name.clone());
+    }
+    for child in &link.children {
+        walk_undecided(child, out);
     }
 }
 

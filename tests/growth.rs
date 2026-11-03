@@ -128,3 +128,32 @@ fn a_missing_out_is_an_invocation_error() {
     assert_eq!(status, 2, "{text}");
     assert!(text.contains("usage:"), "{text}");
 }
+
+#[test]
+fn a_conclusion_on_an_unbacked_hypothesis_is_refused() {
+    let dir = work("unbacked");
+    let library = dir.join("library.tsare");
+    let source = dir.join("source.tsare");
+    let out = dir.join("grown.tsare");
+    fs::write(
+        &library,
+        "tsare 1\nfact F { claim: \"f\", evidence: user }\nhypothesis H { assumes: [F], predicts: \"p\", test: \"t\" }\n",
+    )
+    .expect("library");
+    fs::write(
+        &source,
+        "tsare 1\nproposition P { statement: \"s\", from: [H] }\n",
+    )
+    .expect("source");
+    let (out_text, err, status) = run(&[
+        "grow",
+        library.to_str().expect("library path"),
+        source.to_str().expect("source path"),
+        "P",
+        "--out",
+        out.to_str().expect("out path"),
+    ]);
+    assert_eq!(status, 1, "{out_text}{err}");
+    assert!(out_text.contains("unbacked hypothesis H"), "{out_text}");
+    assert!(!out.exists(), "nothing is written on a refusal");
+}

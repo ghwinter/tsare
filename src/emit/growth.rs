@@ -108,6 +108,16 @@ pub fn grow(library_text: &str, source_text: &str, name: &str) -> Verdict {
             diagnostics: errors,
         };
     }
+    // A conclusion written back must reach evidence: a hypothesis no verdict has decided is a
+    // question, not a premise.
+    if let Ok(link) = crate::chain::chain(&decls, name) {
+        if let Some(hypothesis) = crate::chain::undecided(&link).into_iter().next() {
+            return Verdict::Rejected {
+                reason: format!("{name} stands on the unbacked hypothesis {hypothesis}"),
+                diagnostics: Vec::new(),
+            };
+        }
+    }
     let warnings = diagnostics
         .iter()
         .filter(|item| item.code.starts_with('W'))

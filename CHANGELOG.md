@@ -8,6 +8,9 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `grow` also refuses a declaration whose support path rests on a hypothesis no verdict fact has
+  decided; the chain names it.
+
 - `chain FILE NAME [--json]`: the support path from a declaration to its evidence — a proposition
   reaches its premises and the rules that conclude it, a warrant its premises, a fact its evidence.
 
