@@ -32,6 +32,7 @@ pub const COMMANDS: &[Command] = &[
             },
         ) } },
     Command { group: "checking", name: "status", usage: "status PATH [--json] [--trace FILE] [--budget N]   the decision, the counts and the next question", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_status(path, args.has("--json"), args.option("--trace"), args.option("--budget").and_then(|value| value.parse().ok())) } },
+    Command { group: "checking", name: "contracts", usage: "contracts [--json]   the operator contracts: input, output and effect", needs_target: false, run: |_path: &Path, args: &Args| cmd_contracts(args.has("--json")) },
     Command { group: "checking", name: "provenance", usage: "provenance PATH [--json]    where each quoted claim sits in its source", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_provenance(path, args.has("--json")) } },
     Command { group: "checking", name: "project", usage: "project DIR                                          the same, grouped by file", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_project(path) } },
     Command { group: "checking", name: "trace", usage: "trace PATH [--out FILE | --append FILE]   one run, or append it to a session", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_trace(path, args.option("--out"), args.option("--append")) } },

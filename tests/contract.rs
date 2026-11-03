@@ -415,3 +415,12 @@ fn field(object: &str, key: &str) -> String {
             .to_string()
     }
 }
+
+#[test]
+fn the_contracts_command_lists_the_operators() {
+    let out = run(&["contracts"]);
+    assert!(out.contains("check"), "{out}");
+    let json = run(&["contracts", "--json"]);
+    assert!(json.contains("\"effect\": \"pure\""), "{json}");
+    assert!(json.contains("\"name\": \"grow\""), "{json}");
+}

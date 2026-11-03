@@ -1,5 +1,6 @@
 //! The language: text to declarations, and the shapes a value can take.
 
+pub mod contracts;
 pub mod explain;
 pub mod hash;
 pub mod json;

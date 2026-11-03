@@ -8,6 +8,8 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `contracts [--json]`: every command's operator contract (input, output, effect), so a caller can see what will be read or written before running it.
+
 - `check`/`status` take `--budget N`: a document over the limit is not checked, and the output says `unfinished` instead of a silent truncation.
 
 - `argue --json` carries each conclusion's status and why, so the attack graph can be read by a
@@ -218,6 +220,8 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `contracts [--json]`: every command's operator contract (input, output, effect), so a caller can see what will be read or written before running it.
+
 - `check`/`status` take `--budget N`: a document over the limit is not checked, and the output says `unfinished` instead of a silent truncation.
 
 - `E-SUPERSEDE-CYCLE` — a `supersedes` graph that closes on itself. A withdraws B and B withdraws
@@ -248,6 +252,8 @@ All notable changes are recorded here. The format follows
 - `W-UNWARRANTED-BASIS` pointed its caret at `claim`, blaming the sentence for a missing licence.
   It points at `basis` when the field exists and at the declaration otherwise.
 ### Added
+
+- `contracts [--json]`: every command's operator contract (input, output, effect), so a caller can see what will be read or written before running it.
 
 - `check`/`status` take `--budget N`: a document over the limit is not checked, and the output says `unfinished` instead of a silent truncation.
 
@@ -349,6 +355,8 @@ which observation would decide an open list, and what the attribute table alread
 
 ### Added
 
+- `contracts [--json]`: every command's operator contract (input, output, effect), so a caller can see what will be read or written before running it.
+
 - `check`/`status` take `--budget N`: a document over the limit is not checked, and the output says `unfinished` instead of a silent truncation.
 
 - `ask`: the next question the document needs, from three families that are one defect in three
@@ -392,6 +400,8 @@ The version that learns to say what it cannot tell apart, and to say which forma
 
 ### Added
 
+- `contracts [--json]`: every command's operator contract (input, output, effect), so a caller can see what will be read or written before running it.
+
 - `check`/`status` take `--budget N`: a document over the limit is not checked, and the output says `unfinished` instead of a silent truncation.
 
 - `W-COLLIDE`: two facts that record the same evidence and the same attributes are reported,
@@ -415,6 +425,8 @@ The version that learns to say what it cannot tell apart, and to say which forma
 The version that can be published: one crate, no dependencies, MIT.
 
 ### Added
+
+- `contracts [--json]`: every command's operator contract (input, output, effect), so a caller can see what will be read or written before running it.
 
 - `check`/`status` take `--budget N`: a document over the limit is not checked, and the output says `unfinished` instead of a silent truncation.
 

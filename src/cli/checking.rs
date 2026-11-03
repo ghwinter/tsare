@@ -581,3 +581,10 @@ pub(crate) fn cmd_grow(library: &Path, source: &Path, name: &str, out: &str) -> 
         }
     }
 }
+
+/// The operator contracts: what each command receives, returns and touches.
+pub(crate) fn cmd_contracts(json: bool) -> Outcome {
+    let mut sink = crate::out::Stdout;
+    crate::out::render(&crate::contracts::ContractsReport, json, &mut sink);
+    Outcome::Ok
+}
