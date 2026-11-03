@@ -23,6 +23,13 @@ pub struct Definition {
     pub col: usize,
 }
 
+/// What a page holds that could have been read: the tables it has, and the rows in them.  A page
+/// with tables and no definition is the extractor saying it did not read them, which is more
+/// useful than silence.
+pub fn tables(text: &str) -> (usize, usize) {
+    (text.matches("<table").count(), text.matches("<tr").count())
+}
+
 /// The header words a vocabulary document names.
 ///
 /// A term column is a *preference*, not a commitment: nothing in a page says "this column is a

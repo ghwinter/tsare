@@ -93,3 +93,30 @@ fn the_extracted_document_compiles() {
     assert!(text.contains("0 error(s)"), "{text}");
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn the_extractor_says_what_it_did_not_read() {
+    // A page with tables and no definition is the extractor reporting a decision, not a silence:
+    // without a vocabulary the second page has a term column nobody named, and it says so.
+    let (text, err, status) = run(&["extract", pages().to_str().expect("pages")]);
+    assert_eq!(status, 0, "{text}{err}");
+    assert!(text.contains("read 2 page(s), 2 table(s)"), "{text}");
+    assert!(
+        text.contains("1 page(s) with tables and no definition"),
+        "{text}"
+    );
+    assert!(text.contains("02-capabilities.html"), "{text}");
+
+    // with the vocabulary it reads both, and the count says so
+    let (text, err, status) = run(&[
+        "extract",
+        pages().to_str().expect("pages"),
+        "--terms-from",
+        pages()
+            .join("vocabulary.tsare")
+            .to_str()
+            .expect("vocabulary"),
+    ]);
+    assert_eq!(status, 0, "{text}{err}");
+    assert!(!text.contains("with tables and no definition"), "{text}");
+}

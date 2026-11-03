@@ -50,16 +50,26 @@ pub(crate) fn cmd_extract(
     words.dedup();
     let terms: Vec<&str> = words.iter().map(String::as_str).collect();
     let mut found = Vec::new();
+    let mut tables = 0;
+    let mut rows = 0;
+    let mut silent: Vec<String> = Vec::new();
     for page in &pages {
         let text = match fs::read_to_string(page) {
             Ok(text) => text,
             Err(error) => return fail(format!("{}: {error}", page.display())),
         };
-        found.extend(crate::extract::definitions(
-            &text,
-            &page.display().to_string(),
-            &terms,
-        ));
+        let (page_tables, page_rows) = crate::extract::tables(&text);
+        tables += page_tables;
+        rows += page_rows;
+        let definitions = crate::extract::definitions(&text, &page.display().to_string(), &terms);
+        if page_tables > 0 && definitions.is_empty() {
+            silent.push(
+                page.file_name()
+                    .map(|name| name.to_string_lossy().to_string())
+                    .unwrap_or_else(|| page.display().to_string()),
+            );
+        }
+        found.extend(definitions);
     }
     if let Some(out) = write {
         return write_definitions(&found, Path::new(out));
@@ -77,9 +87,21 @@ pub(crate) fn cmd_extract(
                 ])
             })
             .collect();
+        let coverage = J::Obj(vec![
+            ("pages".to_string(), J::Num(pages.len() as f64)),
+            ("tables".to_string(), J::Num(tables as f64)),
+            ("rows".to_string(), J::Num(rows as f64)),
+            (
+                "silent".to_string(),
+                J::Arr(silent.iter().cloned().map(J::Str).collect()),
+            ),
+        ]);
         println!(
             "{}",
-            crate::json::serialize(&J::Obj(vec![("definitions".to_string(), J::Arr(items))]))
+            crate::json::serialize(&J::Obj(vec![
+                ("definitions".to_string(), J::Arr(items)),
+                ("coverage".to_string(), coverage),
+            ]))
         );
         return Outcome::Ok;
     }
@@ -101,6 +123,27 @@ pub(crate) fn cmd_extract(
         .collect::<std::collections::HashSet<_>>()
         .len();
     println!("\n{} definition(s) in {sections} section(s)", found.len());
+    println!(
+        "read {} page(s), {} table(s), {} row(s)",
+        pages.len(),
+        tables,
+        rows
+    );
+    if !silent.is_empty() {
+        // the extractor says what it did not read, so a missing definition is a decision and not
+        // a silence
+        let shown: Vec<&str> = silent.iter().take(5).map(String::as_str).collect();
+        let more = if silent.len() > shown.len() {
+            format!(" (+{} more)", silent.len() - shown.len())
+        } else {
+            String::new()
+        };
+        println!(
+            "{} page(s) with tables and no definition -- name a column with --terms{more}: {}",
+            silent.len(),
+            shown.join(", ")
+        );
+    }
     Outcome::Ok
 }
 
