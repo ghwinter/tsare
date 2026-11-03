@@ -68,8 +68,8 @@ debt names nothing that could discharge it. The gate steers on that too.
 The authority is one-way: the user sets the level; the model may act more strictly, never less.
 
 At every level the brief also carries the decision and the epistemic counts, and — when any — the
-count of open chains (conclusions standing on an unbacked hypothesis). Below `gate` they are
-display; at `gate` the decision is enforced at turn stopping.
+count of open chains (conclusions standing on an unbacked hypothesis) and the first chain's name.
+Below `gate` they are display; at `gate` the decision is enforced at turn stopping.
 
 ## Activate it in a profile
 

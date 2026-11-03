@@ -8,6 +8,9 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- the brief names the first open chain (`P on H`) after the count, so the live line says which
+  conclusion stands on an undecided hypothesis.
+
 - the gate's brief also counts open chains, so the live line names the G3 gap next to the
   decision and the epistemic counts.
 

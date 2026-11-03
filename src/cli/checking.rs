@@ -430,7 +430,18 @@ pub(crate) fn cmd_status(path: &Path, json: bool, trace: Option<&str>) -> i32 {
         ]),
         None => J::Null,
     };
-    let open_chains = crate::chain::open(&loaded.decls).len();
+    let open = crate::chain::open(&loaded.decls);
+    let open_first = match open.first() {
+        Some((name, kind, hypotheses)) => J::Obj(vec![
+            ("name".to_string(), J::Str(name.clone())),
+            ("kind".to_string(), J::Str(kind.clone())),
+            (
+                "hypotheses".to_string(),
+                J::Arr(hypotheses.iter().map(|h| J::Str(h.clone())).collect()),
+            ),
+        ]),
+        None => J::Null,
+    };
     let value = J::Obj(vec![
         (
             "decision".to_string(),
@@ -451,7 +462,8 @@ pub(crate) fn cmd_status(path: &Path, json: bool, trace: Option<&str>) -> i32 {
         ("first".to_string(), first),
         ("claims".to_string(), J::Num(loaded.decls.len() as f64)),
         ("debt".to_string(), debt),
-        ("open_chains".to_string(), J::Num(open_chains as f64)),
+        ("open_chains".to_string(), J::Num(open.len() as f64)),
+        ("open_chain".to_string(), open_first),
     ]);
     let report = format!("{}\n", crate::json::serialize(&value));
     if json {

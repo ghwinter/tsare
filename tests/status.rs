@@ -58,6 +58,7 @@ fn the_json_view_carries_the_same_fields() {
     assert!(out.contains("closed"), "{out}");
     assert!(out.contains("\"verified\""), "{out}");
     assert!(out.contains("\"open_chains\": 0"), "{out}");
+    assert!(out.contains("\"open_chain\": null"), "{out}");
     assert!(out.contains("\"errors\""), "{out}");
     assert!(out.contains("\"first\""), "{out}");
     assert!(out.contains("\"claims\""), "{out}");
@@ -107,4 +108,5 @@ fn the_json_counts_open_chains() {
     let (out, err, status) = run(&["status", path.to_str().expect("path"), "--json"]);
     assert_eq!(status, 0, "{out}{err}");
     assert!(out.contains("\"open_chains\": 1"), "{out}");
+    assert!(out.contains("\"open_chain\": {\"name\": \"P\""), "{out}");
 }

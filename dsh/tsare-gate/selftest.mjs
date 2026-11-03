@@ -327,6 +327,6 @@ assert.match(readFileSync(traceFile, 'utf8'), /run/, 'the trace file must record
 // 23. an open support path is named in the brief
 writeFileSync(ledger, clean + 'OPEN_CHAIN\n')
 await ctx.fire('tools/post-execute', { name: 'read', arguments: {}, agent })
-assert.match(contexts[0].text(), /1 open chain\(s\)/, contexts[0].text())
+assert.match(contexts[0].text(), /1 open chain\(s\) \(P_OPEN on H_OPEN\)/, contexts[0].text())
 
 console.log('tsare-gate selftest: 23 checks passed')

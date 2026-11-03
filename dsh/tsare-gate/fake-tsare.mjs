@@ -18,6 +18,7 @@ if (args[0] === 'status') {
     warnings: 0,
     claims: 1,
     open_chains: 0,
+    open_chain: null,
     question: null,
     first: null,
     debt: null,
@@ -37,7 +38,10 @@ if (args[0] === 'status') {
     report.unverified = 0
     report.first = { code: 'E-MISSING', name: 'F_X', message: 'F_X needs evidence' }
   }
-  if (text.includes('OPEN_CHAIN')) report.open_chains = 1
+  if (text.includes('OPEN_CHAIN')) {
+    report.open_chains = 1
+    report.open_chain = { name: 'P_OPEN', kind: 'proposition', hypotheses: ['H_OPEN'] }
+  }
   const traceAt = args.indexOf('--trace')
   if (traceAt >= 0) {
     try {

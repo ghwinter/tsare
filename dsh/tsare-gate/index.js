@@ -255,6 +255,7 @@ async function statusLedger(config, cwd) {
     warnings,
     claims: number(report.claims) ?? 0,
     openChains: number(report.open_chains) ?? 0,
+    openChain: report.open_chain && typeof report.open_chain === 'object' ? report.open_chain : null,
     question:
       typeof report.question === 'string' && report.question.length > 0 ? report.question : null,
     first: report.first && typeof report.first === 'object' ? report.first : null,
@@ -366,7 +367,8 @@ export function apply(ctx, raw) {
     if (status.unavailable) {
       return oneLine(`${status.unavailable}. The ledger was not checked.`, config.briefMaxChars)
     }
-    const chains = status.openChains > 0 ? `, ${status.openChains} open chain(s)` : ''
+    const named = status.openChain?.name ? ` (${status.openChain.name} on ${(status.openChain.hypotheses ?? []).join(', ')})` : ''
+    const chains = status.openChains > 0 ? `, ${status.openChains} open chain(s)${named}` : ''
     const tally = `${status.verified} verified, ${status.inferred} inferred, ${status.unverified} unverified${chains}`
     if (status.errors > 0) {
       const first = status.first
