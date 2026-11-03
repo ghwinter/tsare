@@ -110,7 +110,10 @@ partition E_ONE { dimension: C_COLLIDE, elements: [F_A], closure: open }
 
 #[test]
 fn the_self_document_compiles_without_errors() {
-    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("SELF.tsare");
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join("SELF.tsare");
     let text =
         std::fs::read_to_string(&path).unwrap_or_else(|_| panic!("{} is missing", path.display()));
     let declared = parse(&text).expect("the self document parses");
@@ -134,6 +137,8 @@ fn the_self_document_compiles_without_errors() {
 #[test]
 fn the_repository_document_compiles_and_learns() {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
         .join("docs")
         .join("REPO.tsare");
     let text =

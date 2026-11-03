@@ -12,6 +12,8 @@ use tsare::explain::CODES;
 
 fn core() -> String {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
         .join("docs")
         .join("CORE.md");
     std::fs::read_to_string(&path)

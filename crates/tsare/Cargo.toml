@@ -1,0 +1,30 @@
+[package]
+name = "tsare"
+version = "0.4.0"
+edition = "2021"
+rust-version = "1.85"
+description = "An assisted reasoning engine for LLMs: commitments compile, and structure, support, and the next question have deterministic answers."
+license = "MIT"
+repository = "https://github.com/ghwinter/tsare"
+homepage = "https://github.com/ghwinter/tsare"
+documentation = "https://docs.rs/tsare"
+keywords = ["compiler", "logic", "argument", "verification", "reasoning"]
+categories = ["development-tools", "text-processing"]
+include = [
+    "/src/**",
+    "/tests/**",
+    "/Cargo.toml",
+]
+
+[lib]
+# the library keeps the short name, so `tsare::check` reads as it should
+name = "tsare"
+
+[[bin]]
+name = "tsare"
+path = "src/main.rs"
+
+[lints]
+workspace = true
+
+[dependencies]

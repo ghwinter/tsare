@@ -13,7 +13,10 @@ use tsare::check::check;
 use tsare::syntax::parse;
 
 fn prelude() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("prelude")
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join("prelude")
 }
 
 fn decls(name: &str) -> Vec<tsare::syntax::Decl> {
