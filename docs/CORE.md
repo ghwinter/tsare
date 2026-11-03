@@ -231,8 +231,25 @@ core judges what was written. `check/kernel.rs` is not this kernel either: it is
 - **whether the model is honest.** The ledger records what a declaration says. A form can be
   gamed; the defenses are the cost of the debt and the person who confirms.
 
-## What is not yet so
+## The analyzers
 
+`reason` is a drawer of independent analyzers, grouped by the question they answer. A new analyzer
+first answers which group it joins; one that answers none is a design question, not a file.
+
+- **proof** — the derivation from a claim to its evidence, and its defeat: `argue`, `assumptions`,
+  `chain`, `closure`, `derive`, `egraph`, `imply`, `weigh`.
+- **structure** — the shapes the declarations take: `cat`, `fca`, `moves`, `patterns`, `shape`.
+- **candidates** — what the engine proposes and the check may refuse: `abstraction`, `ask`,
+  `generalize`, `hint`, `induce`, `novel`, `propose`.
+- **evidence** — what a document owes and the store remembers: `audit`, `blame`, `cost`, `coverage`,
+  `debt`.
+- **change** — what a withdrawal, a merge or an edit does: `delta`, `diff`, `impact`, `merge`,
+  `whatif`.
+
+The groups are a reading order, not a visibility rule: every analyzer sees the same `check` types,
+and none of them depends on another.
+
+## What is not yet so
 The rules above are the target. The tree today:
 
 - **D1.** No `admit`. `check` is the absolute judgment, `propose::verify` a relative one,

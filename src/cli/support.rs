@@ -140,20 +140,6 @@ pub(crate) fn fail(error: String) -> Outcome {
     Outcome::Unavailable(error)
 }
 
-pub fn escape(text: &str) -> String {
-    let mut out = String::new();
-    for ch in text.chars() {
-        match ch {
-            '"' => out.push_str("\\\""),
-            '\\' => out.push_str("\\\\"),
-            '\n' => out.push_str("\\n"),
-            '\t' => out.push_str("\\t"),
-            other => out.push(other),
-        }
-    }
-    out
-}
-
 pub(crate) fn pad(text: &str, width: usize) -> String {
     let mut out = text.to_string();
     while out.chars().count() < width {

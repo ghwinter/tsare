@@ -6,7 +6,6 @@ pub mod hash;
 pub mod json;
 pub mod paths;
 pub mod program;
-pub mod render;
 pub mod specs;
 pub mod sugar;
 pub mod syntax;

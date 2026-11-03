@@ -19,6 +19,7 @@ pub mod fix;
 pub mod kernel;
 mod partition;
 pub mod provenance;
+pub mod render;
 pub mod status;
 
 use crate::closure;

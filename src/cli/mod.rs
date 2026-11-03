@@ -100,3 +100,4 @@ use self::help::{is_command, looks_like_a_document, usage};
 pub(crate) use self::args::Args;
 pub(crate) use self::support::*;
 pub(crate) use crate::out::Outcome;
+pub(crate) use crate::util::escape;

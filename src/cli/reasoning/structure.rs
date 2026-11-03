@@ -46,6 +46,7 @@ pub(crate) fn cmd_delta(
             process: None,
             witness: None,
             signature: None,
+            abstracts: None,
             refused: None,
         }) {
             Ok(entry) => entry,

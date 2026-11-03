@@ -5,6 +5,8 @@
 //! if `check` finds no error.  Whether the abstraction earns its place (the benefit half) is not
 //! measured here.
 
+use std::path::Path;
+
 use crate::check::{self, Diagnostic};
 use crate::hash::hex;
 use crate::syntax::{parse, Decl};
@@ -15,6 +17,8 @@ pub struct Grown {
     pub source_sha256: String,
     pub warnings: usize,
     pub text: String,
+    /// The abstract's bytes, so the coverage can be compared with the library's size.
+    pub bytes: usize,
 }
 
 /// The gate's answer: the grown library, or why the declaration did not enter.
@@ -127,6 +131,7 @@ pub fn grow(library_text: &str, source_text: &str, name: &str) -> Verdict {
         source_sha256,
         warnings,
         text: merged,
+        bytes: block.len(),
     })
 }
 
@@ -156,6 +161,142 @@ fn entry_note(library: &[Decl], name: &str, sha: &str) -> String {
         "note {chosen} {{ tag: conjecture, text: \"entered from {} as {name}\" }}",
         &sha[..16]
     )
+}
+
+/// One grown abstract and how often the cases reuse it.
+pub struct Entry {
+    pub name: String,
+    pub bytes: usize,
+    pub uses: usize,
+}
+
+/// The library report: the abstracts, their bytes, their uses, and the compression.
+pub struct LibraryReport {
+    pub entries: Vec<Entry>,
+    pub abstract_bytes: usize,
+    pub uses: usize,
+}
+
+impl LibraryReport {
+    /// The covered bytes per abstract byte: the weighted reuse, which is the compression.
+    pub fn compression(&self) -> f64 {
+        if self.abstract_bytes == 0 {
+            0.0
+        } else {
+            let covered: usize = self
+                .entries
+                .iter()
+                .map(|entry| entry.bytes * entry.uses)
+                .sum();
+            covered as f64 / self.abstract_bytes as f64
+        }
+    }
+
+    pub fn text(&self) -> String {
+        let mut out = format!(
+            "library: {} abstract(s), {} bytes, {} use(s), compression {:.2}\n",
+            self.entries.len(),
+            self.abstract_bytes,
+            self.uses,
+            self.compression()
+        );
+        for entry in &self.entries {
+            out.push_str(&format!(
+                "  {}  {} bytes  {} use(s)\n",
+                entry.name, entry.bytes, entry.uses
+            ));
+        }
+        out
+    }
+
+    pub fn json(&self) -> crate::json::Json {
+        use crate::json::Json as J;
+        let entries: Vec<J> = self
+            .entries
+            .iter()
+            .map(|entry| {
+                J::Obj(vec![
+                    ("name".to_string(), J::Str(entry.name.clone())),
+                    ("bytes".to_string(), J::Num(entry.bytes as f64)),
+                    ("uses".to_string(), J::Num(entry.uses as f64)),
+                ])
+            })
+            .collect();
+        J::Obj(vec![
+            ("entries".to_string(), J::Arr(entries)),
+            (
+                "abstract_bytes".to_string(),
+                J::Num(self.abstract_bytes as f64),
+            ),
+            ("uses".to_string(), J::Num(self.uses as f64)),
+            ("compression".to_string(), J::Num(self.compression())),
+        ])
+    }
+}
+
+impl crate::out::Report for LibraryReport {
+    fn text(&self) -> String {
+        LibraryReport::text(self)
+    }
+
+    fn json(&self) -> crate::json::Json {
+        LibraryReport::json(self)
+    }
+}
+
+/// Read a library: the grown notes name the abstracts; the cases say how often each is used.
+pub fn report(decls: &[Decl], text: &str, cases: Option<&Path>) -> LibraryReport {
+    use std::collections::BTreeMap;
+    let mut uses: BTreeMap<String, usize> = BTreeMap::new();
+    if let Some(store) = cases {
+        for entry in crate::cases::load(store) {
+            for name in entry
+                .get("abstracts")
+                .map(|value| value.strings())
+                .unwrap_or_default()
+            {
+                *uses.entry(name).or_insert(0) += 1;
+            }
+        }
+    }
+    let mut entries: Vec<Entry> = Vec::new();
+    for decl in decls {
+        if decl.kind != "note" || !decl.name.starts_with("N_GROWN_") {
+            continue;
+        }
+        let note = decl
+            .fields
+            .iter()
+            .find(|(key, _)| key == "text")
+            .and_then(|(_, value)| match value {
+                crate::syntax::Val::Str(text) => Some(text.clone()),
+                _ => None,
+            })
+            .unwrap_or_default();
+        let Some(name) = note
+            .split(" as ")
+            .nth(1)
+            .map(|name| name.trim().to_string())
+        else {
+            continue;
+        };
+        let bytes = match decls.iter().find(|candidate| candidate.name == name) {
+            Some(abstract_) => slice(text, abstract_).map(|block| block.len()).unwrap_or(0),
+            None => 0,
+        };
+        entries.push(Entry {
+            uses: uses.get(&name).copied().unwrap_or(0),
+            name,
+            bytes,
+        });
+    }
+    let abstract_bytes = entries.iter().map(|entry| entry.bytes).sum();
+    let uses = entries.iter().map(|entry| entry.uses).sum();
+    LibraryReport {
+        entries,
+        abstract_bytes,
+        uses,
+    }
 }
 
 #[cfg(test)]
