@@ -309,4 +309,24 @@ await ctx.fire('tools/post-execute', { name: 'read', arguments: {}, agent })
 const view = contexts[0].text()
 assert.match(view, /closed; 1 verified, 1 inferred, 2 unverified/, view)
 
-console.log('tsare-gate selftest: 21 checks passed')
+// 22. an enabled trace file records one run per turn
+const liveCtx = context()
+const traceFile = join(dir, 'live.trace.json')
+apply(liveCtx, {
+  command,
+  statusCommand,
+  traceCommand: [process.execPath, fake, 'trace', '.tsare/session.tsare', '--append', traceFile],
+  traceFile,
+  level: 'steer',
+})
+const liveAgent = makeAgent()
+await liveCtx.fire('agent/created', { agent: liveAgent })
+writeFileSync(ledger, clean)
+await liveCtx.fire('agent/turn-stopping', {
+  agent: liveAgent,
+  turn: 1,
+  signal: new AbortController().signal,
+})
+assert.match(readFileSync(traceFile, 'utf8'), /run/, 'the trace file must record the turn')
+
+console.log('tsare-gate selftest: 22 checks passed')

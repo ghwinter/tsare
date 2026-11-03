@@ -31,6 +31,8 @@
  *   command            argv override for tests and wrappers; replaces [binary, check, ledger, --json]
  *   statusCommand      argv override for the brief's call (default [binary, status, ledger, --json])
  *   decideCommand      argv override for the decision call at turn stopping (default [binary, decide, ledger, --json])
+ *   traceFile          when set, append one trace run per turn to this path (default null: no trace)
+ *   traceCommand       argv override for that call (default [binary, trace, ledger, --append, traceFile])
  *   debug              append one line per hook to <tmp>/tsare-gate.log (default false)
  */
 
@@ -64,6 +66,8 @@ const DEFAULTS = {
   command: null,
   statusCommand: null,
   decideCommand: null,
+  traceFile: null,
+  traceCommand: null,
   debug: false,
 }
 
@@ -549,6 +553,15 @@ export function apply(ctx, raw) {
     void refreshBrief(agent)
     const verdict = await checkLedger(config, cwdOf(agent))
     trace(`turn-stopping status=${verdict.status}`)
+    // G1: the write→check→write-back loop is replayable only if it is recorded.  One trace run per
+    // turn when the config asks for it; the trace command re-runs check/ask/decide, so this is
+    // opt-in and costs one extra child.
+    if (config.traceFile) {
+      const argv =
+        config.traceCommand ?? [config.binary, 'trace', config.ledger, '--append', config.traceFile]
+      const { error } = await run(argv, config, cwdOf(agent))
+      trace(`turn-stopping trace error=${error ? error.message : 'none'}`)
+    }
     if (verdict.status === 'ok') {
       if (config.level === 'gate') {
         const decided = await decideLedger(config, cwdOf(agent))

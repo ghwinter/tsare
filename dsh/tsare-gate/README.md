@@ -12,7 +12,7 @@ choice at three seams DSH owns:
 
 | seam | behaviour |
 | --- | --- |
-| `agent/turn-stopping` | the turn is about to close; the plugin runs `tsare check LEDGER --json` and, if the ledger is not checkable, calls `agent.steer(...)` with the diagnostics. The machine runs another step: **the turn cannot close while the checker objects**, up to `steerLimit` times. |
+| `agent/turn-stopping` | the turn is about to close; the plugin runs `tsare check LEDGER --json` and, if the ledger is not checkable, calls `agent.steer(...)` with the diagnostics. The machine runs another step: **the turn cannot close while the checker objects**, up to `steerLimit` times. When `traceFile` is set, it also appends one `trace` run per turn, so the write→check→write-back loop is replayable. |
 | `systemPrompt.context` | one standing line from `tsare status --json`: the decision, the verified/inferred/unverified counts, and the ledger's **next question** or its first error, replaced in place and recomputed only when the ledger changes. This is the engine; the gate is the brake. |
 | `tools/post-execute` | for the tools named in `remindAfterTools`, a dirty ledger rides along as context on the next request; for arguments matching `remindWhen`, one reminder that the result is a claim, once per ledger state. It never blocks the tool. |
 | `agent/created` | a session that starts without a ledger gets one: a single `note` declaration, which is a valid document. |
@@ -43,6 +43,8 @@ almost never fire. The plugin runs no model, opens no network, and writes nothin
 | `command` | none | argv override (`[file, ...args]`) for the check, for tests and wrappers |
 | `statusCommand` | none | argv override for the brief's call (`tsare status LEDGER --json`) |
 | `decideCommand` | none | argv override for the decision call at turn stopping (`tsare decide LEDGER --json`) |
+| `traceFile` | none | when set, append one replayable trace run per turn to this path |
+| `traceCommand` | none | argv override for that call (`tsare trace LEDGER --append TRACE`) |
 | `debug` | `false` | append one line per hook (apply, created, install, post-execute, turn-stopping) to a temp file, for diagnosing a live integration |
 
 ## Levels
@@ -89,7 +91,7 @@ dependency works), and the listeners are live for the next session:
 ## Test
 
 ```powershell
-node selftest.mjs                 # fake checker: 21 checks, no dependencies
+node selftest.mjs                 # fake checker: 22 checks, no dependencies
 $env:TSARE_BIN = "tsare"; node verify-real.mjs   # the real binary, same parser
 ```
 

@@ -2,7 +2,7 @@
 // LEDGER --json`, so the plugin can be tested without the real binary.  The ledger is "clean"
 // when it contains the word OK, it has a question when it contains ASK, and it has an open debt
 // when it contains OPEN_DEBT.
-import { readFileSync } from 'node:fs'
+import { appendFileSync, readFileSync } from 'node:fs'
 
 const args = process.argv.slice(2)
 const ledger = process.argv.find((item) => item.endsWith('.tsare'))
@@ -38,6 +38,15 @@ if (args[0] === 'status') {
   }
   process.stdout.write(`${JSON.stringify(report)}\n`)
   process.exit(report.errors > 0 ? 1 : 0)
+}
+
+if (args[0] === 'trace') {
+  try {
+    appendFileSync(args[args.length - 1], 'run\n')
+  } catch {
+    // the fake cannot promise the caller's file either
+  }
+  process.exit(0)
 }
 
 if (args[0] === 'decide') {
