@@ -182,6 +182,7 @@ pub const COMMANDS: &[Command] = &[
                 proposals,
                 args.has("--apply"),
                 args.option("--policy").unwrap_or("harmless"),
+                args.has("--json"),
             )
         } } },
     Command { group: "emitting", name: "fmt", usage: "fmt PATH                             the document in one spelling, for a stable diff and hash", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_fmt(path) } },

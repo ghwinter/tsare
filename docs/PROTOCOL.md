@@ -109,7 +109,7 @@ answers `--json`.
 | `fmt FILE` | the document in one spelling: one field per line, one separator everywhere, for a diff and a hash that mean something | |
 | `outline FILE` | the document read as prose: each field quoted, its ground and its diagnostics in the margin | |
 | `mem [--store FILE] [--recall CODE...] [--k N]` | the case store: audit it, or recall similar situations | |
-| `propose FILE --proposals FILE.json [--policy ...]` | gate values an outside model wants to fill into holes; applying is refused while a conclusion stands on an unbacked hypothesis | |
+| `propose FILE --proposals FILE.json [--policy ...] [--json]` | gate values an outside model wants to fill into holes; applying is refused while a conclusion stands on an unbacked hypothesis; the JSON answers per proposal (`decl`, `field`, `verdict`, `reason`, `errors`, `warnings`) so a loop can retry the refused ones | yes |
 | `fca FILE` | what a concept's positives share, and which facts the attributes imply | |
 
 `suggest` and `apply` are the engine's own shape: `apply` splices a span and keeps the result

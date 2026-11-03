@@ -1,6 +1,7 @@
 //! Commands that propose or apply a repair.
 
 use super::*;
+use crate::json::Json as J;
 
 pub(crate) fn cmd_suggest(path: &Path, json: bool) -> Outcome {
     let loaded = match load(path) {
@@ -328,7 +329,13 @@ pub(crate) fn cmd_fix(path: &Path, apply: Option<&str>) -> Outcome {
     Outcome::Ok
 }
 
-pub(crate) fn cmd_propose(path: &Path, proposals_path: &str, apply: bool, policy: &str) -> Outcome {
+pub(crate) fn cmd_propose(
+    path: &Path,
+    proposals_path: &str,
+    apply: bool,
+    policy: &str,
+    json: bool,
+) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -357,6 +364,7 @@ pub(crate) fn cmd_propose(path: &Path, proposals_path: &str, apply: bool, policy
     let mut current = loaded.text.clone();
     let mut admitted = 0;
     let mut needs_review = 0;
+    let mut rows: Vec<crate::json::Json> = Vec::new();
     for item in &items {
         let decl = item
             .get("decl")
@@ -391,19 +399,35 @@ pub(crate) fn cmd_propose(path: &Path, proposals_path: &str, apply: bool, policy
                 text,
             } => {
                 admitted += 1;
-                println!(
-                    "{} admitted  ({errors:+} errors, {warnings:+} warnings)",
-                    pad(&format!("{decl}.{field}"), 34)
-                );
+                if !json {
+                    println!(
+                        "{} admitted  ({errors:+} errors, {warnings:+} warnings)",
+                        pad(&format!("{decl}.{field}"), 34)
+                    );
+                }
+                rows.push(row(
+                    decl,
+                    field,
+                    "admitted",
+                    "",
+                    errors as i64,
+                    warnings as i64,
+                ));
                 current = text;
             }
             crate::propose::Verdict::NeedsReview { reason, text } => {
                 needs_review += 1;
-                println!("{} review    {reason}", pad(&format!("{decl}.{field}"), 34));
+                if !json {
+                    println!("{} review    {reason}", pad(&format!("{decl}.{field}"), 34));
+                }
+                rows.push(row(decl, field, "review", &reason, 0, 0));
                 current = text;
             }
             crate::propose::Verdict::Rejected { reason } => {
-                println!("{} rejected  {reason}", pad(&format!("{decl}.{field}"), 34));
+                if !json {
+                    println!("{} rejected  {reason}", pad(&format!("{decl}.{field}"), 34));
+                }
+                rows.push(row(decl, field, "rejected", &reason, 0, 0));
             }
         }
     }
@@ -415,9 +439,31 @@ pub(crate) fn cmd_propose(path: &Path, proposals_path: &str, apply: bool, policy
             return fail(format!("{}: {error}", path.display()));
         }
     }
-    println!(
-        "{admitted} admitted, {needs_review} review, {} rejected",
-        items.len() - admitted - needs_review
-    );
+    let rejected = items.len() - admitted - needs_review;
+    if json {
+        println!(
+            "{}",
+            crate::json::serialize(&J::Obj(vec![
+                ("proposals".to_string(), J::Arr(rows)),
+                ("admitted".to_string(), J::Num(admitted as f64)),
+                ("review".to_string(), J::Num(needs_review as f64)),
+                ("rejected".to_string(), J::Num(rejected as f64)),
+            ]))
+        );
+        return Outcome::Ok;
+    }
+    println!("{admitted} admitted, {needs_review} review, {rejected} rejected");
     Outcome::Ok
+}
+
+/// One proposal's verdict, in the shape a caller reads without parsing prose.
+fn row(decl: &str, field: &str, verdict: &str, reason: &str, errors: i64, warnings: i64) -> J {
+    J::Obj(vec![
+        ("decl".to_string(), J::Str(decl.to_string())),
+        ("field".to_string(), J::Str(field.to_string())),
+        ("verdict".to_string(), J::Str(verdict.to_string())),
+        ("reason".to_string(), J::Str(reason.to_string())),
+        ("errors".to_string(), J::Num(errors as f64)),
+        ("warnings".to_string(), J::Num(warnings as f64)),
+    ])
 }
