@@ -7,6 +7,7 @@ pub mod assumptions;
 pub mod audit;
 pub mod blame;
 pub mod cat;
+pub mod chain;
 pub mod closure;
 pub mod cost;
 pub mod coverage;

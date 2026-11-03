@@ -274,6 +274,7 @@ const COMMANDS: &[Command] = &[
         Command("reasoning", "diff", "diff BEFORE AFTER [--json]   what changed between two ledgers"),
         Command("reasoning", "merge", "merge BASE OURS THEIRS --out FILE [--json]   structural three-way merge"),
         Command("reasoning", "blame", "blame STORE NAME [--json]   which version last changed each field"),
+        Command("reasoning", "chain", "chain FILE NAME [--json]   the support path from a claim to its evidence"),
         Command("reasoning", "whatif", "whatif PATH NAME             what falls when one assumption is removed"),
         Command("reasoning", "kinds", "kinds                        the obligation table: what each kind owes"),
         Command("repairing", "fix", "fix PATH [--apply OUT]          verified repair candidates, and applying them"),
@@ -670,6 +671,13 @@ pub fn run() -> i32 {
                 return 2;
             };
             cmd_blame(&path, name, args.has("--json"))
+        }
+        "chain" => {
+            let Some(name) = args.at(1) else {
+                println!("usage: tsare chain FILE NAME [--json]");
+                return 2;
+            };
+            cmd_chain(&path, name, args.has("--json"))
         }
         "fmt" => cmd_fmt(&path),
         "induce" => cmd_induce(&path),

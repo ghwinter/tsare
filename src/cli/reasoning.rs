@@ -371,6 +371,46 @@ pub(crate) fn cmd_blame(store: &Path, name: &str, json: bool) -> i32 {
     0
 }
 
+fn link_json(link: &crate::chain::Link) -> J {
+    let children: Vec<J> = link.children.iter().map(link_json).collect();
+    obj(vec![
+        ("name", J::Str(link.name.clone())),
+        ("kind", J::Str(link.kind.clone())),
+        ("detail", J::Str(link.detail.clone())),
+        ("children", J::Arr(children)),
+    ])
+}
+
+fn print_link(link: &crate::chain::Link, depth: usize) {
+    let pad = "  ".repeat(depth);
+    if link.detail.is_empty() {
+        println!("{pad}{} {}", link.kind, link.name);
+    } else {
+        println!("{pad}{} {} — {}", link.kind, link.name, link.detail);
+    }
+    for child in &link.children {
+        print_link(child, depth + 1);
+    }
+}
+
+/// The support path behind a declaration, from the claim to the evidence.
+pub(crate) fn cmd_chain(path: &Path, name: &str, json: bool) -> i32 {
+    let loaded = match load(path) {
+        Ok(loaded) => loaded,
+        Err(error) => return fail(error),
+    };
+    let link = match crate::chain::chain(&loaded.decls, name) {
+        Ok(link) => link,
+        Err(error) => return fail(error),
+    };
+    if json {
+        emit(link_json(&link));
+    } else {
+        print_link(&link, 0);
+    }
+    0
+}
+
 pub(crate) fn cmd_engine(path: &Path, json: bool) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,

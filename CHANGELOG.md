@@ -8,6 +8,9 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `chain FILE NAME [--json]`: the support path from a declaration to its evidence — a proposition
+  reaches its premises and the rules that conclude it, a warrant its premises, a fact its evidence.
+
 - `views FILE [--as VIEW] [--check] [--json]`: the same document as five typed projections —
   tree, graph, hypergraph, matrix (facts × attrs) and logic — each declaring what it preserves and
   loses. The matrix and graph read back to the attributes and references they came from; `--as`
