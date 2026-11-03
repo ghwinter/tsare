@@ -504,7 +504,7 @@ pub(crate) fn cmd_fmt(path: &Path) -> i32 {
 }
 
 /// Five projections of one document: tree, graph, hypergraph, matrix and logic.
-pub(crate) fn cmd_views(path: &Path, json: bool) -> i32 {
+pub(crate) fn cmd_views(path: &Path, json: bool, only: Option<&str>) -> i32 {
     use crate::json::Json as J;
 
     let loaded = match load(path) {
@@ -512,45 +512,97 @@ pub(crate) fn cmd_views(path: &Path, json: bool) -> i32 {
         Err(error) => return fail(error),
     };
     let views = crate::views::json(&loaded.decls);
-    if json {
-        println!("{}", crate::json::serialize(&views));
-        return 0;
+    if let Some(name) = only {
+        if !crate::views::VIEWS.contains(&name) {
+            println!(
+                "views: unknown view {name}; views are {}",
+                crate::views::VIEWS.join(", ")
+            );
+            return 2;
+        }
     }
     fn count(value: &J) -> usize {
         value.as_arr().map(|items| items.len()).unwrap_or(0)
     }
-    let part = |name: &str| -> Option<&J> { views.get(name) };
-    let nodes = part("graph")
-        .and_then(|graph| graph.get("nodes"))
-        .map(count)
-        .unwrap_or(0);
-    let edges = part("graph")
-        .and_then(|graph| graph.get("edges"))
-        .map(count)
-        .unwrap_or(0);
-    let concepts = part("hypergraph")
-        .and_then(|hyper| hyper.get("hyperedges"))
-        .map(count)
-        .unwrap_or(0);
-    let rows = part("matrix")
-        .and_then(|matrix| matrix.get("rows"))
-        .map(count)
-        .unwrap_or(0);
-    let attributes = part("matrix")
-        .and_then(|matrix| matrix.get("attributes"))
-        .map(count)
-        .unwrap_or(0);
-    let rules = part("logic")
-        .and_then(|logic| logic.get("rules"))
-        .map(count)
-        .unwrap_or(0);
-    println!(
-        "tree: {} declarations",
-        part("tree").map(count).unwrap_or(0)
-    );
-    println!("graph: {nodes} nodes, {edges} edges");
-    println!("hypergraph: {concepts} concepts");
-    println!("matrix: {rows} rows, {attributes} attributes");
-    println!("logic: {rules} rules");
+    fn summary(name: &str, data: &J) -> String {
+        match name {
+            "tree" => format!("tree: {} declarations", count(data)),
+            "graph" => format!(
+                "graph: {} nodes, {} edges",
+                data.get("nodes").map(count).unwrap_or(0),
+                data.get("edges").map(count).unwrap_or(0)
+            ),
+            "hypergraph" => format!(
+                "hypergraph: {} concepts",
+                data.get("hyperedges").map(count).unwrap_or(0)
+            ),
+            "matrix" => format!(
+                "matrix: {} rows, {} attributes",
+                data.get("rows").map(count).unwrap_or(0),
+                data.get("attributes").map(count).unwrap_or(0)
+            ),
+            "logic" => format!("logic: {} rules", data.get("rules").map(count).unwrap_or(0)),
+            _ => String::new(),
+        }
+    }
+    fn declared(fidelity: &J) -> String {
+        let list = |key: &str| -> String {
+            fidelity
+                .get(key)
+                .and_then(J::as_arr)
+                .map(|items| {
+                    items
+                        .iter()
+                        .filter_map(|item| item.as_str())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                })
+                .unwrap_or_default()
+        };
+        let loses = list("loses");
+        let loses = if loses.is_empty() {
+            "nothing".to_string()
+        } else {
+            loses
+        };
+        format!("preserves: {}; loses: {loses}", list("preserves"))
+    }
+    let fidelity = views.get("fidelity");
+    if let Some(name) = only {
+        let Some(data) = views.get(name) else {
+            println!("views: unknown view {name}");
+            return 2;
+        };
+        if json {
+            let selected = J::Obj(vec![
+                ("view".to_string(), J::Str(name.to_string())),
+                (
+                    "fidelity".to_string(),
+                    fidelity
+                        .and_then(|all| all.get(name))
+                        .cloned()
+                        .unwrap_or(J::Null),
+                ),
+                ("data".to_string(), data.clone()),
+            ]);
+            println!("{}", crate::json::serialize(&selected));
+            return 0;
+        }
+        println!("{}", summary(name, data));
+        if let Some(fidelity) = fidelity.and_then(|all| all.get(name)) {
+            println!("fidelity: {}", declared(fidelity));
+        }
+        return 0;
+    }
+    if json {
+        println!("{}", crate::json::serialize(&views));
+        return 0;
+    }
+    for name in crate::views::VIEWS {
+        if let Some(data) = views.get(name) {
+            println!("{}", summary(name, data));
+        }
+    }
+    println!("fidelity: declared for all five views (--json has preserves/loses)");
     0
 }

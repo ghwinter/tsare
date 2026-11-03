@@ -22,6 +22,54 @@ fn strings(items: &[String]) -> J {
     J::Arr(items.iter().map(|item| J::Str(item.clone())).collect())
 }
 
+fn string_list(items: &[&str]) -> J {
+    J::Arr(items.iter().map(|item| J::Str(item.to_string())).collect())
+}
+
+/// The five names, in output order.
+pub const VIEWS: &[&str] = &["tree", "graph", "hypergraph", "matrix", "logic"];
+
+/// What each projection preserves and loses: a representation change declares its fidelity.
+pub fn fidelity() -> J {
+    let view = |preserves: &[&str], loses: &[&str]| {
+        obj(vec![
+            ("preserves", string_list(preserves)),
+            ("loses", string_list(loses)),
+        ])
+    };
+    obj(vec![
+        (
+            "tree",
+            view(&["declarations", "kinds", "fields", "typed values"], &[]),
+        ),
+        (
+            "graph",
+            view(&["references"], &["field values", "claims", "evidence"]),
+        ),
+        (
+            "hypergraph",
+            view(
+                &["concept extents"],
+                &["concept parents", "layers", "extent kinds"],
+            ),
+        ),
+        (
+            "matrix",
+            view(
+                &["facts' attributes"],
+                &["claims", "evidence", "references"],
+            ),
+        ),
+        (
+            "logic",
+            view(
+                &["rule premises", "rule conclusions"],
+                &["warrant basis", "confidence", "layers"],
+            ),
+        ),
+    ])
+}
+
 /// The five views of a document, as one typed JSON object.
 pub fn json(decls: &[Decl]) -> J {
     obj(vec![
@@ -30,6 +78,7 @@ pub fn json(decls: &[Decl]) -> J {
         ("hypergraph", hypergraph(decls)),
         ("matrix", matrix(decls)),
         ("logic", logic(decls)),
+        ("fidelity", fidelity()),
     ])
 }
 

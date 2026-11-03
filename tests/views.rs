@@ -227,6 +227,55 @@ fn the_other_three_views_are_present() {
 }
 
 #[test]
+fn every_view_declares_its_fidelity() {
+    let dir = work("fidelity");
+    let path = dir.join("doc.tsare");
+    fs::write(&path, DOC).expect("doc");
+    let (out, err, status) = run(&["views", path.to_str().expect("path"), "--json"]);
+    assert_eq!(status, 0, "{out}{err}");
+    let views = parse(&out).expect("views JSON");
+    let fidelity = views.get("fidelity").expect("fidelity");
+    for name in ["tree", "graph", "hypergraph", "matrix", "logic"] {
+        let view = fidelity
+            .get(name)
+            .unwrap_or_else(|| panic!("no fidelity for {name}"));
+        let preserves = view
+            .get("preserves")
+            .and_then(Json::as_arr)
+            .expect("preserves");
+        assert!(!preserves.is_empty(), "{name} preserves nothing");
+        assert!(
+            view.get("loses").and_then(Json::as_arr).is_some(),
+            "{name} has no loses list"
+        );
+    }
+}
+
+#[test]
+fn one_view_can_be_selected() {
+    let dir = work("selected");
+    let path = dir.join("doc.tsare");
+    fs::write(&path, DOC).expect("doc");
+    let (out, err, status) = run(&[
+        "views",
+        path.to_str().expect("path"),
+        "--as",
+        "matrix",
+        "--json",
+    ]);
+    assert_eq!(status, 0, "{out}{err}");
+    let selected = parse(&out).expect("selected JSON");
+    assert_eq!(selected.get("view").and_then(Json::as_str), Some("matrix"));
+    assert!(selected
+        .get("data")
+        .and_then(|data| data.get("rows"))
+        .is_some());
+    let (out, _, status) = run(&["views", path.to_str().expect("path"), "--as", "nope"]);
+    assert_eq!(status, 2, "{out}");
+    assert!(out.contains("unknown view"), "{out}");
+}
+
+#[test]
 fn the_tree_reads_back_to_the_declarations() {
     let dir = work("tree");
     let path = dir.join("doc.tsare");
