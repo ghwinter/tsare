@@ -57,15 +57,113 @@ fn open_chain(text: &str) -> Option<String> {
     })
 }
 
-pub(crate) fn cmd_apply(path: &Path, dry: bool) -> Outcome {
+/// The check report for one side of an edit, as the case store reads it.
+fn report(decls: &[crate::syntax::Decl], text: &str, display: &str) -> String {
+    let mut session = crate::session::Session::new(display.to_string()).with_source(text);
+    session.extend(crate::check::check(decls));
+    session.json()
+}
+
+/// The process as step descriptors: what kind of edit happened, on which field, with the values
+/// abstracted to their presence.  The document and the values are not part of the process.
+fn describe(difference: &crate::diff::Diff) -> Vec<String> {
+    let mut ops: Vec<String> = Vec::new();
+    for (_, kind) in &difference.added {
+        ops.push(format!("add {kind}"));
+    }
+    for (_, kind) in &difference.removed {
+        ops.push(format!("remove {kind}"));
+    }
+    for change in &difference.changed {
+        for field in &change.fields {
+            let from = if field.before.is_some() {
+                "set"
+            } else {
+                "unset"
+            };
+            let to = if field.after.is_some() {
+                "set"
+            } else {
+                "unset"
+            };
+            ops.push(format!(
+                "edit {} {} {}->{}",
+                change.after_kind, field.key, from, to
+            ));
+        }
+    }
+    ops.sort();
+    ops
+}
+
+/// The witness templates: the applied suggestion messages with their declaration names stripped.
+fn templates(applied: &[String]) -> Vec<String> {
+    let mut out: Vec<String> = applied
+        .iter()
+        .map(|message| {
+            let rest = match message.split_once(": ") {
+                Some((_, rest)) => rest,
+                None => message.as_str(),
+            };
+            match rest.split_once(" at line ") {
+                Some((head, _)) => head.to_string(),
+                None => rest.to_string(),
+            }
+        })
+        .collect();
+    out.sort();
+    out
+}
+
+pub(crate) fn cmd_apply(path: &Path, dry: bool, record: Option<&str>, action: &str) -> Outcome {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
     };
     let items = crate::fix::suggestions(&loaded.decls);
     let (updated, applied) = crate::apply::apply_best(&loaded.text, &items);
+    let refused = if !dry && updated != loaded.text {
+        open_chain(&updated)
+    } else {
+        None
+    };
+    if let Some(store) = record {
+        let after = crate::syntax::parse(&updated).unwrap_or_default();
+        let before_report = report(&loaded.decls, &loaded.text, &path.display().to_string());
+        let after_report = report(&after, &updated, &path.display().to_string());
+        let process = describe(&crate::diff::diff(&loaded.decls, &after));
+        let witness = templates(&applied);
+        let signature = crate::cases::signature(&witness, &process);
+        let lines = |items: &[String]| {
+            crate::json::serialize(&crate::json::Json::Arr(
+                items
+                    .iter()
+                    .map(|line| crate::json::Json::Str(line.clone()))
+                    .collect(),
+            ))
+        };
+        let process_json = lines(&process);
+        let witness_json = lines(&witness);
+        let entry = match crate::cases::entry(&crate::cases::Record {
+            before: &before_report,
+            after: &after_report,
+            doc: &path.display().to_string(),
+            action,
+            checker: crate::cache::SALT,
+            process: Some(&process_json),
+            witness: Some(&witness_json),
+            signature: Some(&signature),
+            refused: refused.as_deref(),
+        }) {
+            Ok(entry) => entry,
+            Err(error) => return fail(error),
+        };
+        if let Err(error) = crate::cases::append(Path::new(store), &entry) {
+            return fail(format!("{store}: {error}"));
+        }
+    }
     if !dry && updated != loaded.text {
-        if let Some(reason) = open_chain(&updated) {
+        if let Some(reason) = refused {
             return Outcome::Refused(format!("refused: {reason}; resolve it, or record why"));
         }
         if let Err(error) = crate::apply::replace(path, &updated) {

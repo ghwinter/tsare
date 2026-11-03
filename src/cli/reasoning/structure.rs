@@ -37,7 +37,17 @@ pub(crate) fn cmd_delta(
             println!("usage: tsare delta BEFORE AFTER --record STORE --doc DOC [--action A]");
             return Outcome::Usage;
         };
-        let entry = match crate::cases::entry(&left, &right, doc, action, crate::cache::SALT) {
+        let entry = match crate::cases::entry(&crate::cases::Record {
+            before: &left,
+            after: &right,
+            doc,
+            action,
+            checker: crate::cache::SALT,
+            process: None,
+            witness: None,
+            signature: None,
+            refused: None,
+        }) {
             Ok(entry) => entry,
             Err(error) => return fail(error),
         };

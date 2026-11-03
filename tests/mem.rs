@@ -49,14 +49,14 @@ fn the_audit_reports_the_reuse_rate_and_the_orphans() {
     let (text, err, status) = run(&["mem", "--store", store.to_str().expect("store"), "--json"]);
     assert_eq!(status, 0, "{text}{err}");
     assert!(text.contains("\"cases\": 4"), "{text}");
-    assert!(text.contains("\"signatures\": 3"), "{text}");
-    assert!(text.contains("\"reused\": 1"), "{text}");
-    assert!(text.contains("\"single\": 2"), "{text}");
+    assert!(text.contains("\"situations\": 3"), "{text}");
+    assert!(text.contains("\"situation_reuse\": 1"), "{text}");
+    assert!(text.contains("\"situation_single\": 2"), "{text}");
     assert!(text.contains("\"regressed\": 1"), "{text}");
     assert!(text.contains("\"reuse_rate\": 0.25"), "{text}");
     let (text, err, status) = run(&["mem", "--store", store.to_str().expect("store")]);
     assert_eq!(status, 0, "{text}{err}");
     assert!(text.contains("reuse rate:  0.25"), "{text}");
-    assert!(text.contains("signatures:  3"), "{text}");
+    assert!(text.contains("situations:  3"), "{text}");
     assert!(text.contains("actions:     fix 3, rename 1"), "{text}");
 }

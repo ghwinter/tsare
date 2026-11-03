@@ -62,18 +62,36 @@ fn summary(report: &str) -> Result<Summary, String> {
     })
 }
 
+/// Everything a recorded case carries.  The process and the witness are the R5 addition: the steps
+/// taken and the rule that justified them, so the memory can be addressed by the process rather
+/// than by the situation.
+pub struct Record<'a> {
+    pub before: &'a str,
+    pub after: &'a str,
+    pub doc: &'a str,
+    pub action: &'a str,
+    pub checker: &'a str,
+    pub process: Option<&'a str>,
+    pub witness: Option<&'a str>,
+    pub signature: Option<&'a str>,
+    pub refused: Option<&'a str>,
+}
+
+/// The canonical signature of a process: the sorted witness templates and step descriptors, hashed.
+pub fn signature(witness: &[String], process: &[String]) -> String {
+    let mut lines: Vec<&str> = Vec::new();
+    lines.extend(witness.iter().map(|line| line.as_str()));
+    lines.extend(process.iter().map(|line| line.as_str()));
+    lines.sort();
+    crate::hash::hex(lines.join("\n").as_bytes())
+}
+
 /// One recorded outcome, as a line of JSON.  Everything in it is read from the two reports or from
 /// the flags; the agent that made the edit supplies only the name of its own action, because a
 /// memory narrated by the party being judged is the thing the audit exists to catch.
-pub fn entry(
-    before: &str,
-    after: &str,
-    doc: &str,
-    action: &str,
-    checker: &str,
-) -> Result<String, String> {
-    let left = summary(before)?;
-    let right = summary(after)?;
+pub fn entry(record: &Record) -> Result<String, String> {
+    let left = summary(record.before)?;
+    let right = summary(record.after)?;
     let block = |item: &Summary| {
         Json::Obj(vec![
             ("errors".to_string(), Json::Num(item.errors as f64)),
@@ -87,14 +105,51 @@ pub fn entry(
             .map(Json::Str)
             .collect::<Vec<Json>>(),
     );
+    let parsed = |text: Option<&str>| -> Result<Json, String> {
+        match text {
+            Some(text) => json::parse(text),
+            None => Ok(Json::Null),
+        }
+    };
+    let process = parsed(record.process).map_err(|error| format!("not a process: {error}"))?;
+    let witness = parsed(record.witness).map_err(|error| format!("not a witness: {error}"))?;
     Ok(json::serialize(&Json::Obj(vec![
-        ("doc".to_string(), Json::Str(doc.to_string())),
+        ("doc".to_string(), Json::Str(record.doc.to_string())),
         ("codes".to_string(), codes),
-        ("action".to_string(), Json::Str(action.to_string())),
+        ("process".to_string(), process),
+        ("witness".to_string(), witness),
+        (
+            "signature".to_string(),
+            match record.signature {
+                Some(signature) => Json::Str(signature.to_string()),
+                None => Json::Null,
+            },
+        ),
+        (
+            "refused".to_string(),
+            match record.refused {
+                Some(reason) => Json::Str(reason.to_string()),
+                None => Json::Null,
+            },
+        ),
+        ("action".to_string(), Json::Str(record.action.to_string())),
         ("before".to_string(), block(&left)),
         ("after".to_string(), block(&right)),
-        ("checker".to_string(), Json::Str(checker.to_string())),
+        ("checker".to_string(), Json::Str(record.checker.to_string())),
     ])))
+}
+
+/// Recall by the process signature: the same steps over a different document.
+pub fn recall_by_signature(store: &Path, signature: &str, k: usize) -> Vec<Recalled> {
+    load(store)
+        .into_iter()
+        .filter(|entry| entry.get("signature").and_then(|value| value.as_str()) == Some(signature))
+        .take(k)
+        .map(|entry| Recalled {
+            improved: improved(&entry),
+            entry,
+        })
+        .collect()
 }
 
 /// Append one entry.  The store is a line-per-case file so that a crash loses at most one case and
@@ -189,14 +244,24 @@ pub struct Audit {
     pub regressed: usize,
     pub unchanged: usize,
     pub orphans: usize,
-    /// Distinct situations (the code set): the quotient the memory is addressed by.
-    pub signatures: usize,
-    /// Cases whose situation was seen before: the reuse count.
-    pub reused: usize,
+    /// Distinct situations (the code set): the first quotient of the memory.
+    pub situations: usize,
+    /// Cases whose situation was seen before.
+    pub situation_reuse: usize,
     /// Situations seen exactly once: the orphan signatures, candidates for decay.
-    pub single: usize,
+    pub situation_single: usize,
     /// The actions, by how many times each was taken (the tool as text).
     pub actions: Vec<(String, usize)>,
+    /// Distinct process signatures: the same steps over different documents.
+    pub processes: usize,
+    /// Cases whose process signature was seen before.
+    pub process_reuse: usize,
+    /// Process signatures over more than one document: the cross-task reuse.
+    pub cross_task: usize,
+    /// Cases recorded as refused by a gate.
+    pub refused: usize,
+    /// Process signatures that carry a refusal: the vetoed processes.
+    pub vetoed: usize,
 }
 
 pub fn audit(store: &Path) -> Audit {
@@ -260,13 +325,61 @@ pub fn audit(store: &Path) -> Audit {
         *signature_counts.entry(codes_of(entry)).or_insert(0) += 1;
         *action_counts.entry(action_of(entry)).or_insert(0) += 1;
     }
-    let signatures = signature_counts.len();
-    let reused = entries.len() - signatures;
-    let single = signature_counts
+    let situations = signature_counts.len();
+    let situation_reuse = entries.len() - situations;
+    let situation_single = signature_counts
         .values()
         .filter(|count| **count == 1)
         .count();
     let actions: Vec<(String, usize)> = action_counts.into_iter().collect();
+    let mut process_docs: HashMap<String, Vec<&str>> = HashMap::new();
+    let mut refused = 0;
+    for entry in &entries {
+        if let Some(signature) = entry.get("signature").and_then(|value| value.as_str()) {
+            let doc = entry
+                .get("doc")
+                .and_then(|value| value.as_str())
+                .unwrap_or("");
+            process_docs
+                .entry(signature.to_string())
+                .or_default()
+                .push(doc);
+        }
+        if entry
+            .get("refused")
+            .and_then(|value| value.as_str())
+            .is_some()
+        {
+            refused += 1;
+        }
+    }
+    let processes = process_docs.len();
+    let process_cases = entries
+        .iter()
+        .filter(|entry| {
+            entry
+                .get("signature")
+                .and_then(|value| value.as_str())
+                .is_some()
+        })
+        .count();
+    let process_reuse = process_cases - processes;
+    let cross_task = process_docs
+        .values()
+        .filter(|docs| docs.iter().collect::<HashSet<_>>().len() > 1)
+        .count();
+    let vetoed = process_docs
+        .iter()
+        .filter(|(signature, _)| {
+            entries.iter().any(|entry| {
+                entry.get("signature").and_then(|value| value.as_str()) == Some(signature.as_str())
+                    && entry
+                        .get("refused")
+                        .and_then(|value| value.as_str())
+                        .is_some()
+            })
+        })
+        .count();
 
     Audit {
         entries: entries.len(),
@@ -275,10 +388,15 @@ pub fn audit(store: &Path) -> Audit {
         regressed,
         unchanged,
         orphans,
-        signatures,
-        reused,
-        single,
+        situations,
+        situation_reuse,
+        situation_single,
         actions,
+        processes,
+        process_reuse,
+        cross_task,
+        refused,
+        vetoed,
     }
 }
 
@@ -297,16 +415,26 @@ impl Audit {
         if self.entries == 0 {
             0.0
         } else {
-            self.reused as f64 / self.entries as f64
+            self.situation_reuse as f64 / self.entries as f64
         }
     }
 
     /// The compression: cases per distinct situation.
     pub fn compression(&self) -> f64 {
-        if self.signatures == 0 {
+        if self.situations == 0 {
             0.0
         } else {
-            self.entries as f64 / self.signatures as f64
+            self.entries as f64 / self.situations as f64
+        }
+    }
+
+    /// The process rate: the cases whose process signature was seen before, over process cases.
+    pub fn process_rate(&self) -> f64 {
+        let cases = self.process_reuse + self.processes;
+        if cases == 0 {
+            0.0
+        } else {
+            self.process_reuse as f64 / cases as f64
         }
     }
 
@@ -331,24 +459,24 @@ impl Audit {
             self.orphans
         ));
         out.push_str(&format!(
-            "signatures:  {}  (distinct situations: the quotient the memory is addressed by)\n",
-            self.signatures
+            "situations:  {}  (distinct diagnostic-code sets)\n",
+            self.situations
         ));
         out.push_str(&format!(
-            "reused:      {}  (a situation seen before)\n",
-            self.reused
+            "situation reuse: {}  (a situation seen before)\n",
+            self.situation_reuse
         ));
         out.push_str(&format!(
-            "reuse rate:  {:.2}  (reused / cases; the compression ratio)\n",
+            "reuse rate:  {:.2}  (situation reuse / cases)\n",
             self.reuse_rate()
         ));
         out.push_str(&format!(
-            "compression: {:.2}  (cases per signature)\n",
+            "compression: {:.2}  (cases per situation)\n",
             self.compression()
         ));
         out.push_str(&format!(
-            "single:      {}  (a situation seen once: the orphan signatures)\n",
-            self.single
+            "situation single: {}  (a situation seen once)\n",
+            self.situation_single
         ));
         let actions = if self.actions.is_empty() {
             "-".to_string()
@@ -359,6 +487,30 @@ impl Audit {
                 .collect::<Vec<_>>()
                 .join(", ")
         };
+        out.push_str(&format!(
+            "processes:   {}  (distinct process signatures: the same steps over different documents)\n",
+            self.processes
+        ));
+        out.push_str(&format!(
+            "process reuse: {}  (a process seen before)\n",
+            self.process_reuse
+        ));
+        out.push_str(&format!(
+            "process rate: {:.2}  (process reuse / process cases)\n",
+            self.process_rate()
+        ));
+        out.push_str(&format!(
+            "cross task:  {}  (a process over more than one document)\n",
+            self.cross_task
+        ));
+        out.push_str(&format!(
+            "refused:     {}  (a gate refused the process)\n",
+            self.refused
+        ));
+        out.push_str(&format!(
+            "vetoed:      {}  (a process signature with a refusal)\n",
+            self.vetoed
+        ));
         out.push_str(&format!("actions:     {actions}\n"));
         out
     }
@@ -384,11 +536,26 @@ impl Audit {
             ("regressed".to_string(), Json::Num(self.regressed as f64)),
             ("unchanged".to_string(), Json::Num(self.unchanged as f64)),
             ("orphans".to_string(), Json::Num(self.orphans as f64)),
-            ("signatures".to_string(), Json::Num(self.signatures as f64)),
-            ("reused".to_string(), Json::Num(self.reused as f64)),
+            ("situations".to_string(), Json::Num(self.situations as f64)),
+            (
+                "situation_reuse".to_string(),
+                Json::Num(self.situation_reuse as f64),
+            ),
+            (
+                "situation_single".to_string(),
+                Json::Num(self.situation_single as f64),
+            ),
             ("reuse_rate".to_string(), Json::Num(self.reuse_rate())),
             ("compression".to_string(), Json::Num(self.compression())),
-            ("single".to_string(), Json::Num(self.single as f64)),
+            ("processes".to_string(), Json::Num(self.processes as f64)),
+            (
+                "process_reuse".to_string(),
+                Json::Num(self.process_reuse as f64),
+            ),
+            ("process_rate".to_string(), Json::Num(self.process_rate())),
+            ("cross_task".to_string(), Json::Num(self.cross_task as f64)),
+            ("refused".to_string(), Json::Num(self.refused as f64)),
+            ("vetoed".to_string(), Json::Num(self.vetoed as f64)),
             ("actions".to_string(), Json::Arr(actions)),
         ])
     }
