@@ -5,11 +5,13 @@ use crate::json::Json as J;
 
 /// The definitions a rendered page states: a heading and the term column the caller names (or the
 /// bold first cell when it names none).  A directory is read page by page in name order, so one
-/// chapter list becomes one document with one numbering.
+/// chapter list becomes one document with one numbering.  The vocabulary may be given inline or
+/// read from a document of preferences.
 pub(crate) fn cmd_extract(
     path: &Path,
     json: bool,
     terms: Option<&str>,
+    terms_from: Option<&str>,
     write: Option<&str>,
 ) -> Outcome {
     let pages: Vec<std::path::PathBuf> = if path.is_dir() {
@@ -25,14 +27,28 @@ pub(crate) fn cmd_extract(
     } else {
         vec![path.to_path_buf()]
     };
-    let terms: Vec<&str> = terms
+    let mut words: Vec<String> = terms
         .map(|list| {
             list.split(',')
                 .map(str::trim)
                 .filter(|word| !word.is_empty())
+                .map(str::to_string)
                 .collect()
         })
         .unwrap_or_default();
+    if let Some(from) = terms_from {
+        let text = match fs::read_to_string(from) {
+            Ok(text) => text,
+            Err(error) => return fail(format!("{from}: {error}")),
+        };
+        match crate::extract::vocabulary(&text, from) {
+            Ok(found) => words.extend(found),
+            Err(error) => return fail(error),
+        }
+    }
+    words.sort();
+    words.dedup();
+    let terms: Vec<&str> = words.iter().map(String::as_str).collect();
     let mut found = Vec::new();
     for page in &pages {
         let text = match fs::read_to_string(page) {

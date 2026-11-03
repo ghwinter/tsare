@@ -23,6 +23,29 @@ pub struct Definition {
     pub col: usize,
 }
 
+/// The header words a vocabulary document names.
+///
+/// A term column is a *preference*, not a commitment: nothing in a page says "this column is a
+/// table of terms", so the person doing the reading says it.  A `note` with `tag: preference` is
+/// exactly that -- held without owing anyone a proof -- and it is written in the same language as
+/// everything else, so `check` still reads it.
+pub fn vocabulary(text: &str, file: &str) -> Result<Vec<String>, String> {
+    let decls = crate::syntax::parse(text).map_err(|error| format!("{file}: {error}"))?;
+    let mut out = Vec::new();
+    for decl in decls.iter().filter(|decl| decl.kind == "note") {
+        if crate::program::f_id(decl, "tag") != Some("preference") {
+            continue;
+        }
+        if let Some(word) = crate::program::f_str(decl, "text") {
+            let word = word.trim();
+            if !word.is_empty() {
+                out.push(word.to_string());
+            }
+        }
+    }
+    Ok(out)
+}
+
 /// Every definition the page states, in reading order.  `terms` are the header words that name a
 /// term column; empty means "only rows whose first cell is the single bold phrase".
 pub fn definitions(text: &str, file: &str, terms: &[&str]) -> Vec<Definition> {

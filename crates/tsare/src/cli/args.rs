@@ -33,6 +33,7 @@ const VALUE_FLAGS: &[&str] = &[
     "--store",
     "--near",
     "--terms",
+    "--terms-from",
     "--write",
 ];
 

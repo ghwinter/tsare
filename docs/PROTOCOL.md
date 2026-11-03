@@ -59,7 +59,7 @@ answers `--json`.
 | `provenance FILE [--json]` | where each quoted claim sits in its source: the source, the line and the column | yes |
 | `engine FILE\|DIR` | held, conditional, blocked, chains, gates | yes |
 | `arrows FILE [--json]` | every relation the document states, with its kind (derives, attacks, retires, sub, asks, reports), its ends and the place it is written; the kinds it uses and the pairs that chain | yes |
-| `extract PATH [--json] [--terms A,B] [--write FILE]` | the definitions a rendered page states: the heading above, the term column the caller names (or the bold first cell when it names none), and the line that does it; a directory is read page by page in name order, one numbering; `--write` emits them as a document of facts, one per term, each citing the page | yes |
+| `extract PATH [--json] [--terms A,B] [--terms-from FILE] [--write FILE]` | the definitions a rendered page states: the heading above, the term column the caller names — inline, or as `note { tag: preference, text: "<header>" }` in a document — and the line that does it; a directory is read page by page in name order, one numbering; `--write` emits them as a document of facts, one per term, each citing the page | yes |
 | `argue FILE [--against OTHER] [--json]` | which conclusions survive attack; with `--against`, the attack graph is the merge; the JSON carries each conclusion's status and why | |
 | `confront LEFT RIGHT` | which rules attack across the pair, and which attacks nobody answered; exit 1 when `LEFT` leaves one unanswered | |
 | `derive FILE` | which conclusions are grounded in facts | |

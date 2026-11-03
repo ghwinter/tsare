@@ -50,6 +50,19 @@ fn a_page_yields_the_terms_it_defines() {
 }
 
 #[test]
+fn a_vocabulary_document_names_the_term_columns() {
+    let text = std::fs::read_to_string(pages().join("vocabulary.tsare")).expect("the vocabulary");
+    let words = tsare::extract::vocabulary(&text, "vocabulary.tsare").expect("it parses");
+    assert_eq!(words, vec!["term".to_string(), "name".to_string()]);
+    assert!(
+        !words
+            .iter()
+            .any(|word| word == "this note is not part of the vocabulary"),
+        "a preference is part of the vocabulary; an intuition is not"
+    );
+}
+
+#[test]
 fn the_extracted_document_compiles() {
     let dir = std::env::temp_dir().join(format!("tsare-extract-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
@@ -58,8 +71,11 @@ fn the_extracted_document_compiles() {
     let (text, err, status) = run(&[
         "extract",
         pages().to_str().expect("pages"),
-        "--terms",
-        "name",
+        "--terms-from",
+        pages()
+            .join("vocabulary.tsare")
+            .to_str()
+            .expect("vocabulary"),
         "--write",
         out.to_str().expect("out"),
     ]);
