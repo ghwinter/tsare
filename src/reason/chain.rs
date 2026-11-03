@@ -182,3 +182,13 @@ impl ChainsReport {
         ])
     }
 }
+
+impl crate::out::Report for ChainsReport {
+    fn text(&self) -> String {
+        ChainsReport::text(self)
+    }
+
+    fn json(&self) -> J {
+        ChainsReport::json(self)
+    }
+}

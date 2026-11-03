@@ -387,15 +387,9 @@ pub(crate) fn cmd_status(path: &Path, json: bool, trace: Option<&str>) -> Outcom
         Err(error) => return fail(error),
     };
     let report = crate::status::report(&loaded.decls);
+    let mut sink = crate::out::Stdout;
+    crate::out::render(&report, json, &mut sink);
     let rendered_json = crate::json::serialize(&report.json());
-    let rendered = if json {
-        rendered_json.clone()
-    } else {
-        report.text()
-    };
-    use crate::out::{Sink, Stdout};
-    let mut out = Stdout;
-    out.line(&rendered);
     if let Some(file) = trace {
         let status = if report.errors > 0 { 1 } else { 0 };
         let step = crate::trace::Step {

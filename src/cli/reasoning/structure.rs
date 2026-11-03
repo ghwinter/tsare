@@ -284,11 +284,8 @@ pub(crate) fn cmd_blame(store: &Path, name: &str, json: bool) -> Outcome {
         Ok(blame) => blame,
         Err(error) => return fail(error),
     };
-    if json {
-        println!("{}", crate::json::serialize(&blame.json()));
-    } else {
-        print!("{}", blame.text());
-    }
+    let mut sink = crate::out::Stdout;
+    crate::out::render(&blame, json, &mut sink);
     Outcome::Ok
 }
 
@@ -317,11 +314,8 @@ pub(crate) fn cmd_chains(path: &Path, json: bool) -> Outcome {
         Err(error) => return fail(error),
     };
     let report = crate::chain::chains(&loaded.decls);
-    if json {
-        println!("{}", crate::json::serialize(&report.json()));
-    } else {
-        print!("{}", report.text());
-    }
+    let mut sink = crate::out::Stdout;
+    crate::out::render(&report, json, &mut sink);
     if report.rows.is_empty() {
         Outcome::Ok
     } else {

@@ -139,3 +139,13 @@ impl Blame {
         ])
     }
 }
+
+impl crate::out::Report for Blame {
+    fn text(&self) -> String {
+        Blame::text(self)
+    }
+
+    fn json(&self) -> J {
+        Blame::json(self)
+    }
+}

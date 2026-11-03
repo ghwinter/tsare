@@ -184,6 +184,15 @@ pub fn line(decls: &[Decl]) -> String {
     report(decls).text()
 }
 
+impl crate::out::Report for StatusReport {
+    fn text(&self) -> String {
+        StatusReport::text(self)
+    }
+
+    fn json(&self) -> J {
+        StatusReport::json(self)
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;

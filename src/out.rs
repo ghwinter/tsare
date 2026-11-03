@@ -1,10 +1,33 @@
-//! The transport: a command writes lines to a sink, so its text can be checked without a process.
+//! The transport: a report renders to a sink, so its text can be checked without a process.
 //!
-//! The report types own the rendering; a command only picks a sink and writes.
+//! A `Report` owns its two renderings; `render` picks one and writes it to any `Sink`.  The
+//! commands only choose a report and a sink.
+
+use std::io::Write;
+
+use crate::json::Json;
 
 /// Somewhere one line of output goes.
 pub trait Sink {
     fn line(&mut self, text: &str);
+}
+
+/// A rendered report: the text for a reader, the JSON for a caller.
+pub trait Report {
+    fn text(&self) -> String;
+    fn json(&self) -> Json;
+}
+
+/// Render a report into a sink: the JSON when asked, the text otherwise.
+pub fn render<R: Report>(report: &R, json: bool, sink: &mut dyn Sink) {
+    let rendered = if json {
+        crate::json::serialize(&report.json())
+    } else {
+        report.text()
+    };
+    for line in rendered.lines() {
+        sink.line(line);
+    }
 }
 
 /// The process's standard output.
@@ -25,6 +48,23 @@ pub struct Buffer {
 impl Sink for Buffer {
     fn line(&mut self, text: &str) {
         self.lines.push(text.to_string());
+    }
+}
+
+/// A sink over any writer: a `Vec<u8>` in a test, a file, or a pipe.
+pub struct Writer<W: Write> {
+    inner: W,
+}
+
+impl<W: Write> Writer<W> {
+    pub fn new(inner: W) -> Self {
+        Self { inner }
+    }
+}
+
+impl<W: Write> Sink for Writer<W> {
+    fn line(&mut self, text: &str) {
+        let _ = writeln!(self.inner, "{text}");
     }
 }
 
@@ -93,5 +133,32 @@ mod tests {
         buffer.line("a");
         buffer.line("b");
         assert_eq!(buffer.lines, vec!["a".to_string(), "b".to_string()]);
+    }
+
+    #[test]
+    fn a_report_renders_text_or_json_to_any_sink() {
+        struct Doc;
+        impl Report for Doc {
+            fn text(&self) -> String {
+                "hello\nthere".to_string()
+            }
+            fn json(&self) -> Json {
+                Json::Str("hello".to_string())
+            }
+        }
+        let mut buffer = Buffer::default();
+        render(&Doc, false, &mut buffer);
+        assert_eq!(buffer.lines, vec!["hello".to_string(), "there".to_string()]);
+        let mut buffer = Buffer::default();
+        render(&Doc, true, &mut buffer);
+        assert_eq!(buffer.lines, vec!["\"hello\"".to_string()]);
+    }
+
+    #[test]
+    fn a_writer_is_a_sink() {
+        let mut writer = Writer::new(Vec::new());
+        writer.line("a");
+        writer.line("b");
+        assert_eq!(writer.inner, b"a\nb\n".to_vec());
     }
 }

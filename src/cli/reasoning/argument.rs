@@ -26,37 +26,13 @@ pub(crate) fn cmd_argue(path: &Path, against: Option<&Path>, json: bool) -> Outc
         .into_iter()
         .filter(|row| mine.contains(row.name.as_str()))
         .collect();
-    let width = rows
-        .iter()
-        .map(|row| row.name.chars().count())
-        .max()
-        .unwrap_or(10);
     let errors = error_count(&diagnostics);
-    if json {
-        let items: Vec<J> = rows
-            .iter()
-            .map(|row| {
-                obj(vec![
-                    ("name", J::Str(row.name.clone())),
-                    ("status", J::Str(row.status.to_string())),
-                    ("why", J::Str(row.why.clone())),
-                ])
-            })
-            .collect();
-        emit(obj(vec![
-            ("conclusions", J::Arr(items)),
-            ("errors", J::Num(errors as f64)),
-        ]));
-    } else {
-        for row in &rows {
-            println!(
-                "{}  {} {}",
-                pad(&row.name, width),
-                pad(row.status, 10),
-                row.why
-            );
-        }
-    }
+    let report = crate::argue::ArgueReport {
+        conclusions: rows,
+        errors,
+    };
+    let mut sink = crate::out::Stdout;
+    crate::out::render(&report, json, &mut sink);
     if errors > 0 {
         if !json {
             println!(
