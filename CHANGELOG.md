@@ -8,6 +8,10 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `diff BEFORE AFTER [--json]`: the semantic difference between two ledgers — declarations added,
+  removed, or changed by kind or field — with both document hashes. 0 same, 1 changed, 2 cannot
+  load.
+
 - `source` and the `source` / `quote` fields: a claim can anchor to a line of an embedded source
   text; `check` reports `E-QUOTE` when the quote is not a line of it, and `E-QUOTE-SOURCE` when
   the pair is incomplete. Format 2 adds the kind; format 1 documents still parse.

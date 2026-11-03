@@ -82,6 +82,136 @@ pub(crate) fn cmd_delta(
     0
 }
 
+/// The semantic diff between two ledgers: declarations added, removed, and fields changed.
+pub(crate) fn cmd_diff(before: &Path, after: &Path, json: bool) -> i32 {
+    let read = |path: &Path| -> Result<String, String> {
+        fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))
+    };
+    let (left, right) = match (read(before), read(after)) {
+        (Ok(left), Ok(right)) => (left, right),
+        (Err(error), _) | (_, Err(error)) => {
+            println!("{error}");
+            return 2;
+        }
+    };
+    let old = match crate::syntax::parse(&left) {
+        Ok(decls) => decls,
+        Err(error) => {
+            println!("{}: {error}", before.display());
+            return 2;
+        }
+    };
+    let new = match crate::syntax::parse(&right) {
+        Ok(decls) => decls,
+        Err(error) => {
+            println!("{}: {error}", after.display());
+            return 2;
+        }
+    };
+    let difference = crate::diff::diff(&old, &new);
+    let old_hash: String = crate::hash::hex(left.as_bytes()).chars().take(12).collect();
+    let new_hash: String = crate::hash::hex(right.as_bytes())
+        .chars()
+        .take(12)
+        .collect();
+    let code = if difference.is_empty() { 0 } else { 1 };
+    if json {
+        let added: Vec<J> = difference
+            .added
+            .iter()
+            .map(|(name, kind)| {
+                obj(vec![
+                    ("name", J::Str(name.clone())),
+                    ("kind", J::Str(kind.clone())),
+                ])
+            })
+            .collect();
+        let removed: Vec<J> = difference
+            .removed
+            .iter()
+            .map(|(name, kind)| {
+                obj(vec![
+                    ("name", J::Str(name.clone())),
+                    ("kind", J::Str(kind.clone())),
+                ])
+            })
+            .collect();
+        let changed: Vec<J> = difference
+            .changed
+            .iter()
+            .map(|change| {
+                let fields: Vec<J> = change
+                    .fields
+                    .iter()
+                    .map(|field| {
+                        obj(vec![
+                            ("key", J::Str(field.key.clone())),
+                            (
+                                "before",
+                                match &field.before {
+                                    Some(text) => J::Str(text.clone()),
+                                    None => J::Null,
+                                },
+                            ),
+                            (
+                                "after",
+                                match &field.after {
+                                    Some(text) => J::Str(text.clone()),
+                                    None => J::Null,
+                                },
+                            ),
+                        ])
+                    })
+                    .collect();
+                obj(vec![
+                    ("name", J::Str(change.name.clone())),
+                    ("before_kind", J::Str(change.before_kind.clone())),
+                    ("after_kind", J::Str(change.after_kind.clone())),
+                    ("fields", J::Arr(fields)),
+                ])
+            })
+            .collect();
+        emit(obj(vec![
+            ("old", J::Str(old_hash)),
+            ("new", J::Str(new_hash)),
+            ("added", J::Arr(added)),
+            ("removed", J::Arr(removed)),
+            ("changed", J::Arr(changed)),
+        ]));
+        return code;
+    }
+    println!("diff {old_hash} -> {new_hash}");
+    if difference.is_empty() {
+        println!("no semantic change");
+        return 0;
+    }
+    for (name, kind) in &difference.added {
+        println!("+ {name} {kind}");
+    }
+    for (name, kind) in &difference.removed {
+        println!("- {name} {kind}");
+    }
+    for change in &difference.changed {
+        if change.before_kind != change.after_kind {
+            println!(
+                "~ {}: kind {} -> {}",
+                change.name, change.before_kind, change.after_kind
+            );
+        } else {
+            println!("~ {} {}", change.name, change.after_kind);
+        }
+        for field in &change.fields {
+            println!(
+                "    {}: {} -> {}",
+                field.key,
+                field.before.as_deref().unwrap_or("-"),
+                field.after.as_deref().unwrap_or("-")
+            );
+        }
+    }
+    code
+}
+
 pub(crate) fn cmd_engine(path: &Path, json: bool) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,

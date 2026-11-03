@@ -12,6 +12,7 @@ pub mod coverage;
 pub mod debt;
 pub mod delta;
 pub mod derive;
+pub mod diff;
 pub mod egraph;
 pub mod fca;
 pub mod generalize;

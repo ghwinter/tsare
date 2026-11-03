@@ -19,6 +19,6 @@ pub use io::{apply, cache, cases, session, trace};
 pub use lang::{explain, hash, json, paths, program, render, specs, sugar, syntax};
 pub use reason::{
     abstraction, argue, ask, assumptions, audit, cat, closure, cost, coverage, debt, delta, derive,
-    egraph, fca, generalize, hint, impact, imply, induce, moves, novel, patterns, propose, shape,
-    weigh, whatif,
+    diff, egraph, fca, generalize, hint, impact, imply, induce, moves, novel, patterns, propose,
+    shape, weigh, whatif,
 };

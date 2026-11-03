@@ -268,6 +268,7 @@ const COMMANDS: &[Command] = &[
         Command("reasoning", "moves", "moves PATH                   six representation moves as candidates"),
         Command("reasoning", "assumptions", "assumptions PATH [--top N]   load-bearing declarations without support"),
         Command("reasoning", "delta", "delta BEFORE AFTER [--json] [--record STORE --doc DOC [--action A]]  what changed between two `check --json` reports"),
+        Command("reasoning", "diff", "diff BEFORE AFTER [--json]   what changed between two ledgers"),
         Command("reasoning", "whatif", "whatif PATH NAME             what falls when one assumption is removed"),
         Command("reasoning", "kinds", "kinds                        the obligation table: what each kind owes"),
         Command("repairing", "fix", "fix PATH [--apply OUT]          verified repair candidates, and applying them"),
@@ -615,6 +616,13 @@ pub fn run() -> i32 {
                 args.option("--doc"),
                 args.option("--action"),
             )
+        }
+        "diff" => {
+            let Some(after) = args.at(1) else {
+                println!("usage: tsare diff BEFORE AFTER");
+                return 2;
+            };
+            cmd_diff(&path, Path::new(after), args.has("--json"))
         }
         "fmt" => cmd_fmt(&path),
         "induce" => cmd_induce(&path),
