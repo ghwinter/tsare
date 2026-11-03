@@ -103,7 +103,8 @@ R2 witness      E-SELF-VERDICT E-NO-EVIDENCE E-SCOPE-UNBOUNDED E-OUT-MISMATCH
                 W-BASIS-NO-CRITERION W-UNWARRANTED-BASIS W-LAW-UNCHECKED
                 W-PARTITION-CLOSED-UNJUSTIFIED W-RETIRED-UNBASED W-CONFIDENCE-MODEL
                 W-CONFIDENCE-ASSERTED W-CONFIDENCE-INFLATED W-OUT-UNVERIFIED
-R3 support      E-UNGROUNDED E-CYCLE E-VACUOUS E-UNCOVERED W-UNWARRANTED W-CONDITIONAL W-OPEN
+R3 support      E-UNGROUNDED E-CYCLE E-VACUOUS E-UNCOVERED W-UNWARRANTED W-UNFAITHFUL
+                W-CONDITIONAL W-OPEN
 R4 debt         E-UNFALSIFIABLE E-PARTITION-UNKNOWN-NO-EXIT E-PARTITION-UNKNOWN-USED
                 W-UNTESTED W-NO-EXIT W-PARTITION-UNKNOWN W-PARTITION-OPEN-USED
 R5 distinction  E-COLLAPSE E-CONTRADICTION E-TENSION E-HIERARCHY E-FALSE-BLINDSPOT
@@ -196,6 +197,15 @@ before reading a list of diagnostics. Until that lands — it changes every chec
 
 The kernel is: the parser, the kind signatures, the grade order, the obligation table, R1–R6, the
 fixed point, and `decide`. No model, no network, no clock, no randomness.
+
+As of the workspace split, the kernel is a fact of the build graph, not of this document:
+**`crates/tsare-core`** (the check kernel -- kinds, types, references, closure, FCA, induction,
+weighting, the epistemic-fixpoint inputs) and **`crates/tsare-lang`** (the parser, the kind
+signatures, the canonical printer). **`crates/tsare-util`** is the no-opinion text helpers both
+depend on. Everything above -- `tsare-state` (where state lives), `tsare-analyses` and
+`tsare-infer` (the analyzers), `tsare-emit`, and the `cli`/`mcp`/`out` facade -- is views and
+adapters. A dependency arrow pointing upward is a bug; `cargo tree` is the audit, and the
+`crates/tsare/tests/golden.rs` byte-level suite is the proof the re-exports changed nothing.
 
 The views are every command that proposes or explains: `abstract`, `ask`, `audit`, `confront`,
 `cost`, `coverage`, `debt`, `delta`, `derive`, `egraph`, `fca`, `graph`, `hint`, `impact`,

@@ -2,6 +2,8 @@
 
 pub mod contracts;
 pub mod explain;
+pub mod extract;
+pub mod format;
 pub mod hash;
 pub mod json;
 pub mod paths;

@@ -74,11 +74,11 @@ fn the_prelude_cannot_change_without_a_red_test() {
     let pins = [
         (
             "KERNEL.tsare",
-            "cbb322a95dd469c3d2c330c0e70ef574b93b0cdd26a3e1a9226144815c74f657",
+            "a762bd7f95eecc10e061cd5e53df38a427ed3bcf79298c9fb335aa2eb0d0b0aa",
         ),
         (
             "WORLDVIEW.tsare",
-            "c84c4d6beff5de1642a441afb9d1747c728e96d7a961a5d7b246b1d7ae14a57e",
+            "67d4472f472ef8edc290a43804c10e00be53f7a2d7b21c2a1f89b0bfa3f522ce",
         ),
         (
             "PROCESS.tsare",

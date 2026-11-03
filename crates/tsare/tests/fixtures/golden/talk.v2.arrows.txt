@@ -1,0 +1,3 @@
+attacks   H_RETENTION                      -> H_NOVELTY                <fixtures>/talk.v2.tsare:96:1
+
+1 arrow(s), 1 kind(s)

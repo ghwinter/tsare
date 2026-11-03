@@ -1,0 +1,3 @@
+derives   F_SCROLL                         -> P_FAST                   <fixtures>/hello.tsare:23:1
+
+1 arrow(s), 1 kind(s)

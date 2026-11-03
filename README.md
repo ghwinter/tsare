@@ -175,8 +175,8 @@ document saying so:
 cargo test --release
 ```
 
-`tests/semantics.rs` states the properties (an attack defeats its target, a number cannot
-exceed its support, a closed list is contradicted by its own attributes). `tests/golden.rs`
+`crates/tsare/tests/semantics/main.rs` states the properties (an attack defeats its target, a number cannot
+exceed its support, a closed list is contradicted by its own attributes). `crates/tsare/tests/golden.rs`
 pins the exact text of every command against six fixture documents; `UPDATE_GOLDEN=1` rewrites
 them, and the diff is the review. `SELF.tsare` is the repository describing itself, compiled by
 the compiler it argues about; a test fails if it stops compiling cleanly.

@@ -1,0 +1,3 @@
+derives   P_THRESHOLD                      -> P_SMOOTH                 <fixtures>/ungrounded.tsare:26:1
+
+1 arrow(s), 1 kind(s)

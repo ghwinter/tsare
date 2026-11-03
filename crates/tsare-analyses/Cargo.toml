@@ -1,0 +1,17 @@
+[package]
+name = "tsare-analyses"
+version = "0.4.0"
+edition = "2021"
+rust-version = "1.85"
+description = "The deterministic analyzers: proof, structure, evidence, and change over a whole document."
+license = "MIT"
+repository = "https://github.com/ghwinter/tsare"
+
+[dependencies]
+tsare-core = { path = "../tsare-core" }
+tsare-lang = { path = "../tsare-lang" }
+tsare-state = { path = "../tsare-state" }
+tsare-util = { path = "../tsare-util" }
+
+[lints]
+workspace = true

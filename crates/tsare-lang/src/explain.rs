@@ -78,6 +78,7 @@ pub const CODES: &[&str] = &[
     "W-RETIRED-UNBASED",
     "W-UNANSWERED",
     "W-UNCONFIRMED",
+    "W-UNFAITHFUL",
     "W-UNPRINCIPLED",
     "W-UNREAD",
     "W-UNREFINED",
@@ -300,6 +301,11 @@ pub fn explain(code: &str) -> Option<&'static str> {
             Fix: declare the field, or stop citing the law and let the declaration carry the ground.",
         "W-UNTESTED" => "A concept is never contrasted with a counterexample.\n\
             Fix: add `against:` with a fact the concept should reject.",
+        "W-UNFAITHFUL" => "A proposition names the premises it read, but no rule that concludes it draws on any of them.\n\
+            The support is real and comes from somewhere else -- usually an earlier frame -- so the \
+            citation is decoration.  This is the frame-capture failure: the words were kept, the \
+            referent was replaced.\n\
+            Fix: add the rule from the premises it cites, or drop them from `from`.",
         "W-UNWARRANTED" => "A proposition cites premises, but no rule connects them to it.\n\
             Fix: add the warrant, or drop the premises.",
         "W-UNWARRANTED-BASIS" => "A rule states an inference, but nothing makes the rule acceptable.\n\

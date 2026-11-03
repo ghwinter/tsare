@@ -20,15 +20,15 @@ fact F_PROTOCOL {
 }
 
 fact F_GOLDENS {
-  claim: "tests/golden.rs pins the exact text of every command on six documents",
-  evidence: code("tests/golden.rs"),
+  claim: "crates/tsare/tests/golden.rs pins the exact text of every command on six documents",
+  evidence: code("crates/tsare/tests/golden.rs"),
   scope: "the six fixture documents",
   attrs: { checker: automated }
 }
 
 fact F_EXPLAIN {
   claim: "every diagnostic code has an explanation, and a test fails when one is missing",
-  evidence: code("src/explain.rs"),
+  evidence: code("crates/tsare-lang/src/explain.rs"),
   scope: "every code the compiler can print",
   attrs: { checker: automated }
 }
@@ -41,19 +41,19 @@ fact F_CI {
 
 fact F_SELF {
   claim: "SELF.tsare compiles with no error and its concept learns a clause, or the test fails",
-  evidence: code("tests/semantics.rs"),
+  evidence: code("crates/tsare/tests/semantics/main.rs"),
   attrs: { checker: automated }
 }
 
 fact F_ZERO_DEPENDENCIES {
   claim: "the crate has no dependencies, so the binary needs no runtime beyond the OS",
-  evidence: code("Cargo.toml"),
+  evidence: code("crates/tsare/Cargo.toml"),
   attrs: { checker: automated }
 }
 
 fact F_EXAMPLES {
   claim: "the smallest fixture document compiles with no diagnostic at all",
-  evidence: doc("tests/fixtures/hello.tsare")
+  evidence: doc("crates/tsare/crates/tsare/tests/fixtures/hello.tsare")
 }
 
 concept C_PROOF_CARRIER {
@@ -71,7 +71,8 @@ partition E_CLAIMS {
 
 proposition P_EVERY_CLAIM_HAS_A_CHECKER {
   statement: "each artifact that claims something about the code is accompanied by the thing that would fail if the claim were false",
-  from: [E_CLAIMS]
+  from: [F_PROTOCOL, F_GOLDENS, F_EXPLAIN, F_CI, F_SELF, F_ZERO_DEPENDENCIES],
+  over: [E_CLAIMS]
 }
 
 warrant W_EVERY_CLAIM_HAS_A_CHECKER {

@@ -1,0 +1,4 @@
+derives   F_TRACE                          -> P_SMOOTH                 <fixtures>/schema.tsare:29:1
+derives   F_TRACE                          -> P_STABLE                 <fixtures>/schema.tsare:29:1
+
+2 arrow(s), 1 kind(s)

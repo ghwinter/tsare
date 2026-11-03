@@ -3,6 +3,103 @@
 use super::*;
 use crate::json::Json as J;
 
+/// The definitions a rendered page states: a heading and the term column the caller names (or the
+/// bold first cell when it names none).  The output is arrows, because that is what the text is
+/// being read for.
+pub(crate) fn cmd_extract(
+    path: &Path,
+    json: bool,
+    terms: Option<&str>,
+    write: Option<&str>,
+) -> Outcome {
+    let text = match fs::read_to_string(path) {
+        Ok(text) => text,
+        Err(error) => return fail(format!("{}: {error}", path.display())),
+    };
+    let shown = path.display().to_string();
+    let terms: Vec<&str> = terms
+        .map(|list| {
+            list.split(',')
+                .map(str::trim)
+                .filter(|word| !word.is_empty())
+                .collect()
+        })
+        .unwrap_or_default();
+    let found = crate::extract::definitions(&text, &shown, &terms);
+    if let Some(out) = write {
+        return write_definitions(&found, Path::new(out));
+    }
+    if json {
+        let items: Vec<J> = found
+            .iter()
+            .map(|item| {
+                J::Obj(vec![
+                    ("term".to_string(), J::Str(item.term.clone())),
+                    ("section".to_string(), J::Str(item.section.clone())),
+                    ("file".to_string(), J::Str(item.file.clone())),
+                    ("line".to_string(), J::Num(item.line as f64)),
+                    ("col".to_string(), J::Num(item.col as f64)),
+                ])
+            })
+            .collect();
+        println!(
+            "{}",
+            crate::json::serialize(&J::Obj(vec![("definitions".to_string(), J::Arr(items))]))
+        );
+        return Outcome::Ok;
+    }
+    if found.is_empty() {
+        println!(
+            "no definitions: no bold term opens a table row under a heading, and no --terms header names a column"
+        );
+        return Outcome::Ok;
+    }
+    for item in &found {
+        println!(
+            "defines  {:<28} -> {:<24} {}:{}:{}",
+            item.section, item.term, item.file, item.line, item.col
+        );
+    }
+    let sections: usize = found
+        .iter()
+        .map(|item| item.section.as_str())
+        .collect::<std::collections::HashSet<_>>()
+        .len();
+    println!("\n{} definition(s) in {sections} section(s)", found.len());
+    Outcome::Ok
+}
+
+/// The same definitions as a document the checker can read: one fact per term, its evidence the
+/// page it was read from.  The extraction is a claim about the page, so the claim says what the
+/// page states and where -- never what the term means.
+pub(crate) fn write_definitions(found: &[crate::extract::Definition], out: &Path) -> Outcome {
+    let escape = |text: &str| text.replace('\\', "\\\\").replace('"', "\\\"");
+    let mut text = String::from("tsare 1\n");
+    for (index, item) in found.iter().enumerate() {
+        let name = format!("D_{:04}", index + 1);
+        let page = std::path::Path::new(&item.file)
+            .file_name()
+            .map(|name| name.to_string_lossy().to_string())
+            .unwrap_or_else(|| item.file.clone());
+        text.push_str(&format!(
+            "\n# {page}:{} -- {}\nfact {name} {{\n  claim: \"{} defines 「{}」 under 「{}」\",\n  evidence: doc(\"{}\")\n}}\n",
+            item.line,
+            item.term,
+            page,
+            escape(&item.term),
+            escape(&item.section),
+            escape(&item.file)
+        ));
+    }
+    match fs::write(out, text) {
+        Ok(()) => {
+            println!("{} definition(s) written to {}", found.len(), out.display());
+            Outcome::Ok
+        }
+        Err(error) => fail(format!("{}: {error}", out.display())),
+    }
+}
+
 /// Errors decide the exit code.  `--strict` lets a warning decide it too: a warning is the engine
 /// saying the document states something it cannot settle, and a loop that reads only the number
 /// should not be able to ignore that.

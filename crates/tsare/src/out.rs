@@ -1,34 +1,12 @@
 //! The transport: a report renders to a sink, so its text can be checked without a process.
 //!
-//! A `Report` owns its two renderings; `render` picks one and writes it to any `Sink`.  The
-//! commands only choose a report and a sink.
+//! The `Sink` and `Report` traits and the `render` helper live in the trusted base
+//! (`tsare_core::out`); this module re-exports them so `tsare::out::Report` keeps working, and
+//! owns the transports -- standard output, a buffer, a writer -- plus the exit-code outcome.
 
 use std::io::Write;
 
-use crate::json::Json;
-
-/// Somewhere one line of output goes.
-pub trait Sink {
-    fn line(&mut self, text: &str);
-}
-
-/// A rendered report: the text for a reader, the JSON for a caller.
-pub trait Report {
-    fn text(&self) -> String;
-    fn json(&self) -> Json;
-}
-
-/// Render a report into a sink: the JSON when asked, the text otherwise.
-pub fn render<R: Report>(report: &R, json: bool, sink: &mut dyn Sink) {
-    let rendered = if json {
-        crate::json::serialize(&report.json())
-    } else {
-        report.text()
-    };
-    for line in rendered.lines() {
-        sink.line(line);
-    }
-}
+pub use tsare_core::out::{render, Report, Sink};
 
 /// The process's standard output.
 pub struct Stdout;
@@ -112,6 +90,7 @@ impl Outcome {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tsare_lang::json::Json;
 
     #[test]
     fn the_outcome_maps_to_the_exit_codes() {

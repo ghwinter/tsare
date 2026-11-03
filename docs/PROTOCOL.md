@@ -4,7 +4,7 @@ This repository is the compiler. The crate at the root builds a single, dependen
 binary: no interpreter, no runtime beyond the OS, no second code path to keep in step.
 
 The text is the contract. Every command's output is pinned byte for byte by
-`tests/fixtures/golden/`, so a change to what the tool says appears as a diff before it ships.
+`crates/tsare/crates/tsare/tests/fixtures/golden/`, so a change to what the tool says appears as a diff before it ships.
 
 ## Two numbers, and only two
 
@@ -58,6 +58,8 @@ answers `--json`.
 | `status FILE [--json] [--trace FILE] [--budget N]` | one line: the decision, the epistemic counts, the next question, and — when any — the first open chain; over the budget the line is `unfinished`; the JSON also carries the first debt, the claim count, the number of conclusions standing on an unbacked hypothesis, and the first chain's name and hypotheses; `--trace` appends the report as a replayable run; errors exit 1 | yes |
 | `provenance FILE [--json]` | where each quoted claim sits in its source: the source, the line and the column | yes |
 | `engine FILE\|DIR` | held, conditional, blocked, chains, gates | yes |
+| `arrows FILE [--json]` | every relation the document states, with its kind (derives, attacks, retires, sub, asks, reports), its ends and the place it is written; the kinds it uses and the pairs that chain | yes |
+| `extract PAGE [--json] [--terms A,B] [--write FILE]` | the definitions a rendered page states: the heading above, the term column the caller names (or the bold first cell when it names none), and the line that does it; `--write` emits them as a document of facts, one per term, each citing the page | yes |
 | `argue FILE [--against OTHER] [--json]` | which conclusions survive attack; with `--against`, the attack graph is the merge; the JSON carries each conclusion's status and why | |
 | `confront LEFT RIGHT` | which rules attack across the pair, and which attacks nobody answered; exit 1 when `LEFT` leaves one unanswered | |
 | `derive FILE` | which conclusions are grounded in facts | |
@@ -448,7 +450,7 @@ one document — `tests/codes/*.tsare` (the smallest single document per code), 
 (recorded output of the two-document commands), and direct assertions for parsing, the kernel and
 goal files. A code that nothing can produce is either unreachable or stale, and both are bugs.
 
-`tests/semantics.rs` holds properties (`an_attack_defeats_its_target`). `tests/golden.rs` holds
+`crates/tsare/tests/semantics/main.rs` holds properties (`an_attack_defeats_its_target`). `crates/tsare/tests/golden.rs` holds
 the exact text of every command on six fixture documents. `UPDATE_GOLDEN=1 cargo test` rewrites
 them; read the diff first.
 

@@ -54,9 +54,9 @@ branch is worth someone else's pull, not when a file was saved.
 
 1. No model call, no network, no clock, no randomness in `src/`. A check that cannot be decided
    says so instead of guessing.
-2. Every diagnostic code has an entry in `src/explain.rs`; `tests/semantics.rs` fails if one
+2. Every diagnostic code has an entry in `crates/tsare-lang/src/explain.rs`; `crates/tsare/tests/semantics/main.rs` fails if one
    does not.
-3. A new check needs the document that would have caught it: add it to `tests/fixtures/`, the
+3. A new check needs the document that would have caught it: add it to `crates/tsare/tests/fixtures/`, the
    corpus every check runs against.
 4. Output changes are golden changes. Run `UPDATE_GOLDEN=1 cargo test`, then read the diff
    before committing it.

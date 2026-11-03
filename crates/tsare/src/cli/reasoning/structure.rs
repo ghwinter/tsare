@@ -1,5 +1,96 @@
 use super::*;
 
+/// The relations the document states, as arrows with kinds and spans -- what the analyzers below
+/// all read, made visible once.
+pub(crate) fn cmd_arrows(path: &Path, json: bool) -> Outcome {
+    let loaded = match load(path) {
+        Ok(loaded) => loaded,
+        Err(error) => return fail(error),
+    };
+    let arrows = {
+        // a single-file load leaves `file` empty on the declarations; the command knows the name
+        let shown = path.display().to_string();
+        let mut arrows = crate::arrow::arrows(&loaded.decls);
+        for arrow in &mut arrows {
+            if arrow.file.is_empty() {
+                arrow.file = shown.clone();
+            }
+        }
+        arrows
+    };
+    let counts = crate::arrow::counts(&arrows);
+    let pairs = crate::arrow::composition(&arrows);
+    if json {
+        let items: Vec<J> = arrows
+            .iter()
+            .map(|arrow| {
+                J::Obj(vec![
+                    ("kind".to_string(), J::Str(arrow.kind.to_string())),
+                    (
+                        "from".to_string(),
+                        J::Arr(arrow.from.iter().cloned().map(J::Str).collect()),
+                    ),
+                    ("to".to_string(), J::Str(arrow.to.clone())),
+                    ("reason".to_string(), J::Str(arrow.reason.clone())),
+                    ("file".to_string(), J::Str(arrow.file.clone())),
+                    ("line".to_string(), J::Num(arrow.line as f64)),
+                    ("col".to_string(), J::Num(arrow.col as f64)),
+                ])
+            })
+            .collect();
+        let kinds: Vec<J> = counts
+            .iter()
+            .map(|(kind, count)| {
+                J::Obj(vec![
+                    ("kind".to_string(), J::Str(kind.to_string())),
+                    ("count".to_string(), J::Num(*count as f64)),
+                ])
+            })
+            .collect();
+        let composition: Vec<J> = pairs
+            .iter()
+            .map(|(name, count)| {
+                J::Obj(vec![
+                    ("pair".to_string(), J::Str(name.clone())),
+                    ("count".to_string(), J::Num(*count as f64)),
+                ])
+            })
+            .collect();
+        let value = J::Obj(vec![
+            ("arrows".to_string(), J::Arr(items)),
+            ("kinds".to_string(), J::Arr(kinds)),
+            ("composition".to_string(), J::Arr(composition)),
+        ]);
+        println!("{}", crate::json::serialize(&value));
+        return Outcome::Ok;
+    }
+    if arrows.is_empty() {
+        println!("no arrows: the document states no relation between two named things");
+        return Outcome::Ok;
+    }
+    for arrow in &arrows {
+        println!(
+            "{:<9} {:<32} -> {:<24} {}:{}:{}",
+            arrow.kind,
+            arrow.from.join(", "),
+            arrow.to,
+            arrow.file,
+            arrow.line,
+            arrow.col
+        );
+    }
+    let total = arrows.len();
+    let kinds = counts.len();
+    println!("\n{total} arrow(s), {kinds} kind(s)");
+    if !pairs.is_empty() {
+        println!("composition:");
+        for (name, count) in &pairs {
+            println!("  {name} {count}");
+        }
+    }
+    Outcome::Ok
+}
+
 pub(crate) fn cmd_delta(
     before: &Path,
     after: &Path,

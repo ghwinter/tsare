@@ -32,6 +32,8 @@ const VALUE_FLAGS: &[&str] = &[
     "--action",
     "--store",
     "--near",
+    "--terms",
+    "--write",
 ];
 
 /// Options that take no value.  An option in neither list is a usage error: a silently ignored
