@@ -52,7 +52,7 @@ cargo run --release --quiet -- check prelude/PROCESS.tsare
 # list omits passes locally and fails from a published crate; this is the check that catches it.
 # `--allow-dirty` because the check is the list, not the git state.
 echo "== package"
-cargo package -p tsare --allow-dirty
+cargo package -p tsare --allow-dirty --list
 
 if [ "$hygiene" -eq 1 ]; then
     echo "== the tree is tracked"
