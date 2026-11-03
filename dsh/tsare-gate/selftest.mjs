@@ -324,4 +324,9 @@ writeFileSync(ledger, clean)
 await liveCtx.fire('tools/post-execute', { name: 'read', arguments: {}, agent: liveAgent })
 assert.match(readFileSync(traceFile, 'utf8'), /run/, 'the trace file must record the brief refresh')
 
-console.log('tsare-gate selftest: 22 checks passed')
+// 23. an open support path is named in the brief
+writeFileSync(ledger, clean + 'OPEN_CHAIN\n')
+await ctx.fire('tools/post-execute', { name: 'read', arguments: {}, agent })
+assert.match(contexts[0].text(), /1 open chain\(s\)/, contexts[0].text())
+
+console.log('tsare-gate selftest: 23 checks passed')

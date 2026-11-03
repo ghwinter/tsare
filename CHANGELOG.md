@@ -8,6 +8,9 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- the gate's brief also counts open chains, so the live line names the G3 gap next to the
+  decision and the epistemic counts.
+
 - `status --json` also reports `open_chains`: how many propositions or warrants stand on a
   hypothesis no verdict has decided.
 

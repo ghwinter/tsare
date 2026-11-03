@@ -67,7 +67,8 @@ debt names nothing that could discharge it. The gate steers on that too.
 `mode` is orthogonal: it decides whether warnings count as failures, not whether the gate acts.
 The authority is one-way: the user sets the level; the model may act more strictly, never less.
 
-At every level the brief also carries the decision and the epistemic counts. Below `gate` they are
+At every level the brief also carries the decision and the epistemic counts, and — when any — the
+count of open chains (conclusions standing on an unbacked hypothesis). Below `gate` they are
 display; at `gate` the decision is enforced at turn stopping.
 
 ## Activate it in a profile
@@ -90,7 +91,7 @@ dependency works), and the listeners are live for the next session:
 ## Test
 
 ```powershell
-node selftest.mjs                 # fake checker: 22 checks, no dependencies
+node selftest.mjs                 # fake checker: 23 checks, no dependencies
 $env:TSARE_BIN = "tsare"; node verify-real.mjs   # the real binary, same parser
 ```
 
