@@ -8,6 +8,10 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `merge BASE OURS THEIRS --out FILE [--json]`: a structural three-way merge — declarations by
+  name, fields by value — that writes only when every change has one side; conflicts are named and
+  nothing is written.
+
 - `save` / `log` / `restore`: a content-addressed store of ledgers. `save` writes the bytes under
   their hash, `log` lists them, and `restore` refuses content that no longer matches the hash.
 

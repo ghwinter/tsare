@@ -20,6 +20,7 @@ pub mod hint;
 pub mod impact;
 pub mod imply;
 pub mod induce;
+pub mod merge;
 pub mod moves;
 pub mod novel;
 pub mod patterns;

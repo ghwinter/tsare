@@ -272,6 +272,7 @@ const COMMANDS: &[Command] = &[
         Command("reasoning", "assumptions", "assumptions PATH [--top N]   load-bearing declarations without support"),
         Command("reasoning", "delta", "delta BEFORE AFTER [--json] [--record STORE --doc DOC [--action A]]  what changed between two `check --json` reports"),
         Command("reasoning", "diff", "diff BEFORE AFTER [--json]   what changed between two ledgers"),
+        Command("reasoning", "merge", "merge BASE OURS THEIRS --out FILE [--json]   structural three-way merge"),
         Command("reasoning", "whatif", "whatif PATH NAME             what falls when one assumption is removed"),
         Command("reasoning", "kinds", "kinds                        the obligation table: what each kind owes"),
         Command("repairing", "fix", "fix PATH [--apply OUT]          verified repair candidates, and applying them"),
@@ -639,6 +640,19 @@ pub fn run() -> i32 {
                 return 2;
             };
             cmd_diff(&path, Path::new(after), args.has("--json"))
+        }
+        "merge" => {
+            let (Some(ours), Some(theirs)) = (args.at(1), args.at(2)) else {
+                println!("usage: tsare merge BASE OURS THEIRS --out FILE [--json]");
+                return 2;
+            };
+            cmd_merge(
+                &path,
+                Path::new(ours),
+                Path::new(theirs),
+                args.option("--out"),
+                args.has("--json"),
+            )
         }
         "fmt" => cmd_fmt(&path),
         "induce" => cmd_induce(&path),

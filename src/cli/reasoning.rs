@@ -212,6 +212,127 @@ pub(crate) fn cmd_diff(before: &Path, after: &Path, json: bool) -> i32 {
     code
 }
 
+/// A three-way structural merge; writes only when nothing conflicts.
+pub(crate) fn cmd_merge(
+    base: &Path,
+    ours: &Path,
+    theirs: &Path,
+    out: Option<&str>,
+    json: bool,
+) -> i32 {
+    let parse = |path: &Path| -> Result<Vec<crate::syntax::Decl>, String> {
+        let text =
+            fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
+        crate::syntax::parse(&text).map_err(|error| format!("{}: {error}", path.display()))
+    };
+    let (before, mine, other) = match (parse(base), parse(ours), parse(theirs)) {
+        (Ok(before), Ok(mine), Ok(other)) => (before, mine, other),
+        (Err(error), _, _) | (_, Err(error), _) | (_, _, Err(error)) => {
+            println!("{error}");
+            return 2;
+        }
+    };
+    let merged = crate::merge::merge(&before, &mine, &other);
+    let Some(out) = out else {
+        println!("usage: tsare merge BASE OURS THEIRS --out FILE [--json]");
+        return 2;
+    };
+    let text = merge_text(&merged);
+    if json {
+        let conflicts: Vec<J> = merged
+            .conflicts
+            .iter()
+            .map(|item| {
+                obj(vec![
+                    ("name", J::Str(item.name.clone())),
+                    ("field", J::Str(item.field.clone())),
+                    ("base", optional(item.base.clone())),
+                    ("ours", optional(item.ours.clone())),
+                    ("theirs", optional(item.theirs.clone())),
+                ])
+            })
+            .collect();
+        let names = |list: &[String]| -> J {
+            J::Arr(list.iter().map(|name| J::Str(name.clone())).collect())
+        };
+        let empty = merged.conflicts.is_empty();
+        emit(obj(vec![
+            ("merged", J::Bool(empty)),
+            (
+                "out",
+                if empty {
+                    J::Str(out.to_string())
+                } else {
+                    J::Null
+                },
+            ),
+            ("conflicts", J::Arr(conflicts)),
+            ("added", names(&merged.added)),
+            ("removed", names(&merged.removed)),
+            ("changed", names(&merged.changed)),
+        ]));
+    }
+    if !merged.conflicts.is_empty() {
+        if !json {
+            for item in &merged.conflicts {
+                println!(
+                    "conflict {} {}: base {}, ours {}, theirs {}",
+                    item.name,
+                    item.field,
+                    item.base.as_deref().unwrap_or("-"),
+                    item.ours.as_deref().unwrap_or("-"),
+                    item.theirs.as_deref().unwrap_or("-")
+                );
+            }
+            println!(
+                "merge stopped: {} conflict(s); nothing written",
+                merged.conflicts.len()
+            );
+        }
+        return 1;
+    }
+    if let Err(error) = fs::write(out, text) {
+        return fail(format!("{out}: {error}"));
+    }
+    if !json {
+        println!("merged {} declaration(s) -> {out}", merged.views.len());
+    }
+    0
+}
+
+fn optional(text: Option<String>) -> J {
+    match text {
+        Some(text) => J::Str(text),
+        None => J::Null,
+    }
+}
+
+fn merge_text(merged: &crate::merge::Merged) -> String {
+    let mut text = String::from("tsare 2\n");
+    for view in &merged.views {
+        text.push('\n');
+        text.push_str(&crate::format::declaration(&decl_of(view)));
+    }
+    text
+}
+
+fn decl_of(view: &crate::merge::View) -> crate::syntax::Decl {
+    crate::syntax::Decl {
+        kind: view.kind.clone(),
+        name: view.name.clone(),
+        fields: view.fields.clone(),
+        field_span: vec![(0, 0, 0, 0); view.fields.len()],
+        kind_line: 1,
+        kind_col: 1,
+        line: 1,
+        col: 1,
+        end_line: 1,
+        end_col: 1,
+        file: String::new(),
+        ref_pos: Vec::new(),
+    }
+}
+
 pub(crate) fn cmd_engine(path: &Path, json: bool) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,

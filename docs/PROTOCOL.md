@@ -81,6 +81,7 @@ answers `--json`.
 | `assumptions FILE` | load-bearing declarations without support | |
 | `delta BEFORE AFTER [--record STORE --doc DOC [--action A]]` | what changed between two `check --json` reports, keyed by declaration; `--record` appends the change to a case store | yes |
 | `diff BEFORE AFTER [--json]` | what changed between two ledgers: declarations added, removed, or changed by kind or field; 0 same, 1 changed, 2 cannot load | yes |
+| `merge BASE OURS THEIRS --out FILE [--json]` | a structural three-way merge by declaration and field; 0 merged, 1 conflict (nothing written), 2 cannot load | yes |
 | `whatif FILE NAME` | what falls when one assumption is removed | |
 | `graph FILE [--out]` | the typed relation net as Mermaid | |
 | `map LEFT RIGHT` | structure mapping between two documents | |
