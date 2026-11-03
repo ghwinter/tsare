@@ -156,3 +156,52 @@ fn a_quote_the_page_does_not_contain_is_a_compile_error() {
     assert_eq!(status, 1, "{text}");
     assert!(text.contains("E-QUOTE"), "{text}");
 }
+
+#[test]
+fn a_ledger_that_no_longer_matches_the_pages_says_so() {
+    // The ledger carries the page text, so `check` can verify the quotes -- but nothing in it can
+    // tell that the page moved since.  `--verify` rebuilds and compares, so a stale ledger is a
+    // diff with a line number instead of a silence.
+    let dir = std::env::temp_dir().join(format!("tsare-verify-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).expect("temp dir");
+    for name in ["01-planes.html", "02-capabilities.html", "vocabulary.tsare"] {
+        std::fs::copy(pages().join(name), dir.join(name)).expect("copy");
+    }
+    let out = dir.join("pages.tsare");
+    let vocabulary = dir.join("vocabulary.tsare");
+    let (text, err, status) = run(&[
+        "extract",
+        dir.to_str().expect("dir"),
+        "--terms-from",
+        vocabulary.to_str().expect("vocabulary"),
+        "--write",
+        out.to_str().expect("out"),
+    ]);
+    assert_eq!(status, 0, "{text}{err}");
+
+    let verify = |extra: &[&str]| {
+        let mut args = vec![
+            "extract",
+            dir.to_str().expect("dir"),
+            "--terms-from",
+            vocabulary.to_str().expect("vocabulary"),
+            "--verify",
+            out.to_str().expect("out"),
+        ];
+        args.extend_from_slice(extra);
+        run(&args)
+    };
+    let (text, err, status) = verify(&[]);
+    assert_eq!(status, 0, "a fresh ledger is current: {text}{err}");
+    assert!(text.contains("is current"), "{text}");
+
+    let page = dir.join("02-capabilities.html");
+    let mut body = std::fs::read_to_string(&page).expect("page");
+    body.push_str("<tr><td>extra</td><td>new term</td><td>x</td></tr>\n");
+    std::fs::write(&page, body).expect("grow the page");
+
+    let (text, _err, status) = verify(&[]);
+    assert_eq!(status, 1, "a changed page makes the ledger stale: {text}");
+    assert!(text.contains("is stale at line"), "{text}");
+}

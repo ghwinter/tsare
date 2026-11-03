@@ -13,6 +13,7 @@ pub(crate) fn cmd_extract(
     terms: Option<&str>,
     terms_from: Option<&str>,
     write: Option<&str>,
+    verify: Option<&str>,
 ) -> Outcome {
     let pages: Vec<std::path::PathBuf> = if path.is_dir() {
         let mut pages: Vec<std::path::PathBuf> = match fs::read_dir(path) {
@@ -72,6 +73,9 @@ pub(crate) fn cmd_extract(
             );
         }
         found.extend(definitions);
+    }
+    if let Some(document) = verify {
+        return verify_definitions(&page_texts, &found, Path::new(document));
     }
     if let Some(out) = write {
         return write_definitions(&page_texts, &found, Path::new(out));
@@ -155,11 +159,10 @@ pub(crate) fn cmd_extract(
 /// The page's own text is carried in a `source`, and every fact names that source and the words it
 /// quotes.  That is what makes the claim checkable rather than a label: `E-QUOTE` will fail if the
 /// quote is not in the page, so an extraction that invents a term cannot survive `check`.
-pub(crate) fn write_definitions(
+pub(crate) fn definitions_document(
     pages: &[(String, String)],
     found: &[crate::extract::Definition],
-    out: &Path,
-) -> Outcome {
+) -> String {
     let escape = |text: &str| text.replace('\\', "\\\\").replace('"', "\\\"");
     let mut text = String::from("tsare 1\n");
 
@@ -205,6 +208,15 @@ pub(crate) fn write_definitions(
             escape(&item.term)
         ));
     }
+    text
+}
+
+pub(crate) fn write_definitions(
+    pages: &[(String, String)],
+    found: &[crate::extract::Definition],
+    out: &Path,
+) -> Outcome {
+    let text = definitions_document(pages, found);
     match fs::write(out, text) {
         Ok(()) => {
             println!("{} definition(s) written to {}", found.len(), out.display());
@@ -212,6 +224,52 @@ pub(crate) fn write_definitions(
         }
         Err(error) => fail(format!("{}: {error}", out.display())),
     }
+}
+
+/// Whether the document on disk is what the pages would produce now.
+///
+/// The ledger carries the page text, so `check` can verify every quote -- but nothing in `check`
+/// can tell that the page has changed since. This does: it rebuilds the document in memory and
+/// compares, the way a golden does, so a stale ledger is a diff and not a silence.
+pub(crate) fn verify_definitions(
+    pages: &[(String, String)],
+    found: &[crate::extract::Definition],
+    document: &Path,
+) -> Outcome {
+    let expected = definitions_document(pages, found);
+    let actual = match fs::read_to_string(document) {
+        Ok(text) => text,
+        Err(error) => return fail(format!("{}: {error}", document.display())),
+    };
+    let actual = actual.replace("\r\n", "\n");
+    if actual == expected {
+        println!(
+            "{} is current: {} definition(s) from {} page(s)",
+            document.display(),
+            found.len(),
+            pages.len()
+        );
+        return Outcome::Ok;
+    }
+    let expected_lines: Vec<&str> = expected.lines().collect();
+    let actual_lines: Vec<&str> = actual.lines().collect();
+    let at = actual_lines
+        .iter()
+        .zip(expected_lines.iter())
+        .position(|(a, e)| a != e)
+        .unwrap_or(actual_lines.len().min(expected_lines.len()));
+    let show = |line: Option<&&str>| {
+        line.map(|text| text.chars().take(120).collect::<String>())
+            .unwrap_or_else(|| "<nothing>".to_string())
+    };
+    println!("{} is stale at line {}:", document.display(), at + 1);
+    println!("  on disk:  {}", show(actual_lines.get(at)));
+    println!("  now:      {}", show(expected_lines.get(at)));
+    println!(
+        "run `tsare extract … --write {}` to regenerate it",
+        document.display()
+    );
+    Outcome::Failed
 }
 
 /// Errors decide the exit code.  `--strict` lets a warning decide it too: a warning is the engine
