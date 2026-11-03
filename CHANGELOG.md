@@ -8,6 +8,9 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `chains FILE [--json]`: every proposition or warrant whose support path rests on a hypothesis
+  no verdict fact has decided; exits 1 when any is open.
+
 - `grow` also refuses a declaration whose support path rests on a hypothesis no verdict fact has
   decided; the chain names it.
 

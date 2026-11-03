@@ -48,6 +48,7 @@ const COMMANDS: &[Command] = &[
         Command("reasoning", "merge", "merge BASE OURS THEIRS --out FILE [--json]   structural three-way merge"),
         Command("reasoning", "blame", "blame STORE NAME [--json]   which version last changed each field"),
         Command("reasoning", "chain", "chain FILE NAME [--json]   the support path from a claim to its evidence"),
+        Command("reasoning", "chains", "chains FILE [--json]   every open support path"),
         Command("reasoning", "whatif", "whatif PATH NAME             what falls when one assumption is removed"),
         Command("reasoning", "kinds", "kinds                        the obligation table: what each kind owes"),
         Command("repairing", "fix", "fix PATH [--apply OUT]          verified repair candidates, and applying them"),

@@ -333,3 +333,56 @@ pub(crate) fn cmd_chain(path: &Path, name: &str, json: bool) -> i32 {
     }
     0
 }
+
+/// Every conclusion whose support path rests on an unbacked hypothesis.
+pub(crate) fn cmd_chains(path: &Path, json: bool) -> i32 {
+    let loaded = match load(path) {
+        Ok(loaded) => loaded,
+        Err(error) => return fail(error),
+    };
+    let mut rows = Vec::new();
+    for decl in &loaded.decls {
+        if !matches!(decl.kind.as_str(), "proposition" | "warrant") {
+            continue;
+        }
+        if let Ok(link) = crate::chain::chain(&loaded.decls, &decl.name) {
+            let undecided = crate::chain::undecided(&link);
+            if !undecided.is_empty() {
+                rows.push((decl.name.clone(), decl.kind.clone(), undecided));
+            }
+        }
+    }
+    if json {
+        let items: Vec<J> = rows
+            .iter()
+            .map(|(name, kind, hypotheses)| {
+                obj(vec![
+                    ("name", J::Str(name.clone())),
+                    ("kind", J::Str(kind.clone())),
+                    (
+                        "hypotheses",
+                        J::Arr(hypotheses.iter().map(|h| J::Str(h.clone())).collect()),
+                    ),
+                ])
+            })
+            .collect();
+        emit(obj(vec![
+            ("count", J::Num(rows.len() as f64)),
+            ("open", J::Arr(items)),
+        ]));
+    } else if rows.is_empty() {
+        println!("no open chains");
+    } else {
+        for (name, kind, hypotheses) in &rows {
+            println!(
+                "{name} {kind} stands on the unbacked hypothesis {}",
+                hypotheses.join(", ")
+            );
+        }
+    }
+    if rows.is_empty() {
+        0
+    } else {
+        1
+    }
+}

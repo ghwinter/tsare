@@ -148,6 +148,7 @@ pub(crate) fn dispatch(path: &Path, command: &str, args: &Args) -> i32 {
             };
             cmd_chain(path, name, args.has("--json"))
         }
+        "chains" => cmd_chains(path, args.has("--json")),
         "fmt" => cmd_fmt(path),
         "induce" => cmd_induce(path),
         "propose" => {

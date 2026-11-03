@@ -98,6 +98,7 @@ answers `--json`.
 | `restore HASH [--store DIR] --out FILE` | write a stored ledger back, refusing bytes that do not match the hash | |
 | `blame STORE NAME [--json]` | which version on the store's HEAD chain last changed each field of a declaration | |
 | `chain FILE NAME [--json]` | the support path from a declaration to its evidence: premises, the rules that conclude it, and the leaves | |
+| `chains FILE [--json]` | every proposition or warrant whose support path rests on a hypothesis no verdict has decided | |
 | `fix FILE [--apply]` | verified repair candidates, and applying them | |
 | `suggest FILE` | repairs with an applicability | yes |
 | `apply FILE [--dry-run]` | machine repairs spliced and recompiled | |

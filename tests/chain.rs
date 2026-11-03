@@ -63,3 +63,34 @@ fn a_missing_name_is_an_error() {
     assert_eq!(status, 1, "{out}");
     assert!(out.contains("not declared"), "{out}");
 }
+
+const OPEN: &str = "tsare 1\n\
+fact F { claim: \"f\", evidence: user }\n\
+hypothesis H { assumes: [F], predicts: \"p\", test: \"t\" }\n\
+proposition P { statement: \"s\", from: [H] }\n";
+
+#[test]
+fn the_chains_audit_lists_an_unbacked_hypothesis() {
+    let dir = work("chains-open");
+    let path = dir.join("doc.tsare");
+    fs::write(&path, OPEN).expect("doc");
+    let (out, err, status) = run(&["chains", path.to_str().expect("path")]);
+    assert_eq!(status, 1, "{out}{err}");
+    assert!(
+        out.contains("P proposition stands on the unbacked hypothesis H"),
+        "{out}"
+    );
+    let (out, err, status) = run(&["chains", path.to_str().expect("path"), "--json"]);
+    assert_eq!(status, 1, "{out}{err}");
+    assert!(out.contains("\"count\": 1"), "{out}");
+}
+
+#[test]
+fn a_closed_document_has_no_open_chains() {
+    let dir = work("chains-closed");
+    let path = dir.join("doc.tsare");
+    fs::write(&path, DOC).expect("doc");
+    let (out, err, status) = run(&["chains", path.to_str().expect("path")]);
+    assert_eq!(status, 0, "{out}{err}");
+    assert!(out.contains("no open chains"), "{out}");
+}
