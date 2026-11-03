@@ -88,7 +88,7 @@ pub fn learn(
         if size > candidates.len() {
             continue;
         }
-        for indices in crate::induce::combinations(candidates.len(), size) {
+        for indices in crate::util::combinations(candidates.len(), size) {
             let combo: Vec<String> = indices
                 .iter()
                 .map(|index| candidates[*index].clone())

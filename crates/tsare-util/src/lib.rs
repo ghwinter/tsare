@@ -16,3 +16,24 @@ pub fn escape(text: &str) -> String {
     }
     out
 }
+
+/// Index combinations of size `k`, in lexicographic order.
+pub fn combinations(n: usize, k: usize) -> Vec<Vec<usize>> {
+    fn walk(start: usize, n: usize, k: usize, current: &mut Vec<usize>, out: &mut Vec<Vec<usize>>) {
+        if current.len() == k {
+            out.push(current.clone());
+            return;
+        }
+        for index in start..n {
+            if n - index < k - current.len() {
+                break;
+            }
+            current.push(index);
+            walk(index + 1, n, k, current, out);
+            current.pop();
+        }
+    }
+    let mut out = Vec::new();
+    walk(0, n, k, &mut Vec::new(), &mut out);
+    out
+}
