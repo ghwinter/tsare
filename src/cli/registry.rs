@@ -212,7 +212,7 @@ pub const COMMANDS: &[Command] = &[
         } } },
     Command { group: "emitting", name: "audit", usage: "audit PATH                          can a kind be written with a smaller vocabulary", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_audit(path) } },
     Command { group: "emitting", name: "egraph", usage: "egraph PATH [--write OUT]           merge equivalent declarations, rewrite references", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_egraph(path, args.option("--write")) } },
-    Command { group: "emitting", name: "mem", usage: "mem [--store FILE] [--recall CODE...] [--k N]  the case store: audit it, or recall situations", needs_target: false, run: |path: &Path, args: &Args| { let _ = (path, args); { let store = args.option("--store").map(PathBuf::from).unwrap_or_else(crate::cases::store_path); let codes: Vec<String> = args.positional.clone(); let recall = if args.has("--recall") { Some(codes.as_slice()) } else { None }; cmd_mem(&store, recall, args.count("--k", 3)) } } },
+    Command { group: "emitting", name: "mem", usage: "mem [--store FILE] [--recall CODE...] [--k N] [--json]  the case store: audit it (reuse rate, orphans), or recall situations", needs_target: false, run: |path: &Path, args: &Args| { let _ = (path, args); { let store = args.option("--store").map(PathBuf::from).unwrap_or_else(crate::cases::store_path); let codes: Vec<String> = args.positional.clone(); let recall = if args.has("--recall") { Some(codes.as_slice()) } else { None }; cmd_mem(&store, recall, args.count("--k", 3), args.has("--json")) } } },
 ];
 
 pub fn find(name: &str) -> Option<&'static Command> {

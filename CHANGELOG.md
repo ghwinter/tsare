@@ -8,6 +8,8 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `mem --json`: the case store's reuse metrics — distinct situations (the process signature), the reuse rate, the compression, the orphan signatures and the regressions (R5's measurable form).
+
 - `retract FILE NAME [--out FILE]`: remove one assumption, enumerate the conclusions whose status changed, and write the reduced document (R6's update invariance at the mechanism level).
 
 - `contracts [--json]`: every command's operator contract (input, output, effect), so a caller can see what will be read or written before running it.
@@ -222,6 +224,8 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `mem --json`: the case store's reuse metrics — distinct situations (the process signature), the reuse rate, the compression, the orphan signatures and the regressions (R5's measurable form).
+
 - `retract FILE NAME [--out FILE]`: remove one assumption, enumerate the conclusions whose status changed, and write the reduced document (R6's update invariance at the mechanism level).
 
 - `contracts [--json]`: every command's operator contract (input, output, effect), so a caller can see what will be read or written before running it.
@@ -256,6 +260,8 @@ All notable changes are recorded here. The format follows
 - `W-UNWARRANTED-BASIS` pointed its caret at `claim`, blaming the sentence for a missing licence.
   It points at `basis` when the field exists and at the declaration otherwise.
 ### Added
+
+- `mem --json`: the case store's reuse metrics — distinct situations (the process signature), the reuse rate, the compression, the orphan signatures and the regressions (R5's measurable form).
 
 - `retract FILE NAME [--out FILE]`: remove one assumption, enumerate the conclusions whose status changed, and write the reduced document (R6's update invariance at the mechanism level).
 
@@ -361,6 +367,8 @@ which observation would decide an open list, and what the attribute table alread
 
 ### Added
 
+- `mem --json`: the case store's reuse metrics — distinct situations (the process signature), the reuse rate, the compression, the orphan signatures and the regressions (R5's measurable form).
+
 - `retract FILE NAME [--out FILE]`: remove one assumption, enumerate the conclusions whose status changed, and write the reduced document (R6's update invariance at the mechanism level).
 
 - `contracts [--json]`: every command's operator contract (input, output, effect), so a caller can see what will be read or written before running it.
@@ -408,6 +416,8 @@ The version that learns to say what it cannot tell apart, and to say which forma
 
 ### Added
 
+- `mem --json`: the case store's reuse metrics — distinct situations (the process signature), the reuse rate, the compression, the orphan signatures and the regressions (R5's measurable form).
+
 - `retract FILE NAME [--out FILE]`: remove one assumption, enumerate the conclusions whose status changed, and write the reduced document (R6's update invariance at the mechanism level).
 
 - `contracts [--json]`: every command's operator contract (input, output, effect), so a caller can see what will be read or written before running it.
@@ -435,6 +445,8 @@ The version that learns to say what it cannot tell apart, and to say which forma
 The version that can be published: one crate, no dependencies, MIT.
 
 ### Added
+
+- `mem --json`: the case store's reuse metrics — distinct situations (the process signature), the reuse rate, the compression, the orphan signatures and the regressions (R5's measurable form).
 
 - `retract FILE NAME [--out FILE]`: remove one assumption, enumerate the conclusions whose status changed, and write the reduced document (R6's update invariance at the mechanism level).
 

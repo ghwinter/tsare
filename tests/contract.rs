@@ -336,7 +336,7 @@ fn a_repair_is_remembered_and_can_be_recalled() {
     let _ = std::fs::remove_dir_all(&dir);
     assert!(recalled.contains("improved"), "{recalled}");
     assert!(recalled.contains("W-UNCONFIRMED"), "{recalled}");
-    assert!(audit.contains("cases: 1"), "{audit}");
+    assert!(audit.contains("cases:       1"), "{audit}");
 }
 
 #[test]

@@ -11,7 +11,7 @@
 //! `recall` ranks cases by how much of the situation they share with the current one.  `audit`
 //! checks the store itself: a memory that cannot say which of its entries are stale is a rumour.
 
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use crate::cache::SALT;
@@ -189,6 +189,14 @@ pub struct Audit {
     pub regressed: usize,
     pub unchanged: usize,
     pub orphans: usize,
+    /// Distinct situations (the code set): the quotient the memory is addressed by.
+    pub signatures: usize,
+    /// Cases whose situation was seen before: the reuse count.
+    pub reused: usize,
+    /// Situations seen exactly once: the orphan signatures, candidates for decay.
+    pub single: usize,
+    /// The actions, by how many times each was taken (the tool as text).
+    pub actions: Vec<(String, usize)>,
 }
 
 pub fn audit(store: &Path) -> Audit {
@@ -246,6 +254,20 @@ pub fn audit(store: &Path) -> Audit {
     }
     let conflicting = groups.iter().filter(|(_, set)| set.len() > 1).count();
 
+    let mut signature_counts: HashMap<Vec<String>, usize> = HashMap::new();
+    let mut action_counts: BTreeMap<String, usize> = BTreeMap::new();
+    for entry in &entries {
+        *signature_counts.entry(codes_of(entry)).or_insert(0) += 1;
+        *action_counts.entry(action_of(entry)).or_insert(0) += 1;
+    }
+    let signatures = signature_counts.len();
+    let reused = entries.len() - signatures;
+    let single = signature_counts
+        .values()
+        .filter(|count| **count == 1)
+        .count();
+    let actions: Vec<(String, usize)> = action_counts.into_iter().collect();
+
     Audit {
         entries: entries.len(),
         expired,
@@ -253,6 +275,10 @@ pub fn audit(store: &Path) -> Audit {
         regressed,
         unchanged,
         orphans,
+        signatures,
+        reused,
+        single,
+        actions,
     }
 }
 
@@ -263,4 +289,117 @@ pub fn list_repr(items: &[String]) -> String {
         .map(|item| format!("'{}'", item.replace('\'', "\\'")))
         .collect();
     format!("[{}]", quoted.join(", "))
+}
+
+impl Audit {
+    /// The reuse rate: the cases whose situation was seen before, over all cases.
+    pub fn reuse_rate(&self) -> f64 {
+        if self.entries == 0 {
+            0.0
+        } else {
+            self.reused as f64 / self.entries as f64
+        }
+    }
+
+    /// The compression: cases per distinct situation.
+    pub fn compression(&self) -> f64 {
+        if self.signatures == 0 {
+            0.0
+        } else {
+            self.entries as f64 / self.signatures as f64
+        }
+    }
+
+    pub fn text(&self) -> String {
+        let mut out = String::new();
+        out.push_str(&format!("cases:       {}\n", self.entries));
+        out.push_str(&format!(
+            "expired:     {}  (recorded under a different checker)\n",
+            self.expired
+        ));
+        out.push_str(&format!(
+            "conflicting: {}  (same situation and action, opposite outcome)\n",
+            self.conflicting
+        ));
+        out.push_str(&format!(
+            "regressed:   {}  (the counts changed, not for the better)\n",
+            self.regressed
+        ));
+        out.push_str(&format!("unchanged:   {}\n", self.unchanged));
+        out.push_str(&format!(
+            "orphans:     {}  (their document is gone)\n",
+            self.orphans
+        ));
+        out.push_str(&format!(
+            "signatures:  {}  (distinct situations: the quotient the memory is addressed by)\n",
+            self.signatures
+        ));
+        out.push_str(&format!(
+            "reused:      {}  (a situation seen before)\n",
+            self.reused
+        ));
+        out.push_str(&format!(
+            "reuse rate:  {:.2}  (reused / cases; the compression ratio)\n",
+            self.reuse_rate()
+        ));
+        out.push_str(&format!(
+            "compression: {:.2}  (cases per signature)\n",
+            self.compression()
+        ));
+        out.push_str(&format!(
+            "single:      {}  (a situation seen once: the orphan signatures)\n",
+            self.single
+        ));
+        let actions = if self.actions.is_empty() {
+            "-".to_string()
+        } else {
+            self.actions
+                .iter()
+                .map(|(name, count)| format!("{name} {count}"))
+                .collect::<Vec<_>>()
+                .join(", ")
+        };
+        out.push_str(&format!("actions:     {actions}\n"));
+        out
+    }
+
+    pub fn json(&self) -> Json {
+        let actions: Vec<Json> = self
+            .actions
+            .iter()
+            .map(|(name, count)| {
+                Json::Obj(vec![
+                    ("action".to_string(), Json::Str(name.clone())),
+                    ("count".to_string(), Json::Num(*count as f64)),
+                ])
+            })
+            .collect();
+        Json::Obj(vec![
+            ("cases".to_string(), Json::Num(self.entries as f64)),
+            ("expired".to_string(), Json::Num(self.expired as f64)),
+            (
+                "conflicting".to_string(),
+                Json::Num(self.conflicting as f64),
+            ),
+            ("regressed".to_string(), Json::Num(self.regressed as f64)),
+            ("unchanged".to_string(), Json::Num(self.unchanged as f64)),
+            ("orphans".to_string(), Json::Num(self.orphans as f64)),
+            ("signatures".to_string(), Json::Num(self.signatures as f64)),
+            ("reused".to_string(), Json::Num(self.reused as f64)),
+            ("reuse_rate".to_string(), Json::Num(self.reuse_rate())),
+            ("compression".to_string(), Json::Num(self.compression())),
+            ("single".to_string(), Json::Num(self.single as f64)),
+            ("actions".to_string(), Json::Arr(actions)),
+        ])
+    }
+}
+
+impl crate::out::Report for Audit {
+    fn text(&self) -> String {
+        Audit::text(self)
+    }
+
+    fn json(&self) -> Json {
+        Audit::json(self)
+    }
 }
