@@ -532,6 +532,47 @@ pub(crate) fn cmd_provenance(path: &Path, json: bool) -> i32 {
     0
 }
 
+/// Store a ledger under its content hash.
+pub(crate) fn cmd_save(path: &Path, store: &str) -> i32 {
+    match crate::version::save(path, Path::new(store)) {
+        Ok(hash) => {
+            let short: String = hash.chars().take(12).collect();
+            println!("saved {short} ({store})");
+            0
+        }
+        Err(error) => fail(error),
+    }
+}
+
+/// The content hashes the store holds.
+pub(crate) fn cmd_log(store: &Path) -> i32 {
+    match crate::version::list(store) {
+        Ok(hashes) if hashes.is_empty() => {
+            println!("no saved versions");
+            0
+        }
+        Ok(hashes) => {
+            for hash in hashes {
+                println!("{hash}");
+            }
+            0
+        }
+        Err(error) => fail(error),
+    }
+}
+
+/// Write a stored ledger back, refusing bytes that do not match the hash.
+pub(crate) fn cmd_restore(hash: &str, store: &str, out: &str) -> i32 {
+    match crate::version::restore(Path::new(store), hash, Path::new(out)) {
+        Ok(()) => {
+            let short: String = hash.chars().take(12).collect();
+            println!("restored {short} -> {out}");
+            0
+        }
+        Err(error) => fail(error),
+    }
+}
+
 /// Add one declaration from a source document to a library, if the library stays admissible.
 pub(crate) fn cmd_grow(library: &Path, source: &Path, name: &str, out: &str) -> i32 {
     let library_text = match fs::read_to_string(library) {

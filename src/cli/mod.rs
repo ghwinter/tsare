@@ -245,6 +245,9 @@ const COMMANDS: &[Command] = &[
         Command("checking", "trace", "trace PATH [--out FILE | --append FILE]   one run, or append it to a session"),
         Command("checking", "replay", "replay TRACE [--diff]        re-run a recorded session, show the write-backs, compare"),
         Command("checking", "grow", "grow LIBRARY SOURCE NAME --out FILE   add one checked declaration to a library"),
+        Command("checking", "save", "save FILE [--store DIR]      store a ledger under its content hash"),
+        Command("checking", "log", "log STORE                    the content hashes the store holds"),
+        Command("checking", "restore", "restore HASH [--store DIR] --out FILE   write a stored ledger back"),
         Command("reasoning", "engine", "engine PATH [--json]         held, conditional, blocked, chains, gates"),
         Command("reasoning", "argue", "argue PATH [--against OTHER] which conclusions survive attack"),
         Command("reasoning", "confront", "confront LEFT RIGHT          which rules attack which, and which attacks nobody answered"),
@@ -549,6 +552,19 @@ pub fn run() -> i32 {
                 return 2;
             };
             cmd_grow(Path::new(library), Path::new(source), name, out)
+        }
+        "save" => cmd_save(&path, args.option("--store").unwrap_or(".tsare/versions")),
+        "log" => cmd_log(&path),
+        "restore" => {
+            let Some(out) = args.option("--out") else {
+                println!("usage: tsare restore HASH [--store DIR] --out FILE");
+                return 2;
+            };
+            cmd_restore(
+                args.at(0).unwrap_or(""),
+                args.option("--store").unwrap_or(".tsare/versions"),
+                out,
+            )
         }
         "suggest" => cmd_suggest(&path, args.has("--json")),
         "apply" => cmd_apply(&path, args.has("--dry-run")),

@@ -8,6 +8,9 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `save` / `log` / `restore`: a content-addressed store of ledgers. `save` writes the bytes under
+  their hash, `log` lists them, and `restore` refuses content that no longer matches the hash.
+
 - `diff BEFORE AFTER [--json]`: the semantic difference between two ledgers — declarations added,
   removed, or changed by kind or field — with both document hashes. 0 same, 1 changed, 2 cannot
   load.

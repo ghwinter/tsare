@@ -5,3 +5,4 @@ pub mod cache;
 pub mod cases;
 pub mod session;
 pub mod trace;
+pub mod version;
