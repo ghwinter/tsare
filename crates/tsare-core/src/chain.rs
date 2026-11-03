@@ -15,12 +15,26 @@ pub struct Link {
 }
 
 /// Build the support tree for `name`; `Err` when the name is not declared.
+///
+/// The arrows are built once and passed down: the tree asks "what concludes this name" at every
+/// node, and computing the rule set per node made a deep chain re-derive the whole document.
 pub fn chain(decls: &[Decl], name: &str) -> Result<Link, String> {
-    build(decls, name, &mut HashSet::new(), 0)
+    chain_in(decls, &crate::arrow::arrows(decls), name)
+}
+
+/// The same tree over an arrow set the caller built once: a loop that walks every conclusion
+/// should compute the relations once, not once per conclusion.
+pub fn chain_in(
+    decls: &[Decl],
+    arrows: &[crate::arrow::Arrow],
+    name: &str,
+) -> Result<Link, String> {
+    build(decls, arrows, name, &mut HashSet::new(), 0)
 }
 
 fn build(
     decls: &[Decl],
+    arrows: &[crate::arrow::Arrow],
     name: &str,
     seen: &mut HashSet<String>,
     depth: usize,
@@ -32,8 +46,8 @@ fn build(
     // A cycle is a diagnostic, not a reason to hang: the path stops where it repeats.
     if depth < 32 && !seen.contains(name) {
         seen.insert(name.to_string());
-        for child in supports(decls, decl) {
-            if let Ok(link) = build(decls, &child, seen, depth + 1) {
+        for child in supports(arrows, decl) {
+            if let Ok(link) = build(decls, arrows, &child, seen, depth + 1) {
                 children.push(link);
             }
         }
@@ -90,12 +104,13 @@ fn walk_undecided(link: &Link, out: &mut Vec<String>) {
 
 /// The conclusions whose support path reaches an unbacked hypothesis.
 pub fn open(decls: &[Decl]) -> Vec<(String, String, Vec<String>)> {
+    let arrows = crate::arrow::arrows(decls);
     let mut rows = Vec::new();
     for decl in decls {
         if !matches!(decl.kind.as_str(), "proposition" | "warrant") {
             continue;
         }
-        if let Ok(link) = chain(decls, &decl.name) {
+        if let Ok(link) = chain_in(decls, &arrows, &decl.name) {
             let undecided = undecided(&link);
             if !undecided.is_empty() {
                 rows.push((decl.name.clone(), decl.kind.clone(), undecided));
@@ -105,7 +120,7 @@ pub fn open(decls: &[Decl]) -> Vec<(String, String, Vec<String>)> {
     rows
 }
 
-fn supports(decls: &[Decl], decl: &Decl) -> Vec<String> {
+fn supports(arrows: &[crate::arrow::Arrow], decl: &Decl) -> Vec<String> {
     let mut out = Vec::new();
     let mut add = |key: &str| {
         if let Some(id) = f_id(decl, key) {
@@ -116,9 +131,14 @@ fn supports(decls: &[Decl], decl: &Decl) -> Vec<String> {
     match decl.kind.as_str() {
         "proposition" => {
             add("from");
-            for rule in crate::closure::applications(decls) {
-                if rule.target == decl.name && !out.contains(&rule.warrant) {
-                    out.push(rule.warrant);
+            // the rule that concludes this name is an arrow ending here, and the tree descends
+            // into the rule before the premises it draws on
+            for arrow in arrows
+                .iter()
+                .filter(|arrow| arrow.kind == "derives" && arrow.to == decl.name)
+            {
+                if !out.contains(&arrow.reason) {
+                    out.push(arrow.reason.clone());
                 }
             }
         }
