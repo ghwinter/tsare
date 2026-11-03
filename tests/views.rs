@@ -6,7 +6,10 @@ use std::process::Command;
 
 use tsare::check::{refs, LITERALS, REF_KEYS};
 use tsare::json::{parse, Json};
+use tsare::program::f_ids;
 use tsare::syntax::{parse as parse_doc, Val};
+
+type TreeRow = (String, String, Vec<(String, Val)>);
 
 fn binary() -> &'static str {
     env!("CARGO_BIN_EXE_tsare")
@@ -221,4 +224,165 @@ fn the_other_three_views_are_present() {
     assert!(rules
         .iter()
         .any(|rule| rule.get("name").and_then(Json::as_str) == Some("W")));
+}
+
+#[test]
+fn the_tree_reads_back_to_the_declarations() {
+    let dir = work("tree");
+    let path = dir.join("doc.tsare");
+    fs::write(&path, DOC).expect("doc");
+    let (out, err, status) = run(&["views", path.to_str().expect("path"), "--json"]);
+    assert_eq!(status, 0, "{out}{err}");
+    let views = parse(&out).expect("views JSON");
+    let decls = parse_doc(DOC).expect("the document parses");
+    let tree = views.get("tree").and_then(Json::as_arr).expect("tree");
+    let rebuilt: Vec<TreeRow> = tree
+        .iter()
+        .map(|decl| {
+            let name = decl
+                .get("name")
+                .and_then(Json::as_str)
+                .unwrap_or("")
+                .to_string();
+            let kind = decl
+                .get("kind")
+                .and_then(Json::as_str)
+                .unwrap_or("")
+                .to_string();
+            let fields = decl
+                .get("fields")
+                .and_then(Json::as_arr)
+                .unwrap_or(&[])
+                .iter()
+                .map(|field| {
+                    (
+                        field
+                            .get("key")
+                            .and_then(Json::as_str)
+                            .unwrap_or("")
+                            .to_string(),
+                        value_of(field.get("value").expect("a field value")),
+                    )
+                })
+                .collect();
+            (name, kind, fields)
+        })
+        .collect();
+    let expected: Vec<TreeRow> = decls
+        .iter()
+        .map(|decl| (decl.name.clone(), decl.kind.clone(), decl.fields.clone()))
+        .collect();
+    assert_eq!(
+        rebuilt, expected,
+        "the tree does not reconstruct the declarations"
+    );
+}
+
+#[test]
+fn the_hypergraph_reads_back_to_the_concept_extents() {
+    let dir = work("hypergraph");
+    let path = dir.join("doc.tsare");
+    fs::write(&path, DOC).expect("doc");
+    let (out, err, status) = run(&["views", path.to_str().expect("path"), "--json"]);
+    assert_eq!(status, 0, "{out}{err}");
+    let views = parse(&out).expect("views JSON");
+    let decls = parse_doc(DOC).expect("the document parses");
+    let edges = views
+        .get("hypergraph")
+        .and_then(|hyper| hyper.get("hyperedges"))
+        .and_then(Json::as_arr)
+        .expect("hyperedges");
+    let rebuilt: Vec<(String, Vec<String>)> = edges
+        .iter()
+        .map(|edge| {
+            let concept = edge
+                .get("concept")
+                .and_then(Json::as_str)
+                .unwrap_or("")
+                .to_string();
+            let extent = edge
+                .get("extent")
+                .and_then(Json::as_arr)
+                .unwrap_or(&[])
+                .iter()
+                .map(|item| item.as_str().unwrap_or("").to_string())
+                .collect();
+            (concept, extent)
+        })
+        .collect();
+    let expected: Vec<(String, Vec<String>)> = decls
+        .iter()
+        .filter(|decl| decl.kind == "concept")
+        .map(|decl| (decl.name.clone(), f_ids(decl, "grounded_by")))
+        .collect();
+    assert_eq!(
+        rebuilt, expected,
+        "the hypergraph does not reconstruct the extents"
+    );
+}
+
+#[test]
+fn the_logic_reads_back_to_the_rules() {
+    let dir = work("logic");
+    let path = dir.join("doc.tsare");
+    fs::write(&path, DOC).expect("doc");
+    let (out, err, status) = run(&["views", path.to_str().expect("path"), "--json"]);
+    assert_eq!(status, 0, "{out}{err}");
+    let views = parse(&out).expect("views JSON");
+    let decls = parse_doc(DOC).expect("the document parses");
+    let rules = views
+        .get("logic")
+        .and_then(|logic| logic.get("rules"))
+        .and_then(Json::as_arr)
+        .expect("logic rules");
+    let rebuilt: Vec<(String, String, Vec<String>, Vec<String>)> = rules
+        .iter()
+        .map(|rule| {
+            let name = rule
+                .get("name")
+                .and_then(Json::as_str)
+                .unwrap_or("")
+                .to_string();
+            let kind = rule
+                .get("kind")
+                .and_then(Json::as_str)
+                .unwrap_or("")
+                .to_string();
+            let premises = rule
+                .get("premises")
+                .and_then(Json::as_arr)
+                .unwrap_or(&[])
+                .iter()
+                .map(|item| item.as_str().unwrap_or("").to_string())
+                .collect();
+            let conclusion = rule
+                .get("conclusion")
+                .and_then(Json::as_arr)
+                .unwrap_or(&[])
+                .iter()
+                .map(|item| item.as_str().unwrap_or("").to_string())
+                .collect();
+            (name, kind, premises, conclusion)
+        })
+        .collect();
+    let expected: Vec<(String, String, Vec<String>, Vec<String>)> = decls
+        .iter()
+        .filter(|decl| matches!(decl.kind.as_str(), "warrant" | "law" | "proposition"))
+        .map(|decl| {
+            let premises = match decl.kind.as_str() {
+                "warrant" | "proposition" => f_ids(decl, "from"),
+                _ => f_ids(decl, "checked_by"),
+            };
+            let conclusion = match decl.kind.as_str() {
+                "warrant" => f_ids(decl, "to"),
+                "law" => f_ids(decl, "holds_in"),
+                _ => Vec::new(),
+            };
+            (decl.name.clone(), decl.kind.clone(), premises, conclusion)
+        })
+        .collect();
+    assert_eq!(
+        rebuilt, expected,
+        "the logic view does not reconstruct the rules"
+    );
 }

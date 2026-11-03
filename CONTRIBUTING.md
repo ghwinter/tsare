@@ -23,7 +23,7 @@ Three tiers, and `nightly` may split into variants:
 | `main` | what is stable and absorbed | a person, through a pull request from `dev`, after review and a green CI | slowest: only after `dev` has held |
 | `dev` | integration: several stable changes together | a merge from `nightly`, squashed | when a change is wanted |
 | `nightly` | every experiment and every new line; the variants land here | direct commits, batched | may be reset from `dev` at any time |
-| `nightly-<name>` | one decision under test | direct commits, batched | starts from `dev`, merges to `nightly` when its tests pass, then is reset or deleted |
+| `nightly-<name>` | one decision under test | direct commits, batched | starts from `dev`, merges to `nightly` when its tests pass, then is deleted in the same push (a branch is a decision under test, not an archive) |
 
 A change starts on `nightly`, or on a `nightly-<name>` variant when it is one decision that
 deserves its own branch. A variant merges to `nightly` when its tests pass; `nightly` merges to
@@ -31,6 +31,10 @@ deserves its own branch. A variant merges to `nightly` when its tests pass; `nig
 to `main`; CI runs on it, someone reviews it, and a person merges it. Nothing is committed to
 `main` directly, and `dev` takes nothing that has not been on `nightly`. `nightly` and its
 variants are expected to break: a red local run there is information, not an incident.
+
+A merged variant is deleted rather than kept: its commit is already in `nightly`'s history, and a
+ref that outlives its decision is only clutter. An unmerged variant is deleted once it is refuted;
+the refutation belongs in the commit message, not in a branch.
 
 CI runs on `main` only: a push to it, and a pull request whose base is it. `dev` and `nightly`
 spend no runner; the local commands above are the gate before a merge.
