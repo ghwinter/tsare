@@ -430,7 +430,7 @@ pub(crate) fn cmd_outline(path: &Path) -> Outcome {
     Outcome::Ok
 }
 
-pub(crate) fn cmd_mem(store: &Path, recall: Option<&[String]>, k: usize) -> Outcome {
+pub(crate) fn cmd_mem(store: &Path, recall: Option<&[String]>, k: usize, json: bool) -> Outcome {
     if let Some(codes) = recall {
         let entries = crate::cases::recall(store, codes, k);
         if entries.is_empty() {
@@ -472,25 +472,10 @@ pub(crate) fn cmd_mem(store: &Path, recall: Option<&[String]>, k: usize) -> Outc
         return Outcome::Ok;
     }
     let report = crate::cases::audit(store);
-    println!("store: {}", store.display());
-    println!("cases: {}", report.entries);
-    println!(
-        "expired:     {}  (recorded under a different checker)",
-        report.expired
-    );
-    println!(
-        "conflicting: {}  (same situation and action, opposite outcome)",
-        report.conflicting
-    );
-    println!(
-        "regressed:   {}  (the counts changed, not for the better)",
-        report.regressed
-    );
-    println!("unchanged:   {}", report.unchanged);
-    println!(
-        "orphans:     {}  (document no longer exists)",
-        report.orphans
-    );
+    let mut sink = crate::out::Stdout;
+    use crate::out::Sink;
+    sink.line(&format!("store: {}", store.display()));
+    crate::out::render(&report, json, &mut sink);
     Outcome::Ok
 }
 
