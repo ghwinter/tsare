@@ -4,19 +4,27 @@ use super::*;
 use crate::json::Json as J;
 
 /// The definitions a rendered page states: a heading and the term column the caller names (or the
-/// bold first cell when it names none).  The output is arrows, because that is what the text is
-/// being read for.
+/// bold first cell when it names none).  A directory is read page by page in name order, so one
+/// chapter list becomes one document with one numbering.
 pub(crate) fn cmd_extract(
     path: &Path,
     json: bool,
     terms: Option<&str>,
     write: Option<&str>,
 ) -> Outcome {
-    let text = match fs::read_to_string(path) {
-        Ok(text) => text,
-        Err(error) => return fail(format!("{}: {error}", path.display())),
+    let pages: Vec<std::path::PathBuf> = if path.is_dir() {
+        let mut pages: Vec<std::path::PathBuf> = match fs::read_dir(path) {
+            Ok(entries) => entries
+                .filter_map(|entry| entry.ok().map(|item| item.path()))
+                .filter(|item| item.extension().map(|ext| ext == "html").unwrap_or(false))
+                .collect(),
+            Err(error) => return fail(format!("{}: {error}", path.display())),
+        };
+        pages.sort();
+        pages
+    } else {
+        vec![path.to_path_buf()]
     };
-    let shown = path.display().to_string();
     let terms: Vec<&str> = terms
         .map(|list| {
             list.split(',')
@@ -25,7 +33,18 @@ pub(crate) fn cmd_extract(
                 .collect()
         })
         .unwrap_or_default();
-    let found = crate::extract::definitions(&text, &shown, &terms);
+    let mut found = Vec::new();
+    for page in &pages {
+        let text = match fs::read_to_string(page) {
+            Ok(text) => text,
+            Err(error) => return fail(format!("{}: {error}", page.display())),
+        };
+        found.extend(crate::extract::definitions(
+            &text,
+            &page.display().to_string(),
+            &terms,
+        ));
+    }
     if let Some(out) = write {
         return write_definitions(&found, Path::new(out));
     }
@@ -81,6 +100,9 @@ pub(crate) fn write_definitions(found: &[crate::extract::Definition], out: &Path
             .file_name()
             .map(|name| name.to_string_lossy().to_string())
             .unwrap_or_else(|| item.file.clone());
+        // a document that names a Windows path in its evidence is not portable, and the goldens
+        // would differ between platforms
+        let page_path = item.file.replace('\\', "/");
         text.push_str(&format!(
             "\n# {page}:{} -- {}\nfact {name} {{\n  claim: \"{} defines 「{}」 under 「{}」\",\n  evidence: doc(\"{}\")\n}}\n",
             item.line,
@@ -88,7 +110,7 @@ pub(crate) fn write_definitions(found: &[crate::extract::Definition], out: &Path
             page,
             escape(&item.term),
             escape(&item.section),
-            escape(&item.file)
+            escape(&page_path)
         ));
     }
     match fs::write(out, text) {
