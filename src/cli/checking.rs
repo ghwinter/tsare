@@ -386,104 +386,29 @@ pub(crate) fn cmd_status(path: &Path, json: bool, trace: Option<&str>) -> i32 {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
     };
-    let diagnostics = crate::check::check(&loaded.decls);
-    let errors = diagnostics
-        .iter()
-        .filter(|item| item.code.starts_with('E'))
-        .count();
-    let warnings = diagnostics
-        .iter()
-        .filter(|item| item.code.starts_with('W'))
-        .count();
-    let verdict = crate::decide::report(&loaded.decls);
-    let rows = crate::epistemic::report(&loaded.decls);
-    let verified = rows
-        .iter()
-        .filter(|row| row.knowing == crate::epistemic::Knowing::Verified)
-        .count();
-    let inferred = rows
-        .iter()
-        .filter(|row| row.knowing == crate::epistemic::Knowing::Inferred)
-        .count();
-    let unverified = rows.len() - verified - inferred;
-    let program = crate::program::Program::new(&loaded.decls);
-    let question = crate::ask::questions(&program)
-        .into_iter()
-        .next()
-        .map(|item| item.question);
-    let first = match diagnostics.first() {
-        Some(item) => J::Obj(vec![
-            ("code".to_string(), J::Str(item.code.to_string())),
-            (
-                "name".to_string(),
-                J::Str(item.witness.clone().unwrap_or_default()),
-            ),
-            ("message".to_string(), J::Str(item.message.clone())),
-        ]),
-        None => J::Null,
-    };
-    let debt = match verdict.items.first() {
-        Some(item) => J::Obj(vec![
-            ("name".to_string(), J::Str(item.name.clone())),
-            ("kind".to_string(), J::Str(item.kind.clone())),
-            ("reason".to_string(), J::Str(item.reason.to_string())),
-        ]),
-        None => J::Null,
-    };
-    let open = crate::chain::open(&loaded.decls);
-    let open_first = match open.first() {
-        Some((name, kind, hypotheses)) => J::Obj(vec![
-            ("name".to_string(), J::Str(name.clone())),
-            ("kind".to_string(), J::Str(kind.clone())),
-            (
-                "hypotheses".to_string(),
-                J::Arr(hypotheses.iter().map(|h| J::Str(h.clone())).collect()),
-            ),
-        ]),
-        None => J::Null,
-    };
-    let value = J::Obj(vec![
-        (
-            "decision".to_string(),
-            J::Str(verdict.decision.label().to_string()),
-        ),
-        ("verified".to_string(), J::Num(verified as f64)),
-        ("inferred".to_string(), J::Num(inferred as f64)),
-        ("unverified".to_string(), J::Num(unverified as f64)),
-        ("errors".to_string(), J::Num(errors as f64)),
-        ("warnings".to_string(), J::Num(warnings as f64)),
-        (
-            "question".to_string(),
-            match &question {
-                Some(text) => J::Str(text.clone()),
-                None => J::Null,
-            },
-        ),
-        ("first".to_string(), first),
-        ("claims".to_string(), J::Num(loaded.decls.len() as f64)),
-        ("debt".to_string(), debt),
-        ("open_chains".to_string(), J::Num(open.len() as f64)),
-        ("open_chain".to_string(), open_first),
-    ]);
-    let report = format!("{}\n", crate::json::serialize(&value));
-    if json {
-        print!("{report}");
+    let report = crate::status::report(&loaded.decls);
+    let rendered_json = crate::json::serialize(&report.json());
+    let rendered = if json {
+        rendered_json.clone()
     } else {
-        println!("{}", crate::status::line(&loaded.decls));
-    }
+        report.text()
+    };
+    use crate::out::{Sink, Stdout};
+    let mut out = Stdout;
+    out.line(&rendered);
     if let Some(file) = trace {
-        let status = if errors > 0 { 1 } else { 0 };
+        let status = if report.errors > 0 { 1 } else { 0 };
         let step = crate::trace::Step {
             command: "status".to_string(),
             status,
-            report: report.clone(),
+            report: format!("{rendered_json}\n"),
         };
         let run = crate::trace::Run::new(&loaded.text, vec![step]);
         if let Err(error) = crate::trace::append(Path::new(file), run) {
             eprintln!("trace: {error}");
         }
     }
-    if errors > 0 {
+    if report.errors > 0 {
         1
     } else {
         0
