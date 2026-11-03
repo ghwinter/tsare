@@ -33,7 +33,6 @@ pub(crate) fn cmd_check(
             Ok(decls) => Loaded {
                 decls,
                 text: expanded,
-                path: path.to_path_buf(),
                 syntax: Vec::new(),
                 sources: Vec::new(),
             },
