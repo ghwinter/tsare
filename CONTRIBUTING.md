@@ -36,6 +36,9 @@ A merged variant is deleted rather than kept: its commit is already in `nightly`
 ref that outlives its decision is only clutter. An unmerged variant is deleted once it is refuted;
 the refutation belongs in the commit message, not in a branch.
 
+An **old line** that is superseded is archived, not merged: tag the tip `archive/<name>`, then
+delete the branch. The tag keeps the reference without leaving a fourth tier in the branch list.
+
 CI runs on `main` only: a push to it, and a pull request whose base is it. `dev` and `nightly`
 spend no runner; the local commands above are the gate before a merge.
 
