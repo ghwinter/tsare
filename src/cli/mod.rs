@@ -273,6 +273,7 @@ const COMMANDS: &[Command] = &[
         Command("reasoning", "delta", "delta BEFORE AFTER [--json] [--record STORE --doc DOC [--action A]]  what changed between two `check --json` reports"),
         Command("reasoning", "diff", "diff BEFORE AFTER [--json]   what changed between two ledgers"),
         Command("reasoning", "merge", "merge BASE OURS THEIRS --out FILE [--json]   structural three-way merge"),
+        Command("reasoning", "blame", "blame STORE NAME [--json]   which version last changed each field"),
         Command("reasoning", "whatif", "whatif PATH NAME             what falls when one assumption is removed"),
         Command("reasoning", "kinds", "kinds                        the obligation table: what each kind owes"),
         Command("repairing", "fix", "fix PATH [--apply OUT]          verified repair candidates, and applying them"),
@@ -653,6 +654,13 @@ pub fn run() -> i32 {
                 args.option("--out"),
                 args.has("--json"),
             )
+        }
+        "blame" => {
+            let Some(name) = args.at(1) else {
+                println!("usage: tsare blame STORE NAME [--json]");
+                return 2;
+            };
+            cmd_blame(&path, name, args.has("--json"))
         }
         "fmt" => cmd_fmt(&path),
         "induce" => cmd_induce(&path),

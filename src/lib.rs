@@ -18,7 +18,7 @@ pub use emit::{build, format, graph, growth, mapping, outline};
 pub use io::{apply, cache, cases, session, trace, version};
 pub use lang::{explain, hash, json, paths, program, render, specs, sugar, syntax};
 pub use reason::{
-    abstraction, argue, ask, assumptions, audit, cat, closure, cost, coverage, debt, delta, derive,
-    diff, egraph, fca, generalize, hint, impact, imply, induce, merge, moves, novel, patterns,
-    propose, shape, weigh, whatif,
+    abstraction, argue, ask, assumptions, audit, blame, cat, closure, cost, coverage, debt, delta,
+    derive, diff, egraph, fca, generalize, hint, impact, imply, induce, merge, moves, novel,
+    patterns, propose, shape, weigh, whatif,
 };

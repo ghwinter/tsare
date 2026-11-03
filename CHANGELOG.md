@@ -8,12 +8,16 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `blame STORE NAME [--json]`: which version on the store's HEAD chain last changed each field,
+  walking the parent links from HEAD.
+
 - `merge BASE OURS THEIRS --out FILE [--json]`: a structural three-way merge — declarations by
   name, fields by value — that writes only when every change has one side; conflicts are named and
   nothing is written.
 
 - `save` / `log` / `restore`: a content-addressed store of ledgers. `save` writes the bytes under
-  their hash, `log` lists them, and `restore` refuses content that no longer matches the hash.
+  their hash and advances the store's HEAD, recording the previous head as the parent; `log` lists
+  them, and `restore` refuses content that no longer matches the hash.
 
 - `diff BEFORE AFTER [--json]`: the semantic difference between two ledgers — declarations added,
   removed, or changed by kind or field — with both document hashes. 0 same, 1 changed, 2 cannot

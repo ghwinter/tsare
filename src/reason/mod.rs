@@ -5,6 +5,7 @@ pub mod argue;
 pub mod ask;
 pub mod assumptions;
 pub mod audit;
+pub mod blame;
 pub mod cat;
 pub mod closure;
 pub mod cost;

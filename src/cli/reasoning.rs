@@ -333,6 +333,44 @@ fn decl_of(view: &crate::merge::View) -> crate::syntax::Decl {
     }
 }
 
+/// Which version on the store's HEAD chain last changed each field of a declaration.
+pub(crate) fn cmd_blame(store: &Path, name: &str, json: bool) -> i32 {
+    let blame = match crate::blame::blame(store, name) {
+        Ok(blame) => blame,
+        Err(error) => return fail(error),
+    };
+    let short = |hash: &str| -> String { hash.chars().take(12).collect() };
+    if json {
+        let charges: Vec<J> = blame
+            .charges
+            .iter()
+            .map(|charge| {
+                obj(vec![
+                    ("field", J::Str(charge.field.clone())),
+                    ("version", J::Str(charge.version.clone())),
+                    ("value", optional(charge.value.clone())),
+                ])
+            })
+            .collect();
+        emit(obj(vec![
+            ("name", J::Str(blame.name.clone())),
+            ("version", J::Str(blame.version.clone())),
+            ("charges", J::Arr(charges)),
+        ]));
+        return 0;
+    }
+    println!("blame {} at {}", blame.name, short(&blame.version));
+    for charge in &blame.charges {
+        println!(
+            "  {:<12} {:<14} {}",
+            charge.field,
+            short(&charge.version),
+            charge.value.as_deref().unwrap_or("-")
+        );
+    }
+    0
+}
+
 pub(crate) fn cmd_engine(path: &Path, json: bool) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,

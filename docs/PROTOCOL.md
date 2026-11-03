@@ -92,9 +92,10 @@ answers `--json`.
 | `trace FILE [--out FILE \| --append FILE]` | one run, or a session of runs appended; each run embeds the ledger, its hash, and the steps — `check`, `ask` and `decide`, or one `status` step from `status --trace` — with their reports and statuses | yes |
 | `replay TRACE [--diff]` | re-run every run in order and compare byte for byte; `--diff` names the lines each run wrote back; `match` or the first difference, naming the run and the step | |
 | `grow LIBRARY SOURCE NAME --out FILE` | copy one declaration and a content-addressed entry note into a library, keeping it only if the grown document has no error | |
-| `save FILE [--store DIR]` | store a ledger under its content hash (default `.tsare/versions`) | yes |
+| `save FILE [--store DIR]` | store a ledger under its content hash and advance the store's HEAD (default `.tsare/versions`) | yes |
 | `log STORE` | the content hashes the store holds | |
 | `restore HASH [--store DIR] --out FILE` | write a stored ledger back, refusing bytes that do not match the hash | |
+| `blame STORE NAME [--json]` | which version on the store's HEAD chain last changed each field of a declaration | |
 | `fix FILE [--apply]` | verified repair candidates, and applying them | |
 | `suggest FILE` | repairs with an applicability | yes |
 | `apply FILE [--dry-run]` | machine repairs spliced and recompiled | |
