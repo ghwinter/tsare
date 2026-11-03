@@ -112,6 +112,8 @@ fn stem(path: &Path) -> String {
 const COMMANDS: &[(&str, &[&str])] = &[
     ("check", &[]),
     ("check-json", &["--json"]),
+    ("status", &[]),
+    ("status-json", &["--json"]),
     ("engine-json", &["--json"]),
     ("suggest-json", &["--json"]),
     ("apply-dry", &["--dry-run"]),
@@ -124,7 +126,12 @@ const COMMANDS: &[(&str, &[&str])] = &[
     // `ask` is not in this matrix: no fixture has a gap or a pile, so its snapshot would be the
     // same six times.  The test below pins the interesting case; the module's unit tests pin
     // the rest.
+    // `trace` writes a file and `replay` consumes one; tests/trace.rs pins both, not this matrix.
     ("cost", &[]),
+    ("decide", &[]),
+    ("decide-json", &["--json"]),
+    ("epistemic", &[]),
+    ("epistemic-json", &["--json"]),
     ("weigh", &[]),
     ("cat", &[]),
     ("outline", &[]),

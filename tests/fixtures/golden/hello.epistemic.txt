@@ -1,0 +1,3 @@
+epistemic: 1 verified, 1 inferred, 0 unverified
+F_SCROLL             fact         verified    measured
+P_FAST               proposition  inferred    W_FAST

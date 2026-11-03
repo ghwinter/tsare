@@ -13,7 +13,7 @@ choice at three seams DSH owns:
 | seam | behaviour |
 | --- | --- |
 | `agent/turn-stopping` | the turn is about to close; the plugin runs `tsare check LEDGER --json` and, if the ledger is not checkable, calls `agent.steer(...)` with the diagnostics. The machine runs another step: **the turn cannot close while the checker objects**, up to `steerLimit` times. |
-| `systemPrompt.context` | one standing line: the ledger's **next question** (`tsare ask --one`) or its first error, replaced in place and recomputed only when the ledger changes. This is the engine; the gate is the brake. |
+| `systemPrompt.context` | one standing line from `tsare status --json`: the decision, the verified/inferred/unverified counts, and the ledger's **next question** or its first error, replaced in place and recomputed only when the ledger changes. When `traceFile` is set, that same call appends one replayable trace run. This is the engine; the gate is the brake. |
 | `tools/post-execute` | for the tools named in `remindAfterTools`, a dirty ledger rides along as context on the next request; for arguments matching `remindWhen`, one reminder that the result is a claim, once per ledger state. It never blocks the tool. |
 | `agent/created` | a session that starts without a ledger gets one: a single `note` declaration, which is a valid document. |
 
@@ -31,6 +31,7 @@ almost never fire. The plugin runs no model, opens no network, and writes nothin
 | `cwd` | the session's own working directory (from its header) | where the ledger lives; set it to pin one directory for every session |
 | `maxDeclarations` | `150` | after this many declarations the gate says so on every objection |
 | `mode` | `errors` | `errors` fails on errors; `warnings` also fails on warnings (`--strict`) |
+| `level` | inferred | `off`, `brief`, `remind`, `steer` or `gate`: a preset that writes `brief`, `remindWhen` and `steerLimit`. A named level wins over those keys; without one the level is inferred from them. |
 | `steerLimit` | `3` | how many times one agent may be held open before the gate gives up |
 | `timeoutMs` | `10000` | per check |
 | `brief` | `true` | keep the next question in the runtime snapshot |
@@ -40,8 +41,35 @@ almost never fire. The plugin runs no model, opens no network, and writes nothin
 | `remindWhen` | `[]` | regexes matched against a call's arguments (e.g. `cargo (test|build)`); a match gets one claim reminder per ledger state |
 | `remindLimit` | `5` | how many claim reminders one agent may receive |
 | `command` | none | argv override (`[file, ...args]`) for the check, for tests and wrappers |
-| `askCommand` | none | argv override for the next-question call |
+| `statusCommand` | none | argv override for the brief's call (`tsare status LEDGER --json`) |
+| `decideCommand` | none | argv override for the decision call at turn stopping (`tsare decide LEDGER --json`) |
+| `traceFile` | none | when set, the brief's status call appends one replayable trace run per ledger change |
 | `debug` | `false` | append one line per hook (apply, created, install, post-execute, turn-stopping) to a temp file, for diagnosing a live integration |
+
+## Levels
+
+A level is a preset, not a second set of rules. The checker judges a document the same way at
+every level: a claim does not become checkable because the gate is quiet. The level decides only
+the gate's response — whether the brief is installed, whether a verification command is reminded,
+and whether a non-checkable ledger holds the turn open.
+
+| level | brief | reminder | steer |
+| --- | --- | --- | --- |
+| `off` | no | no | no |
+| `brief` | yes | no | no |
+| `remind` | yes | default triggers | no |
+| `steer` | yes | default triggers | up to `steerLimit` |
+| `gate` | yes | default triggers | also on an `open` decision, up to `steerLimit` |
+
+`gate` adds the decision to the check: a ledger can be checkable and still be `open`, because a
+debt names nothing that could discharge it. The gate steers on that too.
+
+`mode` is orthogonal: it decides whether warnings count as failures, not whether the gate acts.
+The authority is one-way: the user sets the level; the model may act more strictly, never less.
+
+At every level the brief also carries the decision and the epistemic counts, and — when any — the
+count of open chains (conclusions standing on an unbacked hypothesis) and the first chain's name.
+Below `gate` they are display; at `gate` the decision is enforced at turn stopping.
 
 ## Activate it in a profile
 
@@ -63,7 +91,7 @@ dependency works), and the listeners are live for the next session:
 ## Test
 
 ```powershell
-node selftest.mjs                 # fake checker: 7 checks, no dependencies
+node selftest.mjs                 # fake checker: 23 checks, no dependencies
 $env:TSARE_BIN = "tsare"; node verify-real.mjs   # the real binary, same parser
 ```
 

@@ -16,9 +16,12 @@
  *   ledger             ledger path, relative to `cwd` (default '.tsare/session.tsare')
  *   cwd                where the ledger lives (default: the process working directory)
  *   mode               'errors' (default) fails on errors, 'warnings' also on warnings (--strict)
+ *   level              off | brief | remind | steer | gate, a preset over brief, remindWhen and
+ *                      steerLimit; a named level writes those keys, a missing one is inferred
  *   steerLimit         steers per agent before the gate gives up (default 3)
  *   timeoutMs          per check (default 10000)
- *   brief              keep one line in the runtime snapshot: the next question (default true)
+ *   brief              keep one line in the runtime snapshot from `tsare status --json`: the
+ *                      decision, the counts and the next question (default true)
  *   briefMaxChars      cap for that line (default 240)
  *   briefStyle         'full' (default) names the next action; 'terse' states only the state
  *   remindAfterTools   tool names that attach the diagnostics as context after they run (default [])
@@ -26,7 +29,9 @@
  *                      that the result is a claim (default [])
  *   remindLimit        how many such reminders one agent may receive (default 5)
  *   command            argv override for tests and wrappers; replaces [binary, check, ledger, --json]
- *   askCommand         argv override for the next-question call (default [binary, ask, ledger, --one])
+ *   statusCommand      argv override for the brief's call (default [binary, status, ledger, --json])
+ *   decideCommand      argv override for the decision call at turn stopping (default [binary, decide, ledger, --json])
+ *   traceFile          when set, the brief's status call appends one trace run per ledger change
  *   debug              append one line per hook to <tmp>/tsare-gate.log (default false)
  */
 
@@ -58,8 +63,57 @@ const DEFAULTS = {
   remindWhen: [],
   remindLimit: 5,
   command: null,
-  askCommand: null,
+  statusCommand: null,
+  decideCommand: null,
+  traceFile: null,
   debug: false,
+}
+
+/** The levels, weakest to strongest.  A stronger one adds obligations; it never removes a rule. */
+const LEVELS = ['off', 'brief', 'remind', 'steer', 'gate']
+
+/** What `remind` and `steer` use when the config names no trigger of its own. */
+const DEFAULT_REMIND = ['cargo (test|build|clippy)', 'npm test', 'pytest']
+
+/** The configured level, else the one the three switches already describe. */
+function levelOf(config) {
+  const named = typeof config.level === 'string' ? config.level.trim().toLowerCase() : ''
+  if (LEVELS.includes(named)) return named
+  if (config.brief === false) return 'off'
+  if (Number.isFinite(config.steerLimit) && config.steerLimit > 0) return 'steer'
+  const reminds = Array.isArray(config.remindWhen) && config.remindWhen.length > 0
+  return reminds ? 'remind' : 'brief'
+}
+
+/**
+ * A level is a preset, not a second set of rules: it writes `brief`, `remindWhen` and
+ * `steerLimit`, and the rest of the gate reads those as before.  A named level wins over the
+ * switches; an absent one is inferred and leaves them alone, so an old config keeps its meaning.
+ */
+function applyLevel(config) {
+  const named = typeof config.level === 'string' ? config.level.trim().toLowerCase() : ''
+  config.level = LEVELS.includes(named) ? named : levelOf(config)
+  if (!LEVELS.includes(named)) return config
+  config.brief = config.level !== 'off'
+  if (config.level === 'off') {
+    config.remindWhen = []
+    config.steerLimit = 0
+    return config
+  }
+  if (config.level === 'brief') {
+    config.remindWhen = []
+    config.steerLimit = 0
+    return config
+  }
+  if (!Array.isArray(config.remindWhen) || config.remindWhen.length === 0) {
+    config.remindWhen = [...DEFAULT_REMIND]
+  }
+  if (config.level === 'remind') {
+    config.steerLimit = 0
+  } else if (!Number.isFinite(config.steerLimit) || config.steerLimit <= 0) {
+    config.steerLimit = 3
+  }
+  return config
 }
 
 /** The message a gate injects; the shape is the one `createUserMessage` builds. */
@@ -157,15 +211,78 @@ async function checkLedger(config, cwd) {
   }
 }
 
-/** The next question the ledger needs, or null when there is none (or it cannot run). */
-async function nextQuestion(config, cwd) {
-  const argv = config.askCommand ?? (config.command ? null : [config.binary, 'ask', config.ledger, '--one'])
+/** The status report, or the sentence that says why there is none.  The brief is one call. */
+async function statusLedger(config, cwd) {
+  const base =
+    config.statusCommand ?? (config.command ? null : [config.binary, 'status', config.ledger, '--json'])
+  if (!base) return null
+  const argv = config.traceFile ? [...base, '--trace', config.traceFile] : base
+  const { error, stdout, stderr } = await run(argv, config, cwd)
+  let report = null
+  try {
+    report = JSON.parse(stdout)
+  } catch {
+    report = null
+  }
+  if (!report || typeof report !== 'object') {
+    if (!error) return null
+    const detail = String(stderr || error.message || '').trim().slice(0, 200)
+    return { unavailable: `tsare gate: ${argv[0]} printed no status${detail ? ` (${detail})` : ''}` }
+  }
+  const number = (value) => (typeof value === 'number' && Number.isFinite(value) ? value : null)
+  const decision = typeof report.decision === 'string' ? report.decision : null
+  const verified = number(report.verified)
+  const inferred = number(report.inferred)
+  const unverified = number(report.unverified)
+  const errors = number(report.errors)
+  const warnings = number(report.warnings)
+  if (
+    !decision ||
+    verified === null ||
+    inferred === null ||
+    unverified === null ||
+    errors === null ||
+    warnings === null
+  ) {
+    return null
+  }
+  return {
+    decision,
+    verified,
+    inferred,
+    unverified,
+    errors,
+    warnings,
+    claims: number(report.claims) ?? 0,
+    openChains: number(report.open_chains) ?? 0,
+    openChain: report.open_chain && typeof report.open_chain === 'object' ? report.open_chain : null,
+    question:
+      typeof report.question === 'string' && report.question.length > 0 ? report.question : null,
+    first: report.first && typeof report.first === 'object' ? report.first : null,
+    debt: report.debt && typeof report.debt === 'object' ? report.debt : null,
+  }
+}
+
+/** The decide report, or null when it cannot be read.  The gate never blocks on this. */
+async function decideLedger(config, cwd) {
+  const argv =
+    config.decideCommand ?? (config.command ? null : [config.binary, 'decide', config.ledger, '--json'])
   if (!argv) return null
   const { error, stdout } = await run(argv, config, cwd)
   if (error) return null
-  const text = String(stdout).trim()
-  if (!text || text.startsWith('nothing to ask')) return null
-  return text.split('\n')[0]
+  let report = null
+  try {
+    report = JSON.parse(stdout)
+  } catch {
+    return null
+  }
+  if (!report || typeof report !== 'object' || typeof report.decision !== 'string') return null
+  const items = Array.isArray(report.items) ? report.items : []
+  const first = items.find((item) => item && typeof item === 'object')
+  const text = first
+    ? `${first.name ?? '<declaration>'} ${first.kind ?? ''}: ${first.reason ?? ''}`.trim()
+    : ''
+  return { decision: report.decision, items, text }
 }
 
 /**
@@ -174,7 +291,7 @@ async function nextQuestion(config, cwd) {
  * @param raw - user config.
  */
 export function apply(ctx, raw) {
-  const config = { ...DEFAULTS, ...(raw ?? {}) }
+  const config = applyLevel({ ...DEFAULTS, ...(raw ?? {}) })
   const steers = new Map()
   /** agent -> {stamp, text}; the runtime context reads `text`, the post-execute hook refreshes it. */
   const briefs = new Map()
@@ -238,42 +355,47 @@ export function apply(ctx, raw) {
     }
   }
 
-  const countDecls = (agent) => {
-    try {
-      return (readFileSync(ledgerPath(agent), 'utf8').match(/^[a-z]+ [A-Z][A-Z0-9_]* \{/gm) ?? []).length
-    } catch {
-      return 0
-    }
-  }
-
   /** The one line the runtime snapshot carries.  It changes only when the ledger does. */
   const composeBrief = async (agent) => {
-    const verdict = await checkLedger(config, cwdOf(agent))
-    if (verdict.status === 'unavailable') {
-      return oneLine(`${verdict.text} The ledger was not checked.`, config.briefMaxChars)
+    const status = await statusLedger(config, cwdOf(agent))
+    if (!status) {
+      return oneLine(
+        'tsare gate: cannot read the ledger with status. The ledger was not checked.',
+        config.briefMaxChars,
+      )
     }
-    if (verdict.status === 'dirty') {
-      const rows = Array.isArray(verdict.report?.diagnostics)
-        ? verdict.report.diagnostics.filter((item) => item && typeof item.code === 'string')
-        : []
-      const first = rows.find((item) => item.code.startsWith('E')) ?? rows[0]
+    if (status.unavailable) {
+      return oneLine(`${status.unavailable}. The ledger was not checked.`, config.briefMaxChars)
+    }
+    const named = status.openChain?.name ? ` (${status.openChain.name} on ${(status.openChain.hypotheses ?? []).join(', ')})` : ''
+    const chains = status.openChains > 0 ? `, ${status.openChains} open chain(s)${named}` : ''
+    const tally = `${status.verified} verified, ${status.inferred} inferred, ${status.unverified} unverified${chains}`
+    if (status.errors > 0) {
+      const first = status.first
       const detail = first
         ? `first ${first.code} ${first.name || '<file>'}: ${first.message ?? ''}`
         : 'no diagnostic rows'
       return oneLine(
-        `tsare: ledger not checkable (${verdict.report?.errors ?? 0} error(s), ` +
-          `${verdict.report?.warnings ?? 0} warning(s)); ${detail}. Fix it, or record why it cannot be checked.`,
+        `tsare[${config.level}]: ledger not checkable (${status.errors} error(s), ` +
+          `${status.warnings} warning(s)); ${detail}. Fix it, or record why it cannot be checked.`,
         config.briefMaxChars,
       )
     }
-    const question = await nextQuestion(config, cwdOf(agent))
-    if (question) {
+    if (config.level === 'gate' && status.decision === 'open') {
+      const debt = status.debt
+        ? ` — ${status.debt.name ?? '<declaration>'} ${status.debt.kind ?? ''}: ${status.debt.reason ?? ''}`.trim()
+        : ''
       return oneLine(
-        `tsare: next question — ${question} (ledger ${config.ledger})`,
+        `tsare[gate]: open${debt}; ${tally}; fix it, or record why it cannot be checked.`,
         config.briefMaxChars,
       )
     }
-    const many = countDecls(agent)
+    if (status.question) {
+      return oneLine(
+        `tsare[${config.level}]: ${status.decision}; ${tally}; next question — ${status.question} (ledger ${config.ledger})`,
+        config.briefMaxChars,
+      )
+    }
     // `terse` states the state and nothing else; `full` also tells the model what to do next.
     // The difference is one sentence on every step, which is what the cost experiment varies.
     const tail =
@@ -281,7 +403,7 @@ export function apply(ctx, raw) {
         ? ''
         : ' Record a claim with evidence, or say unchecked with the reason.'
     return oneLine(
-      `tsare: ledger clean, ${many} claim(s); nothing to ask.${tail}`,
+      `tsare[${config.level}]: ${status.decision}; ${tally}; ledger clean, ${status.claims} claim(s); nothing to ask.${tail}`,
       config.briefMaxChars,
     )
   }
@@ -435,6 +557,22 @@ export function apply(ctx, raw) {
     const verdict = await checkLedger(config, cwdOf(agent))
     trace(`turn-stopping status=${verdict.status}`)
     if (verdict.status === 'ok') {
+      if (config.level === 'gate') {
+        const decided = await decideLedger(config, cwdOf(agent))
+        trace(`turn-stopping decide=${decided?.decision ?? 'unavailable'}`)
+        if (decided && decided.decision === 'open') {
+          const used = steers.get(agent) ?? 0
+          const limit = Number.isFinite(config.steerLimit) && config.steerLimit >= 0 ? config.steerLimit : 3
+          if (used >= limit) return
+          steers.set(agent, used + 1)
+          const text =
+            `tsare gate: the ledger is checkable but open${decided.text ? ` — ${decided.text}` : ''}\n` +
+            'Fix it before closing the turn. If a claim cannot be checked, say so in the answer and ' +
+            'record the gap in the document.'
+          agent.steer(notice(text + growthNote(agent)))
+          return
+        }
+      }
       steers.delete(agent)
       return
     }

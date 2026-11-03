@@ -1,7 +1,13 @@
 //! The field table: kind -> (field, type, required).  One entry per kind, in source order.
 
+/// One field of a kind: its name, the type a value must have, and whether a declaration must
+/// write it.
 pub type Field = (&'static str, &'static str, bool);
 
+/// The fields a kind accepts, in the order the checker reports missing ones.  A type string is a
+/// shape name (`str`, `num`, `attrs`, `instrument`, `evidence`), an `enum:` list of permitted
+/// words, or a `list:` / `ref:` form.  `None` means the kind itself is unknown, which is not the
+/// same error as an unknown field of a known kind.
 pub fn spec(kind: &str) -> Option<&'static [Field]> {
     Some(match kind {
         "fact" => &[
@@ -17,6 +23,8 @@ pub fn spec(kind: &str) -> Option<&'static [Field]> {
             ("layer", "ref:layer", false),
             ("supersedes", "list:ref:any", false),
             ("because", "list:ref:any", false),
+            ("source", "ref:source", false),
+            ("quote", "str", false),
         ],
         "concept" => &[
             ("name", "str", true),
@@ -39,6 +47,8 @@ pub fn spec(kind: &str) -> Option<&'static [Field]> {
             ("layer", "ref:layer", false),
             ("supersedes", "list:ref:any", false),
             ("because", "list:ref:any", false),
+            ("source", "ref:source", false),
+            ("quote", "str", false),
         ],
         "hypothesis" => &[
             ("assumes", "list:ref:any", true),
@@ -115,6 +125,13 @@ pub fn spec(kind: &str) -> Option<&'static [Field]> {
             ("closure", "enum:closed,open,unknown", true),
             ("basis", "list:ref:any", false),
             ("closes_with", "list:ref:question", false),
+            ("layer", "ref:layer", false),
+            ("supersedes", "list:ref:any", false),
+            ("because", "list:ref:any", false),
+        ],
+        "source" => &[
+            ("name", "str", true),
+            ("text", "list:str", true),
             ("layer", "ref:layer", false),
             ("supersedes", "list:ref:any", false),
             ("because", "list:ref:any", false),

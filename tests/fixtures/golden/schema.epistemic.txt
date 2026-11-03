@@ -1,0 +1,6 @@
+epistemic: 3 verified, 2 inferred, 0 unverified
+F_TRACE              fact         verified    measured
+F_HEADLESS           fact         verified    measured
+C_RENDERED           concept      verified    examples on both sides
+P_SMOOTH             proposition  inferred    W_RULE
+P_STABLE             proposition  inferred    W_RULE

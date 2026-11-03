@@ -14,10 +14,10 @@ The text is the contract. Every command's output is pinned byte for byte by
 | **crate** | `Cargo.toml`, `tsare --version` | behaviour: which checks, commands and outputs exist | semver, below |
 
 The format number is the one that must not inflate. It is written in every document, so a new
-number means every document needs rewriting. It stays `1` while `2` does not exist, and the
-line may be omitted -- which is why the documents written before the line existed still compile
-unchanged. A document that declares a format this build does not speak gets `E-VERSION` and
-stops: one true error instead of a page of parse noise.
+number means every document needs rewriting. Format 2 adds the `source` kind and the `source` /
+`quote` fields; a format 1 document remains valid and a document without the line is format 1. A
+document that declares a format this build does not speak gets `E-VERSION` and stops: one true
+error instead of a page of parse noise.
 
 The crate number may move as often as the work needs:
 
@@ -44,6 +44,8 @@ count of work: a number that rises because a week passed says nothing about what
 loop that reads only the number then cannot ignore `W-UNCONFIRMED`, which is the engine's way of
 saying that a declaration rests on a model's word.
 
+`replay` answers `0` for a match, `1` for a mismatch, and `2` for a file that is not a trace.
+
 ## Commands
 
 Every command reads files and prints text. Where a command also has a machine contract it
@@ -52,8 +54,10 @@ answers `--json`.
 | command | what it answers | JSON |
 | --- | --- | --- |
 | `check FILE\|DIR` | which declarations are well formed; `--goals`, `--sugar`, `--cache`, `--against OTHER`, `--strict` | yes |
+| `status FILE [--json] [--trace FILE]` | one line: the decision, the epistemic counts, the next question, and — when any — the first open chain; the JSON also carries the first debt, the claim count, the number of conclusions standing on an unbacked hypothesis, and the first chain's name and hypotheses; `--trace` appends the report as a replayable run; errors exit 1 | yes |
+| `provenance FILE [--json]` | where each quoted claim sits in its source: the source, the line and the column | yes |
 | `engine FILE\|DIR` | held, conditional, blocked, chains, gates | yes |
-| `argue FILE [--against OTHER]` | which conclusions survive attack; with `--against`, the attack graph is the merge | |
+| `argue FILE [--against OTHER] [--json]` | which conclusions survive attack; with `--against`, the attack graph is the merge; the JSON carries each conclusion's status and why | |
 | `confront LEFT RIGHT` | which rules attack across the pair, and which attacks nobody answered; exit 1 when `LEFT` leaves one unanswered | |
 | `derive FILE` | which conclusions are grounded in facts | |
 | `debt FILE [--all]` | which facts transitively gate a conclusion | |
@@ -67,6 +71,8 @@ answers `--json`.
 | `imply FILE [--json] [--max-antecedent N] [--min-support N]` | the laws the attribute table already holds, with support and a counterexample to the converse; bounded on purpose | yes |
 | `abstract FILE [--min-support N] [--max-intent N]` | concept declarations the attribute table supports but nobody wrote: extent, closed intent, and the witness pair that separates them | |
 | `cost FILE [--top N] [--json]` | external confirmations the document demands, and its longest chain | yes |
+| `decide FILE [--json]` | whether the document is closed, closable or open, and which declarations still owe a witness | yes |
+| `epistemic FILE [--json]` | each conclusion's state — verified, inferred or unverified — and the rule, fact or witness behind it | yes |
 | `weigh FILE` | confidence propagated by min/max, with no probability | |
 | `kinds` | the obligation table: what each kind owes | |
 | `induce FILE` | the clause each concept's examples support, or why none exists | |
@@ -74,21 +80,33 @@ answers `--json`.
 | `moves FILE` | six representation moves as concrete candidates | |
 | `assumptions FILE` | load-bearing declarations without support | |
 | `delta BEFORE AFTER [--record STORE --doc DOC [--action A]]` | what changed between two `check --json` reports, keyed by declaration; `--record` appends the change to a case store | yes |
+| `diff BEFORE AFTER [--json]` | what changed between two ledgers: declarations added, removed, or changed by kind or field; 0 same, 1 changed, 2 cannot load | yes |
+| `merge BASE OURS THEIRS --out FILE [--json]` | a structural three-way merge by declaration and field; 0 merged, 1 conflict (nothing written), 2 cannot load | yes |
 | `whatif FILE NAME` | what falls when one assumption is removed | |
 | `graph FILE [--out]` | the typed relation net as Mermaid | |
+| `views FILE [--as VIEW] [--check] [--json]` | the same document as five typed projections: tree, graph, hypergraph, matrix (facts × attrs) and logic; each declares what it preserves and loses, and `--check` reads every view back to the IR | yes |
 | `map LEFT RIGHT` | structure mapping between two documents | |
 | `audit FILE` | whether a kind can be written with a smaller vocabulary | |
 | `egraph FILE [--write]` | equivalent declarations merged, references rewritten | |
 | `cat FILE` | the pipeline read as a category, and which functors hold | |
 | `project DIR` | a directory checked as one program, grouped by file | |
-| `fix FILE [--apply]` | verified repair candidates, and applying them | |
+| `trace FILE [--out FILE \| --append FILE]` | one run, or a session of runs appended; each run embeds the ledger, its hash, and the steps — `check`, `ask` and `decide`, or one `status` step from `status --trace` — with their reports and statuses | yes |
+| `replay TRACE [--diff]` | re-run every run in order and compare byte for byte; `--diff` names the lines each run wrote back; `match` or the first difference, naming the run and the step | |
+| `grow LIBRARY SOURCE NAME --out FILE` | copy one declaration and a content-addressed entry note into a library, keeping it only if the grown document has no error and its support path does not rest on a hypothesis no verdict has decided | |
+| `save FILE [--store DIR]` | store a ledger under its content hash and advance the store's HEAD (default `.tsare/versions`) | yes |
+| `log STORE` | the content hashes the store holds | |
+| `restore HASH [--store DIR] --out FILE` | write a stored ledger back, refusing bytes that do not match the hash | |
+| `blame STORE NAME [--json]` | which version on the store's HEAD chain last changed each field of a declaration | |
+| `chain FILE NAME [--json]` | the support path from a declaration to its evidence: premises, the rules that conclude it, and the leaves | |
+| `chains FILE [--json]` | every proposition or warrant whose support path rests on a hypothesis no verdict has decided | |
+| `fix FILE [--apply]` | verified repair candidates, and applying them; applying is refused while a conclusion stands on an unbacked hypothesis | |
 | `suggest FILE` | repairs with an applicability | yes |
-| `apply FILE [--dry-run]` | machine repairs spliced and recompiled | |
+| `apply FILE [--dry-run]` | machine repairs spliced and recompiled; refused while a conclusion stands on an unbacked hypothesis | |
 | `build FILE\|DIR [--out] [--goals]` | obligations, learned clauses, open items, notes, predicates | |
 | `fmt FILE` | the document in one spelling: one field per line, one separator everywhere, for a diff and a hash that mean something | |
 | `outline FILE` | the document read as prose: each field quoted, its ground and its diagnostics in the margin | |
 | `mem [--store FILE] [--recall CODE...] [--k N]` | the case store: audit it, or recall similar situations | |
-| `propose FILE --proposals FILE.json [--policy ...]` | gate values an outside model wants to fill into holes | |
+| `propose FILE --proposals FILE.json [--policy ...]` | gate values an outside model wants to fill into holes; applying is refused while a conclusion stands on an unbacked hypothesis | |
 | `fca FILE` | what a concept's positives share, and which facts the attributes imply | |
 
 `suggest` and `apply` are the engine's own shape: `apply` splices a span and keeps the result
@@ -101,6 +119,9 @@ only if the document compiles better.
 line prints -- one renderer per command, so the two cannot drift -- and no tool calls a model.
 `tests/mcp.rs` opens the server the way a client would and checks that every listed tool is
 dispatched.
+
+`tsare mcp` is deprecated: the DSH plugin and the CLI are the supported surfaces. The server
+remains for existing MCP clients and is frozen at the tools above.
 
 The server is not registered by a harness by default. Registration costs about 500 tokens of tool
 schema in every turn; the skill in `dsh/tsare/SKILL.md` costs one catalog line, which is why it is
@@ -320,10 +341,10 @@ opaque string that only equality can compare. That is why this is a checkability
 semantic one -- and why "the model does not have to be trusted" is a statement about structure, not
 about understanding.
 
-The twelve kinds are an **epistemic type system**: each names an obligation rather than a data
+The thirteen kinds are an **epistemic type system**: each names an obligation rather than a data
 shape. A `fact` owes evidence someone else can check, a `value` owes an instrument and a threshold,
-a `warrant` owes premises, a rule and a licence. Passing the type check means the obligation is met,
-not that the sentence is true.
+a `warrant` owes premises, a rule and a licence, a `source` owes the text a claim quotes. Passing
+the type check means the obligation is met, not that the sentence is true.
 
 | Layer | What is checked | What it does not give you |
 | --- | --- | --- |

@@ -20,6 +20,9 @@ use crate::check::Diagnostic;
 use crate::program::{f_id, f_ids};
 use crate::syntax::Decl;
 
+/// Whether a target stands inside a kernel: a kernel name may be used but not redefined, and a
+/// claim that sits in a governed layer must cite one of that layer's laws.  An empty result admits
+/// the target; a diagnostic always names a declaration in the target, never one in the kernel.
 pub fn check(kernel: &[Decl], target: &[Decl]) -> Vec<Diagnostic> {
     let mut out = Vec::new();
     let named: HashSet<&str> = kernel.iter().map(|decl| decl.name.as_str()).collect();
@@ -61,6 +64,8 @@ pub fn check(kernel: &[Decl], target: &[Decl]) -> Vec<Diagnostic> {
         if laws.is_empty() {
             continue;
         }
+        // a claim can cite a principle from its premises, from its basis, or from what checks it;
+        // all three are citations, so any one of them standing on a law is enough
         let cited: Vec<String> = f_ids(decl, "from")
             .into_iter()
             .chain(f_ids(decl, "basis"))

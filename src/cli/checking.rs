@@ -1,6 +1,7 @@
 //! Commands that read a document and say what is wrong with it.
 
 use super::*;
+use crate::json::Json as J;
 
 /// Errors decide the exit code.  `--strict` lets a warning decide it too: a warning is the engine
 /// saying the document states something it cannot settle, and a loop that reads only the number
@@ -32,7 +33,6 @@ pub(crate) fn cmd_check(
             Ok(decls) => Loaded {
                 decls,
                 text: expanded,
-                path: path.to_path_buf(),
                 syntax: Vec::new(),
                 sources: Vec::new(),
             },
@@ -279,5 +279,348 @@ pub(crate) fn cmd_project(path: &Path) -> i32 {
         1
     } else {
         0
+    }
+}
+
+/// Record one run, or append it to a session trace.
+pub(crate) fn cmd_trace(path: &Path, out: Option<&str>, append: Option<&str>) -> i32 {
+    if out.is_some() && append.is_some() {
+        println!("usage: tsare trace PATH [--out FILE | --append FILE]");
+        return 2;
+    }
+    let run = match crate::trace::record(path) {
+        Ok(run) => run,
+        Err(error) => return fail(error),
+    };
+    if let Some(file) = append {
+        let trace = match crate::trace::append(Path::new(file), run) {
+            Ok(trace) => trace,
+            Err(error) => return fail(error),
+        };
+        print_trace_summary(&trace, file, true);
+        return 0;
+    }
+    let trace = crate::trace::Trace::new(run);
+    match out {
+        Some(file) => {
+            if let Err(error) = fs::write(file, trace.to_json()) {
+                return fail(format!("{file}: {error}"));
+            }
+            print_trace_summary(&trace, file, false);
+            0
+        }
+        None => {
+            print!("{}", trace.to_json());
+            0
+        }
+    }
+}
+
+/// The line that says what was recorded: how many runs, the last ledger, the last step statuses.
+fn print_trace_summary(trace: &crate::trace::Trace, file: &str, session: bool) {
+    let Some(last) = trace.runs.last() else {
+        println!("trace: {file} (no runs)");
+        return;
+    };
+    let short: String = last.ledger_sha256.chars().take(12).collect();
+    let steps: Vec<String> = last
+        .steps
+        .iter()
+        .map(|step| format!("{} {}", step.command, step.status))
+        .collect();
+    println!(
+        "trace: {file} ({} {}, ledger {short}, {})",
+        if session { "runs" } else { "run" },
+        trace.runs.len(),
+        steps.join(", ")
+    );
+}
+
+/// Re-run a recorded session and compare every report and status; `diff` shows the write-backs.
+pub(crate) fn cmd_replay(path: &Path, diff: bool) -> i32 {
+    let text = match fs::read_to_string(path) {
+        Ok(text) => text,
+        Err(error) => return fail(format!("{}: {error}", path.display())),
+    };
+    let trace = match crate::trace::Trace::parse(&text) {
+        Ok(trace) => trace,
+        Err(error) => {
+            println!("not a tsare trace: {error}");
+            return 2;
+        }
+    };
+    if diff {
+        if trace.runs.len() < 2 {
+            println!("one run; nothing to diff");
+        }
+        for (index, pair) in trace.runs.windows(2).enumerate() {
+            match crate::trace::change(&pair[0].ledger, &pair[1].ledger) {
+                Some(change) => {
+                    println!("run {} -> {}:", index + 1, index + 2);
+                    print!("{change}");
+                }
+                None => println!("run {} -> {}: unchanged", index + 1, index + 2),
+            }
+        }
+    }
+    match crate::trace::replay(&trace) {
+        Ok(result) if result.matched => {
+            println!("match");
+            0
+        }
+        Ok(result) => {
+            println!("mismatch: {}", result.detail);
+            1
+        }
+        Err(error) => {
+            println!("cannot replay: {error}");
+            2
+        }
+    }
+}
+
+/// The loop's one line: the decision, the epistemic counts, and the next question.  Errors decide
+/// the exit code; warnings are reported but do not.
+pub(crate) fn cmd_status(path: &Path, json: bool, trace: Option<&str>) -> i32 {
+    let loaded = match load(path) {
+        Ok(loaded) => loaded,
+        Err(error) => return fail(error),
+    };
+    let diagnostics = crate::check::check(&loaded.decls);
+    let errors = diagnostics
+        .iter()
+        .filter(|item| item.code.starts_with('E'))
+        .count();
+    let warnings = diagnostics
+        .iter()
+        .filter(|item| item.code.starts_with('W'))
+        .count();
+    let verdict = crate::decide::report(&loaded.decls);
+    let rows = crate::epistemic::report(&loaded.decls);
+    let verified = rows
+        .iter()
+        .filter(|row| row.knowing == crate::epistemic::Knowing::Verified)
+        .count();
+    let inferred = rows
+        .iter()
+        .filter(|row| row.knowing == crate::epistemic::Knowing::Inferred)
+        .count();
+    let unverified = rows.len() - verified - inferred;
+    let program = crate::program::Program::new(&loaded.decls);
+    let question = crate::ask::questions(&program)
+        .into_iter()
+        .next()
+        .map(|item| item.question);
+    let first = match diagnostics.first() {
+        Some(item) => J::Obj(vec![
+            ("code".to_string(), J::Str(item.code.to_string())),
+            (
+                "name".to_string(),
+                J::Str(item.witness.clone().unwrap_or_default()),
+            ),
+            ("message".to_string(), J::Str(item.message.clone())),
+        ]),
+        None => J::Null,
+    };
+    let debt = match verdict.items.first() {
+        Some(item) => J::Obj(vec![
+            ("name".to_string(), J::Str(item.name.clone())),
+            ("kind".to_string(), J::Str(item.kind.clone())),
+            ("reason".to_string(), J::Str(item.reason.to_string())),
+        ]),
+        None => J::Null,
+    };
+    let open = crate::chain::open(&loaded.decls);
+    let open_first = match open.first() {
+        Some((name, kind, hypotheses)) => J::Obj(vec![
+            ("name".to_string(), J::Str(name.clone())),
+            ("kind".to_string(), J::Str(kind.clone())),
+            (
+                "hypotheses".to_string(),
+                J::Arr(hypotheses.iter().map(|h| J::Str(h.clone())).collect()),
+            ),
+        ]),
+        None => J::Null,
+    };
+    let value = J::Obj(vec![
+        (
+            "decision".to_string(),
+            J::Str(verdict.decision.label().to_string()),
+        ),
+        ("verified".to_string(), J::Num(verified as f64)),
+        ("inferred".to_string(), J::Num(inferred as f64)),
+        ("unverified".to_string(), J::Num(unverified as f64)),
+        ("errors".to_string(), J::Num(errors as f64)),
+        ("warnings".to_string(), J::Num(warnings as f64)),
+        (
+            "question".to_string(),
+            match &question {
+                Some(text) => J::Str(text.clone()),
+                None => J::Null,
+            },
+        ),
+        ("first".to_string(), first),
+        ("claims".to_string(), J::Num(loaded.decls.len() as f64)),
+        ("debt".to_string(), debt),
+        ("open_chains".to_string(), J::Num(open.len() as f64)),
+        ("open_chain".to_string(), open_first),
+    ]);
+    let report = format!("{}\n", crate::json::serialize(&value));
+    if json {
+        print!("{report}");
+    } else {
+        println!("{}", crate::status::line(&loaded.decls));
+    }
+    if let Some(file) = trace {
+        let status = if errors > 0 { 1 } else { 0 };
+        let step = crate::trace::Step {
+            command: "status".to_string(),
+            status,
+            report: report.clone(),
+        };
+        let run = crate::trace::Run::new(&loaded.text, vec![step]);
+        if let Err(error) = crate::trace::append(Path::new(file), run) {
+            eprintln!("trace: {error}");
+        }
+    }
+    if errors > 0 {
+        1
+    } else {
+        0
+    }
+}
+
+/// Where each quoted claim sits in its source: the source, the line and the column.
+pub(crate) fn cmd_provenance(path: &Path, json: bool) -> i32 {
+    let loaded = match load(path) {
+        Ok(loaded) => loaded,
+        Err(error) => return fail(error),
+    };
+    let rows = crate::provenance::rows(&loaded.decls);
+    if json {
+        let items: Vec<J> = rows
+            .iter()
+            .map(|row| {
+                let line = match row.line {
+                    Some(line) => J::Num(line as f64),
+                    None => J::Null,
+                };
+                let col = match row.col {
+                    Some(col) => J::Num(col as f64),
+                    None => J::Null,
+                };
+                J::Obj(vec![
+                    ("name".to_string(), J::Str(row.name.clone())),
+                    ("kind".to_string(), J::Str(row.kind.clone())),
+                    ("source".to_string(), J::Str(row.source.clone())),
+                    ("source_name".to_string(), J::Str(row.source_name.clone())),
+                    ("line".to_string(), line),
+                    ("col".to_string(), col),
+                    ("quote".to_string(), J::Str(row.quote.clone())),
+                ])
+            })
+            .collect();
+        let value = J::Obj(vec![("rows".to_string(), J::Arr(items))]);
+        println!("{}", crate::json::serialize(&value));
+        return 0;
+    }
+    if rows.is_empty() {
+        println!("no quoted claims");
+        return 0;
+    }
+    for row in &rows {
+        let place = match (row.line, row.col) {
+            (Some(line), Some(col)) => format!("{line}:{col}"),
+            _ => "not found".to_string(),
+        };
+        println!(
+            "{} {} {} ({}): {place} {}",
+            pad(&row.name, 20),
+            pad(&row.kind, 10),
+            pad(&row.source, 16),
+            row.source_name,
+            row.quote
+        );
+    }
+    0
+}
+
+/// Store a ledger under its content hash.
+pub(crate) fn cmd_save(path: &Path, store: &str) -> i32 {
+    match crate::version::save(path, Path::new(store)) {
+        Ok(hash) => {
+            let short: String = hash.chars().take(12).collect();
+            println!("saved {short} ({store})");
+            0
+        }
+        Err(error) => fail(error),
+    }
+}
+
+/// The content hashes the store holds.
+pub(crate) fn cmd_log(store: &Path) -> i32 {
+    match crate::version::list(store) {
+        Ok(hashes) if hashes.is_empty() => {
+            println!("no saved versions");
+            0
+        }
+        Ok(hashes) => {
+            for hash in hashes {
+                println!("{hash}");
+            }
+            0
+        }
+        Err(error) => fail(error),
+    }
+}
+
+/// Write a stored ledger back, refusing bytes that do not match the hash.
+pub(crate) fn cmd_restore(hash: &str, store: &str, out: &str) -> i32 {
+    match crate::version::restore(Path::new(store), hash, Path::new(out)) {
+        Ok(()) => {
+            let short: String = hash.chars().take(12).collect();
+            println!("restored {short} -> {out}");
+            0
+        }
+        Err(error) => fail(error),
+    }
+}
+
+/// Add one declaration from a source document to a library, if the library stays admissible.
+pub(crate) fn cmd_grow(library: &Path, source: &Path, name: &str, out: &str) -> i32 {
+    let library_text = match fs::read_to_string(library) {
+        Ok(text) => text,
+        Err(error) => return fail(format!("{}: {error}", library.display())),
+    };
+    let source_text = match fs::read_to_string(source) {
+        Ok(text) => text,
+        Err(error) => return fail(format!("{}: {error}", source.display())),
+    };
+    match crate::growth::grow(&library_text, &source_text, name) {
+        crate::growth::Verdict::Accepted(grown) => {
+            if let Err(error) = fs::write(out, &grown.text) {
+                return fail(format!("{out}: {error}"));
+            }
+            let short: String = grown.source_sha256.chars().take(12).collect();
+            println!(
+                "accepted {} (source {short}, {} warning(s)) -> {out}",
+                grown.name, grown.warnings
+            );
+            0
+        }
+        crate::growth::Verdict::Rejected {
+            reason,
+            diagnostics,
+        } => {
+            println!("rejected {name}: {reason}");
+            for item in &diagnostics {
+                let witness = item.witness.as_deref().unwrap_or("<file>");
+                println!(
+                    "  {} {} line {}: {}",
+                    item.code, witness, item.line, item.message
+                );
+            }
+            1
+        }
     }
 }

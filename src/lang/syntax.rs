@@ -3,6 +3,8 @@
 /// A source span: where a value, a reference or a declaration starts and ends.
 pub type Span = (usize, usize, usize, usize);
 
+/// One parsed value as the document wrote it.  A name is still unresolved, and a number keeps
+/// the text that was written, including any unit suffix.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Val {
     Id(String),
@@ -14,6 +16,8 @@ pub enum Val {
     Hole,
 }
 
+/// One parsed declaration: its kind and name, its fields in source order, and the positions a
+/// diagnostic needs to point into it.
 #[derive(Debug, Clone)]
 pub struct Decl {
     pub kind: String,
@@ -32,6 +36,7 @@ pub struct Decl {
     pub ref_pos: Vec<(String, usize, usize, usize)>,
 }
 
+/// One lexeme and where it starts; a quoted string and a number with a unit each arrive whole.
 #[derive(Debug, Clone)]
 pub struct Token {
     pub text: String,
@@ -105,6 +110,8 @@ fn lex(src: &str) -> (Vec<Token>, Vec<ParseError>) {
                     code: "E-SYNTAX",
                 });
             }
+            // a string is marked with a leading NUL so the parser can tell it from an
+            // identifier or a number; the marker is stripped when the value is built
             out.push(Token {
                 text: format!("\x00{text}"),
                 width,
@@ -334,6 +341,8 @@ impl Parser {
     }
 }
 
+/// A failure at a one-based line and column.  At the end of input the position is the end of the
+/// last token read, so an error about something missing still points at something present.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParseError {
     pub message: String,
@@ -430,7 +439,7 @@ impl Parser {
 /// first one: an absent header means format 1, so a document written before the header existed
 /// is not a document of unknown version.  The number changes only when the grammar does, never
 /// when the crate does.
-pub const FORMAT_VERSION: u32 = 1;
+pub const FORMAT_VERSION: u32 = 2;
 
 /// The optional first line, `tsare <n>`.  `None` means no header.  `Ok(n)` is the number of
 /// bytes the header occupies, including its newline.  `Err` means the document declares a
@@ -461,10 +470,10 @@ fn header(src: &str) -> Option<Result<usize, ParseError>> {
             ))));
         }
     }
-    if version != FORMAT_VERSION {
+    if version != 1 && version != FORMAT_VERSION {
         return Some(Err(version_error(&format!(
-            "this document is format {version}; this build speaks format {FORMAT_VERSION}, so \
-             it cannot read this one"
+            "this document is format {version}; this build speaks formats 1 and {FORMAT_VERSION}, \
+             so it cannot read this one"
         ))));
     }
     Some(Ok(line_end + usize::from(line_end < src.len())))
@@ -508,6 +517,8 @@ pub fn parse_recovering(src: &str) -> (Vec<Decl>, Vec<ParseError>) {
     let mut decls = Vec::new();
     let mut errors = lex_errors;
     while let Some(kind) = parser.peek().map(|text| text.to_string()) {
+        // a closer at the top level begins no declaration; read as a kind it would take the
+        // next token as its name
         if kind == "}" || kind == "]" {
             parser.bump();
             continue;
@@ -527,6 +538,8 @@ pub fn parse_recovering(src: &str) -> (Vec<Decl>, Vec<ParseError>) {
     (decls, errors)
 }
 
+/// Every declaration, or the first error.  The form that keeps the remaining errors is
+/// `parse_recovering`.
 pub fn parse(src: &str) -> Result<Vec<Decl>, ParseError> {
     let (decls, errors) = parse_recovering(src);
     match errors.into_iter().next() {

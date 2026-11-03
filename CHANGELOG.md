@@ -6,6 +6,84 @@ All notable changes are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `argue --json` carries each conclusion's status and why, so the attack graph can be read by a
+  caller.
+
+- `apply`, `fix --apply` and `propose --apply` refuse to write a document whose conclusions still
+  stand on an unbacked hypothesis; the G3 gate now covers every in-place write-back.
+
+- `status` (the text line) also names the first open chain: `1 open chain(s) (P on H)`.
+
+- the brief names the first open chain (`P on H`) after the count, so the live line says which
+  conclusion stands on an undecided hypothesis.
+
+- the gate's brief also counts open chains, so the live line names the G3 gap next to the
+  decision and the epistemic counts.
+
+- `status --json` also reports `open_chains`: how many propositions or warrants stand on a
+  hypothesis no verdict has decided.
+
+- `chains FILE [--json]`: every proposition or warrant whose support path rests on a hypothesis
+  no verdict fact has decided; exits 1 when any is open.
+
+- `grow` also refuses a declaration whose support path rests on a hypothesis no verdict fact has
+  decided; the chain names it.
+
+- `chain FILE NAME [--json]`: the support path from a declaration to its evidence — a proposition
+  reaches its premises and the rules that conclude it, a warrant its premises, a fact its evidence.
+
+- `views FILE [--as VIEW] [--check] [--json]`: the same document as five typed projections —
+  tree, graph, hypergraph, matrix (facts × attrs) and logic — each declaring what it preserves and
+  loses. The matrix and graph read back to the attributes and references they came from; `--as`
+  selects one, and `--check` verifies every round trip.
+
+- `blame STORE NAME [--json]`: which version on the store's HEAD chain last changed each field,
+  walking the parent links from HEAD.
+
+- `merge BASE OURS THEIRS --out FILE [--json]`: a structural three-way merge — declarations by
+  name, fields by value — that writes only when every change has one side; conflicts are named and
+  nothing is written.
+
+- `save` / `log` / `restore`: a content-addressed store of ledgers. `save` writes the bytes under
+  their hash and advances the store's HEAD, recording the previous head as the parent; `log` lists
+  them, and `restore` refuses content that no longer matches the hash.
+
+- `diff BEFORE AFTER [--json]`: the semantic difference between two ledgers — declarations added,
+  removed, or changed by kind or field — with both document hashes. 0 same, 1 changed, 2 cannot
+  load.
+
+- `source` and the `source` / `quote` fields: a claim can anchor to a line of an embedded source
+  text; `check` reports `E-QUOTE` when the quote is not a line of it, and `E-QUOTE-SOURCE` when
+  the pair is incomplete. Format 2 adds the kind; format 1 documents still parse.
+
+- `provenance`: where each quoted claim sits in its source, with the line and column.
+
+- `status`: the loop's one line — the decision, the epistemic counts and the next question — in
+  the same terms as the gate's brief. Its JSON also carries the claim count and the first debt.
+  `--trace FILE` appends the report as a replayable run. It exits 1 when the document has an error.
+
+- `decide`: whether a document is closed, closable or open, and which declarations still owe a
+  witness. It reads the ledger alone; `check` keeps its output until the format freezes.
+
+- `epistemic`: each conclusion's state — verified, inferred or unverified — with the rule, fact or
+  witness behind it. It reads the finer field the three-state projection collapses.
+
+- `grow`: a declaration enters a library only if the grown document stays admissible; the entry
+  note records the source's content hash. It gates admissibility, not whether the abstraction
+  earns its place.
+
+- `trace` and `replay`: a run (`check`, `ask`, `decide`) can be recorded, and `--append` grows a
+  session of runs; replay re-runs them in order and names the first difference, and `--diff` names
+  the lines each run wrote back. The record carries the tool version, is content-addressed and
+  names no path.
+
+### Deprecated
+
+- `tsare mcp`: the DSH plugin and the CLI are the supported surfaces. The server remains for
+  existing MCP clients, frozen at the nine tools it lists; it gains no new commands.
+
 ### Changed
 
 - The document extension is `.tsare`. `.mf` collided with Java manifests.

@@ -1,0 +1,9 @@
+epistemic: 8 verified, 0 inferred, 0 unverified
+F_SCROLL             fact         verified    measured
+F_RESIZE             fact         verified    measured
+F_LAUNCH             fact         verified    measured
+F_IDLE               fact         verified    measured
+C_TIMED              concept      verified    examples on both sides
+C_FAST               concept      verified    examples on both sides
+C_VERY_FAST          concept      verified    examples on both sides
+C_SLOW               concept      verified    examples on both sides

@@ -1,0 +1,11 @@
+tsare 2
+source S_PAPER {
+  name: "paper.html",
+  text: ["the paper says x"]
+}
+fact F_QUOTE {
+  claim: "the paper says y",
+  evidence: doc("paper.html"),
+  source: S_PAPER,
+  quote: "the paper says y"
+}

@@ -1,0 +1,6 @@
+tsare 2
+fact F_QUOTE {
+  claim: "x",
+  evidence: user,
+  quote: "orphan"
+}

@@ -1,0 +1,2 @@
+open
+P_THRESHOLD          open      proposition: no premise and no rule

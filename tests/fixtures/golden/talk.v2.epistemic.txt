@@ -1,0 +1,20 @@
+epistemic: 12 verified, 0 inferred, 7 unverified
+F_DARK               fact         verified    measured
+F_MULTI              fact         verified    measured
+F_NONE               fact         verified    measured
+F_COMP               fact         verified    measured
+F_THEME_FAST         fact         verified    measured
+F_THEME_SLOW         fact         verified    measured
+F_CONTRAST_OK        fact         verified    measured
+F_CONTRAST_LOW       fact         verified    measured
+C_REQUESTED          concept      verified    examples on both sides
+C_POPULAR            concept      verified    examples on both sides
+C_ELEGANT            concept      verified    examples on both sides
+C_SWIFT              concept      verified    examples on both sides
+P_IMPORTANT          proposition  unverified 
+P_SHOULD             proposition  unverified 
+P_ELEGANT            proposition  unverified 
+H_RETENTION          hypothesis   unverified 
+H_NOVELTY            hypothesis   unverified 
+H_CONTRAST           hypothesis   unverified 
+H_MOTION             hypothesis   unverified 

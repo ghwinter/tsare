@@ -36,6 +36,8 @@ pub const CODES: &[&str] = &[
     "E-PARTITION-UNKNOWN-NO-EXIT",
     "E-PARTITION-UNKNOWN-USED",
     "E-OUT-MISMATCH",
+    "E-QUOTE",
+    "E-QUOTE-SOURCE",
     "E-SELF-VERDICT",
     "E-SUPERSEDE-CYCLE",
     "E-SUPERSEDE-UNDEFINED",
@@ -160,6 +162,12 @@ pub fn explain(code: &str) -> Option<&'static str> {
             two disagree, the run that produced this file is not the run that produced the hash --\n\
             and a process that exits 0 while leaving a placeholder behind passes every other check.\n\
             Fix: re-run and record the new hash, or point `artifact` at the real output.",
+        "E-QUOTE" => "A claim's quote does not occur in the source it names.\n\
+            A `source` declaration holds a `text` list; the quote must be one of its lines.\n\
+            Fix: quote the source exactly, or point at the right source.",
+        "E-QUOTE-SOURCE" => "A claim quotes a source but names none, or names a source but quotes nothing.\n\
+            The quote is the anchor between the claim and its source, so the two fields travel together.\n\
+            Fix: add the `source` reference and the `quote`, or drop both.",
         "E-SELF-VERDICT" => "A hypothesis is marked supported or refuted by a fact whose only witness is a model.\n\
             A model assessing its own guess is not an observation; the verdict would assert an\n\
             evidence grade nothing reached.\n\
@@ -197,9 +205,9 @@ pub fn explain(code: &str) -> Option<&'static str> {
             Fix: name the concepts it talks about, or the premises it rests on.",
         "E-VERSION" => "The first line declares a document format this build cannot read.\n\
             The document is not broken; the compiler is behind it.  A file with no such line is\n\
-            format 1, which is what every document written before the line existed is.\n\
-            Fix: use a build that speaks that format. No migration command exists: the format has
-            not moved since 1, and the number moves only with a migration.",
+            format 1; this build speaks formats 1 and 2.  Format 2 added the source kind.\n\
+            Fix: use a build that speaks that format. No migration command exists: a format 1\n\
+            document needs no changes.",
         "E-WARRANT-MODE" => "A warrant must conclude exactly one of a named proposition or a class of them.\n\
             Fix: use `to:` for one conclusion, or `concludes:` for every match.",
         "E-WITNESS" => "A blind spot needs exactly two witnesses.\n\

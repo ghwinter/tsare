@@ -3,6 +3,9 @@
 //! Model Context Protocol servers speak JSON-RPC 2.0, one object per line, on standard
 //! input and output.  This server exposes the deterministic operations and nothing else: no
 //! model is called, and every tool answers with the same text the command line prints.
+//!
+//! **Deprecated.** The DSH plugin and the CLI are the supported surfaces; this server remains for
+//! existing MCP clients, frozen at the tools it lists.  It gains no new commands.
 
 use std::io::{BufRead, Write};
 

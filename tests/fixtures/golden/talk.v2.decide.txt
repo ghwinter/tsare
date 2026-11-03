@@ -1,0 +1,13 @@
+open
+P_IMPORTANT          open      proposition: premises, but no live rule connects them
+P_SHOULD             open      proposition: no premise and no rule
+P_ELEGANT            open      proposition: premises, but no live rule connects them
+H_RETENTION          closable  hypothesis: a test or a rival is named
+H_NOVELTY            closable  hypothesis: a test or a rival is named
+H_CONTRAST           closable  hypothesis: a test or a rival is named
+H_MOTION             closable  hypothesis: a test or a rival is named
+Q_ELEGANT            closable  question: the user is named
+B_PLAN               open      blindspot: no question would close it
+B_IS_OUGHT           open      blindspot: no question would close it
+V_SPEED              open      value: no instrument
+V_QUALITY            open      value: no instrument

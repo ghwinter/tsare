@@ -30,7 +30,8 @@ function context() {
 }
 
 const command = [process.execPath, fake, 'check', '.tsare/session.tsare', '--json']
-const askCommand = [process.execPath, fake, 'ask', '.tsare/session.tsare', '--one']
+const statusCommand = [process.execPath, fake, 'status', '.tsare/session.tsare', '--json']
+const decideCommand = [process.execPath, fake, 'decide', '.tsare/session.tsare', '--json']
 const dirty = 'tsare 1\nfact F_X { claim: "a claim with nothing behind it" }\n'
 const clean = 'tsare 1\nnote N_OK { tag: conjecture, text: "OK" }\n'
 const session = { header: { cwd: dir } }
@@ -65,7 +66,8 @@ const agent = makeAgent()
 const ctx = context()
 apply(ctx, {
   command,
-  askCommand,
+  statusCommand,
+  decideCommand,
   remindAfterTools: ['bash'],
   steerLimit: 3,
   maxDeclarations: 1,
@@ -139,7 +141,7 @@ assert.match(contexts[0].text(), /E-MISSING/, contexts[0].text())
 
 // 12. a verification command gets one reminder per ledger state, and an unrelated one gets none
 const remindCtx = context()
-apply(remindCtx, { command, askCommand, remindWhen: ['cargo (test|build)'], remindLimit: 2 })
+apply(remindCtx, { command, statusCommand, remindWhen: ['cargo (test|build)'], remindLimit: 2 })
 const remindAgent = makeAgent()
 await remindCtx.fire('agent/created', { agent: remindAgent })
 writeFileSync(ledger, clean)
@@ -208,7 +210,7 @@ assert.match(nullAgent.steered[0].content[0].text, /not checked|no executable/, 
 // 15. a terse brief states the ledger, a full one names the next action
 for (const [style, expectsInstruction] of [['terse', false], ['full', true]]) {
   const styleCtx = context()
-  apply(styleCtx, { command, askCommand, briefStyle: style })
+  apply(styleCtx, { command, statusCommand, briefStyle: style })
   const styleAgent = makeAgent()
   await styleCtx.fire('agent/created', { agent: styleAgent })
   const registered = contexts[contexts.length - 1]
@@ -222,4 +224,109 @@ for (const [style, expectsInstruction] of [['terse', false], ['full', true]]) {
   )
 }
 
-console.log('tsare-gate selftest: 15 checks passed')
+// 16. the level is the switches' own name when none is configured
+for (const [extra, expected] of [
+  [{ brief: true, steerLimit: 0 }, 'brief'],
+  [{ brief: true, remindWhen: ['cargo test'], steerLimit: 0 }, 'remind'],
+  [{}, 'steer'],
+]) {
+  const levelCtx = context()
+  apply(levelCtx, { command, statusCommand, ...extra })
+  const levelAgent = makeAgent()
+  await levelCtx.fire('agent/created', { agent: levelAgent })
+  writeFileSync(ledger, clean)
+  await levelCtx.fire('tools/post-execute', { name: 'read', arguments: {}, agent: levelAgent })
+  const text = contexts[contexts.length - 1].text()
+  assert.match(text, new RegExp(`^tsare\\[${expected}\\]`), `${expected}: ${text}`)
+}
+
+// 17. a named level writes the switches: off wins over a stale brief and a steer limit
+const offCtx = context()
+apply(offCtx, { command, statusCommand, level: 'off', brief: true, steerLimit: 3 })
+const offAgent = makeAgent()
+const beforeOff = contexts.length
+await offCtx.fire('agent/created', { agent: offAgent })
+assert.equal(contexts.length, beforeOff, 'level off must not install a brief')
+writeFileSync(ledger, dirty)
+await offCtx.fire('agent/turn-stopping', {
+  agent: offAgent,
+  turn: 1,
+  signal: new AbortController().signal,
+})
+assert.equal(offAgent.steered.length, 0, 'level off must not steer')
+
+// 18. level remind supplies the trigger when the config names none
+const remindLevelCtx = context()
+apply(remindLevelCtx, { command, statusCommand, level: 'remind' })
+const remindLevelAgent = makeAgent()
+await remindLevelCtx.fire('agent/created', { agent: remindLevelAgent })
+writeFileSync(ledger, clean)
+const [reminded] = await remindLevelCtx.fire('tools/post-execute', {
+  name: 'pwsh',
+  arguments: { command: 'cargo test --release' },
+  agent: remindLevelAgent,
+})
+assert.equal(reminded.additionalContexts.length, 1, 'level remind must supply a trigger')
+assert.match(contexts[contexts.length - 1].text(), /^tsare\[remind\]/, contexts[contexts.length - 1].text())
+
+// 19. level gate steers on an open debt even when the checker is clean
+const gateCtx = context()
+apply(gateCtx, { command, statusCommand, decideCommand, level: 'gate', steerLimit: 3 })
+const gateAgent = makeAgent()
+await gateCtx.fire('agent/created', { agent: gateAgent })
+const openLedger = 'tsare 1\nnote N_OK { tag: conjecture, text: "OK OPEN_DEBT" }\n'
+writeFileSync(ledger, openLedger)
+await gateCtx.fire('tools/post-execute', { name: 'read', arguments: {}, agent: gateAgent })
+assert.match(
+  contexts[contexts.length - 1].text(),
+  /^tsare\[gate\]: open/,
+  contexts[contexts.length - 1].text(),
+)
+await gateCtx.fire('agent/turn-stopping', {
+  agent: gateAgent,
+  turn: 1,
+  signal: new AbortController().signal,
+})
+assert.equal(gateAgent.steered.length, 1, 'an open debt must steer at gate')
+assert.match(gateAgent.steered[0].content[0].text, /open/, gateAgent.steered[0].content[0].text)
+
+// 20. the same ledger at steer does not: steer reads the check, not the decision
+const strictCtx = context()
+apply(strictCtx, { command, statusCommand, decideCommand, level: 'steer', steerLimit: 3 })
+const strictAgent = makeAgent()
+await strictCtx.fire('agent/created', { agent: strictAgent })
+writeFileSync(ledger, openLedger)
+await strictCtx.fire('agent/turn-stopping', {
+  agent: strictAgent,
+  turn: 1,
+  signal: new AbortController().signal,
+})
+assert.equal(strictAgent.steered.length, 0, 'steer must not read the decision')
+
+// 21. the brief carries the decision and the epistemic counts
+writeFileSync(ledger, clean)
+await ctx.fire('tools/post-execute', { name: 'read', arguments: {}, agent })
+const view = contexts[0].text()
+assert.match(view, /closed; 1 verified, 1 inferred, 2 unverified/, view)
+
+// 22. the brief's status call appends a trace run when a trace file is set
+const liveCtx = context()
+const traceFile = join(dir, 'live.trace.json')
+apply(liveCtx, {
+  command,
+  statusCommand,
+  traceFile,
+  level: 'steer',
+})
+const liveAgent = makeAgent()
+await liveCtx.fire('agent/created', { agent: liveAgent })
+writeFileSync(ledger, clean)
+await liveCtx.fire('tools/post-execute', { name: 'read', arguments: {}, agent: liveAgent })
+assert.match(readFileSync(traceFile, 'utf8'), /run/, 'the trace file must record the brief refresh')
+
+// 23. an open support path is named in the brief
+writeFileSync(ledger, clean + 'OPEN_CHAIN\n')
+await ctx.fire('tools/post-execute', { name: 'read', arguments: {}, agent })
+assert.match(contexts[0].text(), /1 open chain\(s\) \(P_OPEN on H_OPEN\)/, contexts[0].text())
+
+console.log('tsare-gate selftest: 23 checks passed')

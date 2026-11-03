@@ -160,12 +160,13 @@ fn the_json_contract_does_not_drift() {
 #[test]
 fn the_decision_commands_answer_json() {
     let doc = fixture("talk.v2.tsare");
-    let cases: [(&[&str], &[&str]); 3] = [
+    let cases: [(&[&str], &[&str]); 4] = [
         (&["next", &doc], &["decisions"]),
         (
             &["cost", &doc],
             &["total", "depth", "chain", "by_kind", "rows"],
         ),
+        (&["decide", &doc], &["decision", "items"]),
         (&["shape", &doc], &["depth", "total", "forms"]),
     ];
     for (args, keys) in cases {

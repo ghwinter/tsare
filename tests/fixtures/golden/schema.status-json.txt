@@ -1,0 +1,1 @@
+{"decision": "closed", "verified": 3, "inferred": 2, "unverified": 0, "errors": 0, "warnings": 1, "question": null, "first": {"code": "W-BARE-NUMBER", "name": "P_STABLE", "message": "P_STABLE states a number and cites no measured value: nothing here says what produced it"}, "claims": 6, "debt": null, "open_chains": 0, "open_chain": null}

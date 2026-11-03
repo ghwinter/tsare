@@ -1,0 +1,1 @@
+{"verified": 1, "inferred": 1, "unverified": 0, "rows": [{"name": "F_SCROLL", "kind": "fact", "knowing": "verified", "basis": "measured"}, {"name": "P_FAST", "kind": "proposition", "knowing": "inferred", "basis": "W_FAST"}]}

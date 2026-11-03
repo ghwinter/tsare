@@ -45,6 +45,18 @@ pub(crate) fn cmd_suggest(path: &Path, json: bool) -> i32 {
     0
 }
 
+/// A conclusion written back must reach evidence: the G3 gate for in-place writes.
+fn open_chain(text: &str) -> Option<String> {
+    let decls = syntax::parse(text).ok()?;
+    let open = crate::chain::open(&decls);
+    open.first().map(|(name, _kind, hypotheses)| {
+        format!(
+            "{name} stands on the unbacked hypothesis {}",
+            hypotheses.join(", ")
+        )
+    })
+}
+
 pub(crate) fn cmd_apply(path: &Path, dry: bool) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
@@ -53,6 +65,9 @@ pub(crate) fn cmd_apply(path: &Path, dry: bool) -> i32 {
     let items = crate::fix::suggestions(&loaded.decls);
     let (updated, applied) = crate::apply::apply_best(&loaded.text, &items);
     if !dry && updated != loaded.text {
+        if let Some(reason) = open_chain(&updated) {
+            return fail(format!("refused: {reason}; resolve it, or record why"));
+        }
         if let Err(error) = crate::apply::replace(path, &updated) {
             return fail(format!("{}: {error}", path.display()));
         }
@@ -165,7 +180,11 @@ pub(crate) fn cmd_fix(path: &Path, apply: Option<&str>) -> i32 {
             rounds += 1;
         }
         let (after_e, after_w) = crate::fix::score_without_holes(&current);
-        if let Err(error) = fs::write(out, crate::fix::render(&current)) {
+        let text = crate::fix::render(&current);
+        if let Some(reason) = open_chain(&text) {
+            return fail(format!("refused: {reason}; resolve it, or record why"));
+        }
+        if let Err(error) = fs::write(out, &text) {
             return fail(format!("{out}: {error}"));
         }
         println!("applied {rounds} fix(es) -> {out} ({after_e} errors, {after_w} warnings)");
@@ -253,6 +272,9 @@ pub(crate) fn cmd_propose(path: &Path, proposals_path: &str, apply: bool, policy
         }
     }
     if apply && current != loaded.text {
+        if let Some(reason) = open_chain(&current) {
+            return fail(format!("refused: {reason}; resolve it, or record why"));
+        }
         if let Err(error) = crate::apply::replace(path, &current) {
             return fail(format!("{}: {error}", path.display()));
         }
