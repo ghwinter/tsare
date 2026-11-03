@@ -622,10 +622,15 @@ fn check_collapse(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     }
 }
 
+mod attrs;
+mod layers;
+mod remaining;
 mod semantic;
 
-use self::semantic::{
-    check_layer, check_refinements, check_remaining, check_semantics, check_tension, field_pos,
-};
+use self::attrs::field_pos;
+use self::layers::{check_layer, check_refinements, check_tension};
+use self::remaining::check_remaining;
+use self::semantic::check_semantics;
 
-pub(crate) use self::semantic::{id_field, list_field, sem, string_field};
+pub(crate) use self::attrs::{id_field, list_field, string_field};
+pub(crate) use self::semantic::sem;
