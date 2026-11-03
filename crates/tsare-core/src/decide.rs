@@ -139,10 +139,14 @@ fn judge(
             }
         }
         "question" => {
-            if f_id(decl, "to").unwrap_or("user") == "user" {
-                (Decision::Closable, "the user is named")
-            } else {
-                (Decision::Open, "no respondent is named")
+            // `to:` names who answers: a person, a tool, or an experiment.  Naming a tool is as
+            // much a name as naming a person is -- the value kind treats a named instrument the
+            // same way -- so all three are closable, and the reason says which one it is.
+            match f_id(decl, "to").unwrap_or("user") {
+                "user" => (Decision::Closable, "the user is named"),
+                "tool" => (Decision::Closable, "a tool is named"),
+                "experiment" => (Decision::Closable, "an experiment is named"),
+                _ => (Decision::Open, "no respondent is named"),
             }
         }
         "blindspot" => {
