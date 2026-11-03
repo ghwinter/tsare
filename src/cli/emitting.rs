@@ -430,7 +430,52 @@ pub(crate) fn cmd_outline(path: &Path) -> Outcome {
     Outcome::Ok
 }
 
-pub(crate) fn cmd_mem(store: &Path, recall: Option<&[String]>, k: usize, json: bool) -> Outcome {
+pub(crate) fn cmd_mem(
+    store: &Path,
+    recall: Option<&[String]>,
+    process: Option<&str>,
+    k: usize,
+    json: bool,
+) -> Outcome {
+    if let Some(signature) = process {
+        let entries = crate::cases::recall_by_signature(store, signature, k);
+        if entries.is_empty() {
+            println!("no case with process {signature} in {}", store.display());
+            return Outcome::Ok;
+        }
+        for entry in entries {
+            let doc = entry
+                .entry
+                .get("doc")
+                .and_then(|value| value.as_str())
+                .unwrap_or("");
+            let action = entry
+                .entry
+                .get("action")
+                .and_then(|value| value.as_str())
+                .unwrap_or("");
+            let refused = entry.entry.get("refused").and_then(|value| value.as_str());
+            let outcome = match refused {
+                Some(reason) => format!("refused ({reason})"),
+                None if entry.improved => "improved".to_string(),
+                None => "no better".to_string(),
+            };
+            let errors = |side: &str| {
+                entry
+                    .entry
+                    .get(side)
+                    .and_then(|item| item.get("errors"))
+                    .and_then(|item| item.as_f64())
+                    .unwrap_or(0.0)
+            };
+            println!(
+                "{doc} action={action} {}->{} errors  ({outcome})",
+                crate::program::fmt_g(errors("before")),
+                crate::program::fmt_g(errors("after"))
+            );
+        }
+        return Outcome::Ok;
+    }
     if let Some(codes) = recall {
         let entries = crate::cases::recall(store, codes, k);
         if entries.is_empty() {

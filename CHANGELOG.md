@@ -8,6 +8,8 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- Process-level memory: `apply --record` writes the step descriptors (add/remove/edit, field keys, value presence) and the witness template; `mem` reports distinct processes, cross-task reuse, vetoed processes and refusals; `mem --process SIG` recalls by the process signature, so the same steps over different documents reuse each other.
+
 - `mem --json`: the case store's reuse metrics — distinct situations (the process signature), the reuse rate, the compression, the orphan signatures and the regressions (R5's measurable form).
 
 - `retract FILE NAME [--out FILE]`: remove one assumption, enumerate the conclusions whose status changed, and write the reduced document (R6's update invariance at the mechanism level).
@@ -224,6 +226,8 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- Process-level memory: `apply --record` writes the step descriptors (add/remove/edit, field keys, value presence) and the witness template; `mem` reports distinct processes, cross-task reuse, vetoed processes and refusals; `mem --process SIG` recalls by the process signature, so the same steps over different documents reuse each other.
+
 - `mem --json`: the case store's reuse metrics — distinct situations (the process signature), the reuse rate, the compression, the orphan signatures and the regressions (R5's measurable form).
 
 - `retract FILE NAME [--out FILE]`: remove one assumption, enumerate the conclusions whose status changed, and write the reduced document (R6's update invariance at the mechanism level).
@@ -260,6 +264,8 @@ All notable changes are recorded here. The format follows
 - `W-UNWARRANTED-BASIS` pointed its caret at `claim`, blaming the sentence for a missing licence.
   It points at `basis` when the field exists and at the declaration otherwise.
 ### Added
+
+- Process-level memory: `apply --record` writes the step descriptors (add/remove/edit, field keys, value presence) and the witness template; `mem` reports distinct processes, cross-task reuse, vetoed processes and refusals; `mem --process SIG` recalls by the process signature, so the same steps over different documents reuse each other.
 
 - `mem --json`: the case store's reuse metrics — distinct situations (the process signature), the reuse rate, the compression, the orphan signatures and the regressions (R5's measurable form).
 
@@ -367,6 +373,8 @@ which observation would decide an open list, and what the attribute table alread
 
 ### Added
 
+- Process-level memory: `apply --record` writes the step descriptors (add/remove/edit, field keys, value presence) and the witness template; `mem` reports distinct processes, cross-task reuse, vetoed processes and refusals; `mem --process SIG` recalls by the process signature, so the same steps over different documents reuse each other.
+
 - `mem --json`: the case store's reuse metrics — distinct situations (the process signature), the reuse rate, the compression, the orphan signatures and the regressions (R5's measurable form).
 
 - `retract FILE NAME [--out FILE]`: remove one assumption, enumerate the conclusions whose status changed, and write the reduced document (R6's update invariance at the mechanism level).
@@ -416,6 +424,8 @@ The version that learns to say what it cannot tell apart, and to say which forma
 
 ### Added
 
+- Process-level memory: `apply --record` writes the step descriptors (add/remove/edit, field keys, value presence) and the witness template; `mem` reports distinct processes, cross-task reuse, vetoed processes and refusals; `mem --process SIG` recalls by the process signature, so the same steps over different documents reuse each other.
+
 - `mem --json`: the case store's reuse metrics — distinct situations (the process signature), the reuse rate, the compression, the orphan signatures and the regressions (R5's measurable form).
 
 - `retract FILE NAME [--out FILE]`: remove one assumption, enumerate the conclusions whose status changed, and write the reduced document (R6's update invariance at the mechanism level).
@@ -445,6 +455,8 @@ The version that learns to say what it cannot tell apart, and to say which forma
 The version that can be published: one crate, no dependencies, MIT.
 
 ### Added
+
+- Process-level memory: `apply --record` writes the step descriptors (add/remove/edit, field keys, value presence) and the witness template; `mem` reports distinct processes, cross-task reuse, vetoed processes and refusals; `mem --process SIG` recalls by the process signature, so the same steps over different documents reuse each other.
 
 - `mem --json`: the case store's reuse metrics — distinct situations (the process signature), the reuse rate, the compression, the orphan signatures and the regressions (R5's measurable form).
 
