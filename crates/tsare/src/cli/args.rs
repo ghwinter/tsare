@@ -34,6 +34,7 @@ const VALUE_FLAGS: &[&str] = &[
     "--near",
     "--terms",
     "--terms-from",
+    "--fixtures",
     "--write",
 ];
 

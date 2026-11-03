@@ -4,7 +4,7 @@ This repository is the compiler. The crate at the root builds a single, dependen
 binary: no interpreter, no runtime beyond the OS, no second code path to keep in step.
 
 The text is the contract. Every command's output is pinned byte for byte by
-`crates/tsare/crates/tsare/tests/fixtures/golden/`, so a change to what the tool says appears as a diff before it ships.
+`crates/tsare/tests/fixtures/golden/`, so a change to what the tool says appears as a diff before it ships.
 
 ## Two numbers, and only two
 
@@ -55,6 +55,7 @@ answers `--json`.
 | --- | --- | --- |
 | `check FILE\|DIR` | which declarations are well formed; `--goals`, `--sugar`, `--cache`, `--against OTHER`, `--strict` | yes |
 | `contracts [--json]` | the operator contracts: each command's input, output and effect | |
+| `inventory --fixtures DIR [--json] [--write FILE]` | this build's commands and diagnostic codes, and the documents the golden suite pins, as a `.tsare` document of three layers; generated, never written by hand — the block in `docs/REPO.tsare` is this output and a test fails when it drifts | yes |
 | `status FILE [--json] [--trace FILE] [--budget N]` | one line: the decision, the epistemic counts, the next question, and — when any — the first open chain; over the budget the line is `unfinished`; the JSON also carries the first debt, the claim count, the number of conclusions standing on an unbacked hypothesis, and the first chain's name and hypotheses; `--trace` appends the report as a replayable run; errors exit 1 | yes |
 | `provenance FILE [--json]` | where each quoted claim sits in its source: the source, the line and the column | yes |
 | `engine FILE\|DIR` | held, conditional, blocked, chains, gates | yes |

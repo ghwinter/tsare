@@ -92,6 +92,7 @@ pub fn run() -> i32 {
 
 mod args;
 mod help;
+mod inventory;
 mod registry;
 mod support;
 

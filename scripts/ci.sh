@@ -43,7 +43,7 @@ fi
 
 echo "== documents"
 cargo run --release --quiet -- check SELF.tsare
-cargo run --release --quiet -- check docs/REPO.tsare
+cargo run --release --quiet -- check --strict docs/REPO.tsare
 cargo run --release --quiet -- check prelude/KERNEL.tsare
 cargo run --release --quiet -- check prelude/WORLDVIEW.tsare
 cargo run --release --quiet -- check prelude/PROCESS.tsare

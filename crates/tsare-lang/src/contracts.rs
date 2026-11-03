@@ -155,6 +155,12 @@ pub const CONTRACTS: &[Contract] = &[
         effect: Effect::Read,
     },
     Contract {
+        name: "inventory",
+        input: "dir",
+        output: "document",
+        effect: Effect::Read,
+    },
+    Contract {
         name: "extract",
         input: "file",
         output: "definitions",
