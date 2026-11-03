@@ -110,3 +110,17 @@ fn the_json_counts_open_chains() {
     assert!(out.contains("\"open_chains\": 1"), "{out}");
     assert!(out.contains("\"open_chain\": {\"name\": \"P\""), "{out}");
 }
+
+#[test]
+fn the_line_names_the_first_open_chain() {
+    let dir = work("open-line");
+    let path = dir.join("doc.tsare");
+    fs::write(
+        &path,
+        "tsare 1\nfact F { claim: \"f\", evidence: user }\nhypothesis H { assumes: [F], predicts: \"p\", test: \"t\" }\nproposition P { statement: \"s\", from: [H] }\n",
+    )
+    .expect("doc");
+    let (out, err, status) = run(&["status", path.to_str().expect("path")]);
+    assert_eq!(status, 0, "{out}{err}");
+    assert!(out.contains("1 open chain(s) (P on H)"), "{out}");
+}

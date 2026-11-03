@@ -49,6 +49,16 @@ pub fn line(decls: &[Decl]) -> String {
     } else {
         String::new()
     };
+    // A conclusion standing on an undecided hypothesis is a gap in the line, not only in the JSON.
+    let open = crate::chain::open(decls);
+    let chains = match open.first() {
+        Some((name, _kind, hypotheses)) => format!(
+            "; {} open chain(s) ({name} on {})",
+            open.len(),
+            hypotheses.join(", ")
+        ),
+        None => String::new(),
+    };
     let question = ask::questions(&Program::new(decls))
         .into_iter()
         .next()
@@ -58,7 +68,7 @@ pub fn line(decls: &[Decl]) -> String {
         None => "nothing to ask".to_string(),
     };
     format!(
-        "{}; {verified} verified, {inferred} inferred, {unverified} unverified{warning}; {next}",
+        "{}; {verified} verified, {inferred} inferred, {unverified} unverified{warning}{chains}; {next}",
         verdict.decision.label()
     )
 }
