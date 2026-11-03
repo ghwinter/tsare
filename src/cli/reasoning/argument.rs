@@ -300,3 +300,29 @@ pub(crate) fn cmd_whatif(path: &Path, name: &str) -> Outcome {
     }
     Outcome::Ok
 }
+
+/// Retract one assumption: write the reduced document and enumerate the conclusions whose status
+/// changed.
+pub(crate) fn cmd_retract(path: &Path, name: &str, out: Option<&str>, json: bool) -> Outcome {
+    let loaded = match load(path) {
+        Ok(loaded) => loaded,
+        Err(error) => return fail(error),
+    };
+    let reduced = match crate::whatif::remove(&loaded.decls, name) {
+        Ok(reduced) => reduced,
+        Err(error) => return fail(error),
+    };
+    let report = crate::whatif::RetractReport {
+        name: name.to_string(),
+        counterfactual: crate::whatif::compare(&loaded.decls, &reduced),
+    };
+    if let Some(out) = out {
+        let text = crate::format::document(&reduced);
+        if let Err(error) = fs::write(out, text.as_bytes()) {
+            return fail(format!("{out}: {error}"));
+        }
+    }
+    let mut sink = crate::out::Stdout;
+    crate::out::render(&report, json, &mut sink);
+    Outcome::Ok
+}
