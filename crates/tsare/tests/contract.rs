@@ -176,6 +176,21 @@ fn the_decision_commands_answer_json() {
         assert_eq!(top_keys(&text), keys.to_vec(), "{text}");
     }
 
+    // the gate a model's proposals pass through answers per proposal, so a loop can retry the
+    // ones that were refused instead of re-reading a sentence
+    let gate = run(&[
+        "propose",
+        "tests/fixtures/harden/repro/propose-target.tsare",
+        "--proposals",
+        "tests/fixtures/harden/repro/proposals.json",
+        "--json",
+    ]);
+    assert_eq!(
+        top_keys(&gate),
+        ["proposals", "admitted", "review", "rejected"],
+        "{gate}"
+    );
+
     let against = fixture("relational.v2.tsare");
     let shaped = run(&["shape", &doc, "--against", &against, "--json"]);
     assert_eq!(

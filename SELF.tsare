@@ -20,12 +20,12 @@ fact F_CLOSED_WORLD {
 
 fact F_CONCEPT_COST {
   claim: "naming a dimension as a concept costs a positive example and a counterexample",
-  evidence: code("src/check/mod.rs")
+  evidence: code("crates/tsare-core/src/lib.rs")
 }
 
 fact F_NO_ENUM_OBLIGATION {
   claim: "before this file, the checker had no obligation attached to an enumeration",
-  evidence: code("src/specs.rs")
+  evidence: code("crates/tsare-lang/src/specs.rs")
 }
 
 fact F_EDGE_CLASSES {
@@ -63,7 +63,7 @@ fact F_ADVICE_PROSE {
 
 fact F_PARTITION_IS_ADDITION {
   claim: "adding the partition kind is itself an addition, and it is wanted now",
-  evidence: code("src/specs.rs"),
+  evidence: code("crates/tsare-lang/src/specs.rs"),
   attrs: { checker_can_verify: true, adds: classification }
 }
 
@@ -209,12 +209,12 @@ fact F_ILP_CONTROL {
 
 fact F_BIAS_DIMENSIONS {
   claim: "the five bias dimensions of ILP are present here: predicate bias in specs, types in kinds, complexity in the literal and depth caps, coverage in the consistency test",
-  evidence: code("src/specs.rs")
+  evidence: code("crates/tsare-lang/src/specs.rs")
 }
 
 fact F_ILP_REPRESENTATION {
   claim: "classical ILP needs variables, unification and Horn clauses; this learner has none of them",
-  evidence: code("src/induce.rs")
+  evidence: code("crates/tsare-core/src/induce.rs")
 }
 
 proposition P_NOT_CLASSIC_ILP {

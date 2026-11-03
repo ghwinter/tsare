@@ -48,6 +48,7 @@ pub(crate) fn cmd_next(path: &Path, json: bool) -> Outcome {
                     ("label", J::Str(row.label.clone())),
                     ("node", J::Str(row.node.clone())),
                     ("touches", J::Num(row.count as f64)),
+                    ("needs", J::Str(row.needs.clone())),
                 ])
             })
             .collect();
@@ -64,7 +65,12 @@ pub(crate) fn cmd_next(path: &Path, json: bool) -> Outcome {
         .max()
         .unwrap_or(0);
     for row in &rows {
-        println!("{}  touches {} claim(s)", pad(&row.label, width), row.count);
+        println!(
+            "{}  touches {} claim(s)  needs: {}",
+            pad(&row.label, width),
+            row.count,
+            row.needs
+        );
     }
     Outcome::Ok
 }

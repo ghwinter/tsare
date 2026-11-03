@@ -1,0 +1,6 @@
+derives   F_A1                             -> P_ONE                    <fixtures>/relational.v2.tsare:44:1
+derives   F_A2                             -> P_TWO                    <fixtures>/relational.v2.tsare:51:1
+derives   F_B1                             -> P_THREE                  <fixtures>/relational.v2.tsare:58:1
+derives   F_C                              -> P_THREE                  <fixtures>/relational.v2.tsare:64:1
+
+4 arrow(s), 1 kind(s)

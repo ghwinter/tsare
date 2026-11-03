@@ -95,4 +95,6 @@ pub(crate) use derive::{
     cmd_shape,
 };
 pub(crate) use engine::cmd_engine;
-pub(crate) use structure::{cmd_blame, cmd_chain, cmd_chains, cmd_delta, cmd_diff, cmd_merge};
+pub(crate) use structure::{
+    cmd_arrows, cmd_blame, cmd_chain, cmd_chains, cmd_delta, cmd_diff, cmd_merge,
+};

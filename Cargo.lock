@@ -6,6 +6,66 @@ version = 4
 name = "tsare"
 version = "0.4.0"
 dependencies = [
+ "tsare-analyses",
+ "tsare-core",
+ "tsare-emit",
+ "tsare-infer",
+ "tsare-lang",
+ "tsare-state",
+ "tsare-util",
+]
+
+[[package]]
+name = "tsare-analyses"
+version = "0.4.0"
+dependencies = [
+ "tsare-core",
+ "tsare-lang",
+ "tsare-state",
+ "tsare-util",
+]
+
+[[package]]
+name = "tsare-core"
+version = "0.4.0"
+dependencies = [
+ "tsare-lang",
+ "tsare-util",
+]
+
+[[package]]
+name = "tsare-emit"
+version = "0.4.0"
+dependencies = [
+ "tsare-analyses",
+ "tsare-core",
+ "tsare-lang",
+ "tsare-state",
+]
+
+[[package]]
+name = "tsare-infer"
+version = "0.4.0"
+dependencies = [
+ "tsare-analyses",
+ "tsare-core",
+ "tsare-lang",
+ "tsare-state",
+]
+
+[[package]]
+name = "tsare-lang"
+version = "0.4.0"
+dependencies = [
+ "tsare-util",
+]
+
+[[package]]
+name = "tsare-state"
+version = "0.4.0"
+dependencies = [
+ "tsare-core",
+ "tsare-lang",
  "tsare-util",
 ]
 

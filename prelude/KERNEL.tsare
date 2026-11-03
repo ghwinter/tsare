@@ -23,13 +23,13 @@ layer L_ENGINE {
 
 fact F_OBLIGATIONS {
   claim: "every declaration kind carries a decidable obligation",
-  evidence: code("src/specs.rs"),
+  evidence: code("crates/tsare-lang/src/specs.rs"),
   scope: "the twelve kinds in this build"
 }
 
 fact F_CHECKS {
   claim: "every diagnostic has an explanation, and the golden tests pin every command's text",
-  evidence: code("tests/semantics.rs, tests/golden.rs"),
+  evidence: code("crates/tsare/tests/semantics/main.rs, crates/tsare/tests/golden.rs"),
   scope: "the codes and commands in this build"
 }
 

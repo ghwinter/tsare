@@ -1,0 +1,7 @@
+sub       C_FAST                           -> C_TIMED                  <fixtures>/hier.v2.tsare:35:1
+sub       C_VERY_FAST                      -> C_FAST                   <fixtures>/hier.v2.tsare:42:1
+sub       C_SLOW                           -> C_TIMED                  <fixtures>/hier.v2.tsare:49:1
+
+3 arrow(s), 1 kind(s)
+composition:
+  sub∘sub 1

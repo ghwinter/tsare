@@ -1,2 +1,4 @@
 before: 0 errors, 2 warnings (holes not counted)
 no verified candidate reduces this
+candidates that do not pay:
+  - P_SMOOTH: add a warrant over its premises  (no gain: +0 errors, +1 warnings)

@@ -43,7 +43,7 @@ fi
 
 echo "== documents"
 cargo run --release --quiet -- check SELF.tsare
-cargo run --release --quiet -- check docs/REPO.tsare
+cargo run --release --quiet -- check --strict docs/REPO.tsare
 cargo run --release --quiet -- check prelude/KERNEL.tsare
 cargo run --release --quiet -- check prelude/WORLDVIEW.tsare
 cargo run --release --quiet -- check prelude/PROCESS.tsare
@@ -91,8 +91,8 @@ if [ "$hygiene" -eq 1 ]; then
     fi
 
     echo "== no regenerable matrix rows"
-    if git ls-files 'tests/fixtures/harden/artifacts/*.jsonl' | grep -q .; then
-        git ls-files 'tests/fixtures/harden/artifacts/*.jsonl'
+    if git ls-files 'crates/tsare/tests/fixtures/harden/artifacts/*.jsonl' | grep -q .; then
+        git ls-files 'crates/tsare/tests/fixtures/harden/artifacts/*.jsonl'
         echo "matrix-*.jsonl is regenerable and full of local paths; keep it untracked"
         exit 1
     fi

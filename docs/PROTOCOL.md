@@ -4,7 +4,7 @@ This repository is the compiler. The crate at the root builds a single, dependen
 binary: no interpreter, no runtime beyond the OS, no second code path to keep in step.
 
 The text is the contract. Every command's output is pinned byte for byte by
-`tests/fixtures/golden/`, so a change to what the tool says appears as a diff before it ships.
+`crates/tsare/tests/fixtures/golden/`, so a change to what the tool says appears as a diff before it ships.
 
 ## Two numbers, and only two
 
@@ -55,15 +55,18 @@ answers `--json`.
 | --- | --- | --- |
 | `check FILE\|DIR` | which declarations are well formed; `--goals`, `--sugar`, `--cache`, `--against OTHER`, `--strict` | yes |
 | `contracts [--json]` | the operator contracts: each command's input, output and effect | |
+| `inventory --fixtures DIR [--json] [--write FILE]` | this build's commands and diagnostic codes, and the documents the golden suite pins, as a `.tsare` document of three layers; generated, never written by hand — the block in `docs/REPO.tsare` is this output and a test fails when it drifts | yes |
 | `status FILE [--json] [--trace FILE] [--budget N]` | one line: the decision, the epistemic counts, the next question, and — when any — the first open chain; over the budget the line is `unfinished`; the JSON also carries the first debt, the claim count, the number of conclusions standing on an unbacked hypothesis, and the first chain's name and hypotheses; `--trace` appends the report as a replayable run; errors exit 1 | yes |
 | `provenance FILE [--json]` | where each quoted claim sits in its source: the source, the line and the column | yes |
 | `engine FILE\|DIR` | held, conditional, blocked, chains, gates | yes |
+| `arrows FILE [--json]` | every relation the document states, with its kind (derives, attacks, retires, sub, asks, reports), its ends and the place it is written; the kinds it uses and the pairs that chain | yes |
+| `extract PATH [--json] [--terms A,B] [--terms-from FILE] [--write FILE] [--verify FILE]` | the definitions a rendered page states: the heading above, the term column the caller names — inline, or as `note { tag: preference, text: "<header>" }` in a document — and the line that does it; a directory is read page by page in name order, one numbering; `--write` emits them as a document of facts, one per term, each carrying the page's text as a `source` and quoting the term, so `E-QUOTE` refuses a fabricated one; `--verify` rebuilds and compares, so a ledger whose pages moved is a diff and not a silence; the report also says how many pages, tables and rows were read and names the pages whose tables yielded nothing | yes |
 | `argue FILE [--against OTHER] [--json]` | which conclusions survive attack; with `--against`, the attack graph is the merge; the JSON carries each conclusion's status and why | |
 | `confront LEFT RIGHT` | which rules attack across the pair, and which attacks nobody answered; exit 1 when `LEFT` leaves one unanswered | |
 | `derive FILE` | which conclusions are grounded in facts | |
 | `debt FILE [--all]` | which facts transitively gate a conclusion | |
 | `impact FILE` | dead facts, single support, load-bearing nodes | |
-| `next FILE [--json]` | open decisions ranked by what they touch | yes |
+| `next FILE [--json]` | open decisions ranked by what they touch, each with `needs`: the type a hole wants, who answers a question and with which options, what a blind spot cannot express | yes |
 | `ask FILE [--json] [--one]` | the next question the document needs: a gap in a list, two facts nothing tells apart, or a concept whose examples look alike; `--one` gives the question that settles the most | yes |
 | `novel FILE --attribute N [--holds IDS]` | new, redundant, or a recombination: whether a proposed attribute is a distinction the recorded vocabulary already contains | |
 | `shape FILE [--top N] [--depth D] [--layers] [--against OTHER [--near N]] [--json]` | the forms declarations share, at a depth; `--layers` the forms that cross a layer, `--against` the forms two documents differ in, `--near` the closest unshared forms and how close they are | yes |
@@ -93,7 +96,7 @@ answers `--json`.
 | `project DIR` | a directory checked as one program, grouped by file | |
 | `trace FILE [--out FILE \| --append FILE]` | one run, or a session of runs appended; each run embeds the ledger, its hash, and the steps — `check`, `ask` and `decide`, or one `status` step from `status --trace` — with their reports and statuses | yes |
 | `replay TRACE [--diff]` | re-run every run in order and compare byte for byte; `--diff` names the lines each run wrote back; `match` or the first difference, naming the run and the step | |
-| `grow LIBRARY SOURCE NAME --out FILE` | copy one declaration and a content-addressed entry note into a library, keeping it only if the grown document has no error and its support path does not rest on a hypothesis no verdict has decided | |
+| `grow LIBRARY SOURCE NAME --out FILE [--json]` | copy one declaration and a content-addressed entry note into a library, keeping it only if the grown document has no error and its support path does not rest on a hypothesis no verdict has decided; the JSON answers `verdict`, `name`, `warnings` and, when refused, the diagnostics — the gate a model's new claim goes through | yes |
 | `save FILE [--store DIR]` | store a ledger under its content hash and advance the store's HEAD (default `.tsare/versions`) | yes |
 | `log STORE` | the content hashes the store holds | |
 | `restore HASH [--store DIR] --out FILE` | write a stored ledger back, refusing bytes that do not match the hash | |
@@ -107,7 +110,7 @@ answers `--json`.
 | `fmt FILE` | the document in one spelling: one field per line, one separator everywhere, for a diff and a hash that mean something | |
 | `outline FILE` | the document read as prose: each field quoted, its ground and its diagnostics in the margin | |
 | `mem [--store FILE] [--recall CODE...] [--k N]` | the case store: audit it, or recall similar situations | |
-| `propose FILE --proposals FILE.json [--policy ...]` | gate values an outside model wants to fill into holes; applying is refused while a conclusion stands on an unbacked hypothesis | |
+| `propose FILE --proposals FILE.json [--policy ...] [--json]` | gate values an outside model wants to fill into holes; applying is refused while a conclusion stands on an unbacked hypothesis; the JSON answers per proposal (`decl`, `field`, `verdict`, `reason`, `errors`, `warnings`) so a loop can retry the refused ones | yes |
 | `fca FILE` | what a concept's positives share, and which facts the attributes imply | |
 
 `suggest` and `apply` are the engine's own shape: `apply` splices a span and keeps the result
@@ -448,7 +451,7 @@ one document — `tests/codes/*.tsare` (the smallest single document per code), 
 (recorded output of the two-document commands), and direct assertions for parsing, the kernel and
 goal files. A code that nothing can produce is either unreachable or stale, and both are bugs.
 
-`tests/semantics.rs` holds properties (`an_attack_defeats_its_target`). `tests/golden.rs` holds
+`crates/tsare/tests/semantics/main.rs` holds properties (`an_attack_defeats_its_target`). `crates/tsare/tests/golden.rs` holds
 the exact text of every command on six fixture documents. `UPDATE_GOLDEN=1 cargo test` rewrites
 them; read the diff first.
 

@@ -3,6 +3,275 @@
 use super::*;
 use crate::json::Json as J;
 
+/// The definitions a rendered page states: a heading and the term column the caller names (or the
+/// bold first cell when it names none).  A directory is read page by page in name order, so one
+/// chapter list becomes one document with one numbering.  The vocabulary may be given inline or
+/// read from a document of preferences.
+pub(crate) fn cmd_extract(
+    path: &Path,
+    json: bool,
+    terms: Option<&str>,
+    terms_from: Option<&str>,
+    write: Option<&str>,
+    verify: Option<&str>,
+) -> Outcome {
+    let pages: Vec<std::path::PathBuf> = if path.is_dir() {
+        let mut pages: Vec<std::path::PathBuf> = match fs::read_dir(path) {
+            Ok(entries) => entries
+                .filter_map(|entry| entry.ok().map(|item| item.path()))
+                .filter(|item| item.extension().map(|ext| ext == "html").unwrap_or(false))
+                .collect(),
+            Err(error) => return fail(format!("{}: {error}", path.display())),
+        };
+        pages.sort();
+        pages
+    } else {
+        vec![path.to_path_buf()]
+    };
+    let mut words: Vec<String> = terms
+        .map(|list| {
+            list.split(',')
+                .map(str::trim)
+                .filter(|word| !word.is_empty())
+                .map(str::to_string)
+                .collect()
+        })
+        .unwrap_or_default();
+    if let Some(from) = terms_from {
+        let text = match fs::read_to_string(from) {
+            Ok(text) => text,
+            Err(error) => return fail(format!("{from}: {error}")),
+        };
+        match crate::extract::vocabulary(&text, from) {
+            Ok(found) => words.extend(found),
+            Err(error) => return fail(error),
+        }
+    }
+    words.sort();
+    words.dedup();
+    let terms: Vec<&str> = words.iter().map(String::as_str).collect();
+    let mut found = Vec::new();
+    let mut page_texts: Vec<(String, String)> = Vec::new();
+    let mut tables = 0;
+    let mut rows = 0;
+    let mut silent: Vec<String> = Vec::new();
+    for page in &pages {
+        let text = match fs::read_to_string(page) {
+            Ok(text) => text,
+            Err(error) => return fail(format!("{}: {error}", page.display())),
+        };
+        let (page_tables, page_rows) = crate::extract::tables(&text);
+        page_texts.push((page.display().to_string(), text.clone()));
+        tables += page_tables;
+        rows += page_rows;
+        let definitions = crate::extract::definitions(&text, &page.display().to_string(), &terms);
+        if page_tables > 0 && definitions.is_empty() {
+            silent.push(
+                page.file_name()
+                    .map(|name| name.to_string_lossy().to_string())
+                    .unwrap_or_else(|| page.display().to_string()),
+            );
+        }
+        found.extend(definitions);
+    }
+    if let Some(document) = verify {
+        return verify_definitions(&page_texts, &found, Path::new(document));
+    }
+    if let Some(out) = write {
+        return write_definitions(&page_texts, &found, Path::new(out));
+    }
+    if json {
+        let items: Vec<J> = found
+            .iter()
+            .map(|item| {
+                J::Obj(vec![
+                    ("term".to_string(), J::Str(item.term.clone())),
+                    ("section".to_string(), J::Str(item.section.clone())),
+                    ("file".to_string(), J::Str(item.file.clone())),
+                    ("line".to_string(), J::Num(item.line as f64)),
+                    ("col".to_string(), J::Num(item.col as f64)),
+                ])
+            })
+            .collect();
+        let coverage = J::Obj(vec![
+            ("pages".to_string(), J::Num(pages.len() as f64)),
+            ("tables".to_string(), J::Num(tables as f64)),
+            ("rows".to_string(), J::Num(rows as f64)),
+            (
+                "silent".to_string(),
+                J::Arr(silent.iter().cloned().map(J::Str).collect()),
+            ),
+        ]);
+        println!(
+            "{}",
+            crate::json::serialize(&J::Obj(vec![
+                ("definitions".to_string(), J::Arr(items)),
+                ("coverage".to_string(), coverage),
+            ]))
+        );
+        return Outcome::Ok;
+    }
+    if found.is_empty() {
+        println!(
+            "no definitions: no bold term opens a table row under a heading, and no --terms header names a column"
+        );
+        return Outcome::Ok;
+    }
+    for item in &found {
+        println!(
+            "defines  {:<28} -> {:<24} {}:{}:{}",
+            item.section, item.term, item.file, item.line, item.col
+        );
+    }
+    let sections: usize = found
+        .iter()
+        .map(|item| item.section.as_str())
+        .collect::<std::collections::HashSet<_>>()
+        .len();
+    println!("\n{} definition(s) in {sections} section(s)", found.len());
+    println!(
+        "read {} page(s), {} table(s), {} row(s)",
+        pages.len(),
+        tables,
+        rows
+    );
+    if !silent.is_empty() {
+        // the extractor says what it did not read, so a missing definition is a decision and not
+        // a silence
+        let shown: Vec<&str> = silent.iter().take(5).map(String::as_str).collect();
+        let more = if silent.len() > shown.len() {
+            format!(" (+{} more)", silent.len() - shown.len())
+        } else {
+            String::new()
+        };
+        println!(
+            "{} page(s) with tables and no definition -- name a column with --terms{more}: {}",
+            silent.len(),
+            shown.join(", ")
+        );
+    }
+    Outcome::Ok
+}
+
+/// The same definitions as a document the checker can read: one fact per term, quoting the line of
+/// the page it was read from.
+///
+/// The page's own text is carried in a `source`, and every fact names that source and the words it
+/// quotes.  That is what makes the claim checkable rather than a label: `E-QUOTE` will fail if the
+/// quote is not in the page, so an extraction that invents a term cannot survive `check`.
+pub(crate) fn definitions_document(
+    pages: &[(String, String)],
+    found: &[crate::extract::Definition],
+) -> String {
+    let escape = |text: &str| text.replace('\\', "\\\\").replace('"', "\\\"");
+    let mut text = String::from("tsare 1\n");
+
+    let mut source_of: std::collections::HashMap<&str, String> = std::collections::HashMap::new();
+    for (index, (path, body)) in pages.iter().enumerate() {
+        if !found.iter().any(|item| item.file == *path) {
+            continue;
+        }
+        let name = format!("S_{:02}", index + 1);
+        let lines: Vec<String> = body
+            .lines()
+            .map(|line| format!("    \"{}\",", escape(&crate::extract::plain(line))))
+            .collect();
+        text.push_str(&format!(
+            "\n# the page itself, so the quotes below can be checked against it\nsource {name} {{\n  name: \"{}\",\n  text: [\n{}\n  ]\n}}\n",
+            escape(path),
+            lines.join("\n")
+        ));
+        source_of.insert(path.as_str(), name);
+    }
+
+    for (index, item) in found.iter().enumerate() {
+        let name = format!("D_{:04}", index + 1);
+        let page = std::path::Path::new(&item.file)
+            .file_name()
+            .map(|name| name.to_string_lossy().to_string())
+            .unwrap_or_else(|| item.file.clone());
+        // a document that names a Windows path in its evidence is not portable, and the goldens
+        // would differ between platforms
+        let page_path = item.file.replace('\\', "/");
+        let source = source_of
+            .get(item.file.as_str())
+            .cloned()
+            .unwrap_or_default();
+        text.push_str(&format!(
+            "\n# {page}:{} -- {}\nfact {name} {{\n  claim: \"{} defines 「{}」 under 「{}」\",\n  evidence: doc(\"{}\"),\n  source: {source},\n  quote: \"{}\"\n}}\n",
+            item.line,
+            item.term,
+            page,
+            escape(&item.term),
+            escape(&item.section),
+            escape(&page_path),
+            escape(&item.term)
+        ));
+    }
+    text
+}
+
+pub(crate) fn write_definitions(
+    pages: &[(String, String)],
+    found: &[crate::extract::Definition],
+    out: &Path,
+) -> Outcome {
+    let text = definitions_document(pages, found);
+    match fs::write(out, text) {
+        Ok(()) => {
+            println!("{} definition(s) written to {}", found.len(), out.display());
+            Outcome::Ok
+        }
+        Err(error) => fail(format!("{}: {error}", out.display())),
+    }
+}
+
+/// Whether the document on disk is what the pages would produce now.
+///
+/// The ledger carries the page text, so `check` can verify every quote -- but nothing in `check`
+/// can tell that the page has changed since. This does: it rebuilds the document in memory and
+/// compares, the way a golden does, so a stale ledger is a diff and not a silence.
+pub(crate) fn verify_definitions(
+    pages: &[(String, String)],
+    found: &[crate::extract::Definition],
+    document: &Path,
+) -> Outcome {
+    let expected = definitions_document(pages, found);
+    let actual = match fs::read_to_string(document) {
+        Ok(text) => text,
+        Err(error) => return fail(format!("{}: {error}", document.display())),
+    };
+    let actual = actual.replace("\r\n", "\n");
+    if actual == expected {
+        println!(
+            "{} is current: {} definition(s) from {} page(s)",
+            document.display(),
+            found.len(),
+            pages.len()
+        );
+        return Outcome::Ok;
+    }
+    let expected_lines: Vec<&str> = expected.lines().collect();
+    let actual_lines: Vec<&str> = actual.lines().collect();
+    let at = actual_lines
+        .iter()
+        .zip(expected_lines.iter())
+        .position(|(a, e)| a != e)
+        .unwrap_or(actual_lines.len().min(expected_lines.len()));
+    let show = |line: Option<&&str>| {
+        line.map(|text| text.chars().take(120).collect::<String>())
+            .unwrap_or_else(|| "<nothing>".to_string())
+    };
+    println!("{} is stale at line {}:", document.display(), at + 1);
+    println!("  on disk:  {}", show(actual_lines.get(at)));
+    println!("  now:      {}", show(expected_lines.get(at)));
+    println!(
+        "run `tsare extract … --write {}` to regenerate it",
+        document.display()
+    );
+    Outcome::Failed
+}
+
 /// Errors decide the exit code.  `--strict` lets a warning decide it too: a warning is the engine
 /// saying the document states something it cannot settle, and a loop that reads only the number
 /// should not be able to ignore that.
@@ -544,7 +813,13 @@ pub(crate) fn cmd_restore(hash: &str, store: &str, out: &str) -> Outcome {
 }
 
 /// Add one declaration from a source document to a library, if the library stays admissible.
-pub(crate) fn cmd_grow(library: &Path, source: &Path, name: &str, out: &str) -> Outcome {
+pub(crate) fn cmd_grow(
+    library: &Path,
+    source: &Path,
+    name: &str,
+    out: &str,
+    json: bool,
+) -> Outcome {
     let library_text = match fs::read_to_string(library) {
         Ok(text) => text,
         Err(error) => return fail(format!("{}: {error}", library.display())),
@@ -559,6 +834,20 @@ pub(crate) fn cmd_grow(library: &Path, source: &Path, name: &str, out: &str) -> 
                 return fail(format!("{out}: {error}"));
             }
             let short: String = grown.source_sha256.chars().take(12).collect();
+            if json {
+                println!(
+                    "{}",
+                    crate::json::serialize(&J::Obj(vec![
+                        ("verdict".to_string(), J::Str("accepted".to_string())),
+                        ("name".to_string(), J::Str(grown.name.clone())),
+                        ("out".to_string(), J::Str(out.to_string())),
+                        ("source".to_string(), J::Str(short)),
+                        ("warnings".to_string(), J::Num(grown.warnings as f64)),
+                        ("diagnostics".to_string(), J::Arr(Vec::new())),
+                    ]))
+                );
+                return Outcome::Ok;
+            }
             println!(
                 "accepted {} (source {short}, {} warning(s)) -> {out}",
                 grown.name, grown.warnings
@@ -569,6 +858,32 @@ pub(crate) fn cmd_grow(library: &Path, source: &Path, name: &str, out: &str) -> 
             reason,
             diagnostics,
         } => {
+            if json {
+                let rows: Vec<J> = diagnostics
+                    .iter()
+                    .map(|item| {
+                        J::Obj(vec![
+                            ("code".to_string(), J::Str(item.code.to_string())),
+                            (
+                                "name".to_string(),
+                                J::Str(item.witness.clone().unwrap_or_default()),
+                            ),
+                            ("line".to_string(), J::Num(item.line as f64)),
+                            ("message".to_string(), J::Str(item.message.clone())),
+                        ])
+                    })
+                    .collect();
+                println!(
+                    "{}",
+                    crate::json::serialize(&J::Obj(vec![
+                        ("verdict".to_string(), J::Str("rejected".to_string())),
+                        ("name".to_string(), J::Str(name.to_string())),
+                        ("reason".to_string(), J::Str(reason)),
+                        ("diagnostics".to_string(), J::Arr(rows)),
+                    ]))
+                );
+                return Outcome::Failed;
+            }
             println!("rejected {name}: {reason}");
             for item in &diagnostics {
                 let witness = item.witness.as_deref().unwrap_or("<file>");

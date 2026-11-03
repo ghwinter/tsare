@@ -913,3 +913,27 @@ fn an_answered_question_is_not_an_open_decision() {
     let rows = tsare::impact::decisions(&tsare::program::Program::new(&open));
     assert!(rows.iter().any(|row| row.node == "Q"));
 }
+
+#[test]
+fn a_question_aimed_at_a_tool_names_its_respondent() {
+    // Defect: decide() accepted only `to: user`, so a question aimed at a tool or an experiment
+    // read "no respondent is named" -- the opposite of what the field says, and the opposite of
+    // how `value` treats a named instrument.
+    let aimed = parse(
+        "fact F_A { claim: \"a\", evidence: user }\n\
+         hypothesis H_ONE { assumes: [F_A], predicts: \"one\", rival: H_TWO }\n\
+         hypothesis H_TWO { assumes: [F_A], predicts: \"two\", rival: H_ONE }\n\
+         question Q { asks: \"which?\", answers: [\"one\", \"two\"], separates: [H_ONE, H_TWO], to: experiment }\n",
+    );
+    let item = tsare::decide::report(&aimed)
+        .items
+        .into_iter()
+        .find(|item| item.name == "Q")
+        .expect("the question owes an answer");
+    assert_eq!(item.decision, tsare::decide::Decision::Closable);
+    assert!(
+        item.reason.contains("experiment"),
+        "the reason names the respondent: {}",
+        item.reason
+    );
+}

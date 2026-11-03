@@ -19,6 +19,7 @@
 !/.github
 !/src
 !/tests
+!/crates
 
 !/Cargo.toml
 !/Cargo.lock
@@ -38,7 +39,8 @@
 !/docs/REPO.tsare
 
 
-# The corpus harness: two scripts that say how the measurements under tests/fixtures/harden were taken.
+# The corpus harness: two scripts that say how the measurements under
+# crates/tsare/tests/fixtures/harden were taken.
 !/scripts
 !/scripts/*
 
@@ -76,11 +78,15 @@ Thumbs.db
 !/dsh/tsare-gate/fake-tsare.mjs
 !/dsh/tsare-gate/README.md
 # Regenerable: one line per command invocation, rebuilt by scripts/matrix.py.
-/tests/fixtures/harden/artifacts/matrix.jsonl
+/crates/tsare/tests/fixtures/harden/artifacts/matrix.jsonl
 !/dsh/tsare-gate/cordis.patch.yml
 # The hook and the rule it enforces are part of the repository, not of one clone.
 !/.githooks
 !/.githooks/commit-msg
 # Regenerable and machine-specific: one line per invocation, with the temp paths of the run.
 # scripts/matrix.py rebuilds them; the summaries beside them are the tracked evidence.
-/tests/fixtures/harden/artifacts/matrix-*.jsonl
+/crates/tsare/tests/fixtures/harden/artifacts/matrix-*.jsonl
+
+# Written by `tsare build` when no --out is given, and by the golden test that dispatches every
+# command from the help screen.  Regenerable, and the crate's default output directory.
+/crates/tsare/out/

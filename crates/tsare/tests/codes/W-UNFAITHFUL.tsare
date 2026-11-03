@@ -1,0 +1,4 @@
+fact F_SAID { claim: "the user said it", evidence: user }
+fact F_EARLIER { claim: "an earlier frame said it", evidence: user }
+proposition P_READS_SAID { statement: "what the user said means this", from: [F_SAID] }
+warrant W_READS_EARLIER { claim: "the earlier frame concludes it", from: [F_EARLIER], to: P_READS_SAID }

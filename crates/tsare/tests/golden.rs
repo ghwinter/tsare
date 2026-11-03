@@ -118,6 +118,7 @@ const COMMANDS: &[(&str, &[&str])] = &[
     ("suggest-json", &["--json"]),
     ("apply-dry", &["--dry-run"]),
     ("argue", &[]),
+    ("arrows", &[]),
     ("derive", &[]),
     ("debt", &[]),
     ("debt-all", &["--all"]),
@@ -282,6 +283,8 @@ fn every_command_in_the_help_screen_is_dispatched() {
     for name in names {
         let output = Command::new(binary())
             .args([name.as_str(), fixture.as_str()])
+            // `build` writes `./out` when it is given no --out, and `./out` must not be the crate
+            .current_dir(&dir)
             .output()
             .expect("run the binary");
         let text = format!(

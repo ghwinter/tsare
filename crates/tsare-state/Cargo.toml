@@ -1,0 +1,16 @@
+[package]
+name = "tsare-state"
+version = "0.4.0"
+edition = "2021"
+rust-version = "1.85"
+description = "Where tsare's state lives: the cache, the repair writer, the case store, the session."
+license = "MIT"
+repository = "https://github.com/ghwinter/tsare"
+
+[dependencies]
+tsare-core = { path = "../tsare-core" }
+tsare-lang = { path = "../tsare-lang" }
+tsare-util = { path = "../tsare-util" }
+
+[lints]
+workspace = true

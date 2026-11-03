@@ -20,6 +20,28 @@ proposition P_LEAK { statement: "y", from: [F_INTERNAL], layer: L_APP }
 }
 
 #[test]
+fn a_reading_is_supported_by_what_it_says_it_read() {
+    // The frame capture: the claim names the user's sentence, but the only rule that concludes
+    // it draws on the previous round's frame.  The support is real, and it is borrowed.
+    let borrowed = r#"
+fact F_SAID { claim: "x", evidence: user }
+fact F_EARLIER { claim: "y", evidence: user }
+proposition P_READ { statement: "s", from: [F_SAID] }
+warrant W_FRAME { claim: "r", from: [F_EARLIER], to: P_READ, basis: [F_EARLIER] }
+"#;
+    assert!(codes(borrowed).contains(&"W-UNFAITHFUL"));
+
+    // One premise in common anchors the rule, even when it also draws on the frame.
+    let anchored = r#"
+fact F_SAID { claim: "x", evidence: user }
+fact F_EARLIER { claim: "y", evidence: user }
+proposition P_READ { statement: "s", from: [F_SAID] }
+warrant W_READS { claim: "r", from: [F_SAID, F_EARLIER], to: P_READ, basis: [F_SAID] }
+"#;
+    assert!(!codes(anchored).contains(&"W-UNFAITHFUL"));
+}
+
+#[test]
 fn the_declared_inference_type_must_match_the_structure() {
     let deductive_without_rule = r#"
 fact F { claim: "x", evidence: user }

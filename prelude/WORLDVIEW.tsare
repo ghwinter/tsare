@@ -16,25 +16,25 @@ layer L_CHECKED {
 
 fact F_KINDS {
   claim: "the language has twelve kinds of declaration, and each carries a decidable obligation",
-  evidence: code("src/specs.rs"),
+  evidence: code("crates/tsare-lang/src/specs.rs"),
   scope: "the twelve kinds in this build"
 }
 
 fact F_ANY {
   claim: "a cited ground is resolved for existence, not for relevance",
-  evidence: code("src/check/mod.rs"),
+  evidence: code("crates/tsare-core/src/lib.rs"),
   scope: "every from, basis and checked_by field"
 }
 
 fact F_MODEL {
   claim: "a fact whose only witness is a model is admitted with a warning and passed on",
-  evidence: code("src/check/confidence.rs"),
+  evidence: code("crates/tsare-core/src/confidence.rs"),
   scope: "every fact in this build"
 }
 
 fact F_QUESTION {
   claim: "a question must name the hypotheses it separates, so it cannot be decorative",
-  evidence: code("src/specs.rs"),
+  evidence: code("crates/tsare-lang/src/specs.rs"),
   scope: "every question in this build",
   attrs: {about: "questions"}
 }

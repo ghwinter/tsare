@@ -1,0 +1,20 @@
+tsare 1
+# The header words this page family uses for a term column.
+#
+# A preference, not a commitment: nothing in a page says which column is a table of terms, so
+# the reader says it -- and says it in the same language the checker reads.
+
+note N_TERM {
+  tag: preference,
+  text: "term"
+}
+
+note N_NAME {
+  tag: preference,
+  text: "name"
+}
+
+note N_PROSE {
+  tag: intuition,
+  text: "this note is not part of the vocabulary"
+}

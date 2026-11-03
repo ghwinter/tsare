@@ -157,3 +157,46 @@ fn a_conclusion_on_an_unbacked_hypothesis_is_refused() {
     assert!(out_text.contains("unbacked hypothesis H"), "{out_text}");
     assert!(!out.exists(), "nothing is written on a refusal");
 }
+
+#[test]
+fn the_gate_answers_json() {
+    // A loop that adds a declaration needs the verdict as data: which declaration entered, how
+    // many warnings it brought, and -- when refused -- the diagnostics that refused it.
+    let dir = work("json");
+    let library = dir.join("library.tsare");
+    let source = dir.join("source.tsare");
+    let grown = dir.join("grown.tsare");
+    fs::write(&library, LIBRARY).expect("library");
+    fs::write(
+        &source,
+        "tsare 1\nfact F_NEW { claim: \"new\", evidence: user }\n",
+    )
+    .expect("source");
+
+    let (text, err, status) = run(&[
+        "grow",
+        library.to_str().expect("library path"),
+        source.to_str().expect("source path"),
+        "F_NEW",
+        "--out",
+        grown.to_str().expect("grown path"),
+        "--json",
+    ]);
+    assert_eq!(status, 0, "{text}{err}");
+    assert!(text.contains("\"verdict\": \"accepted\""), "{text}");
+    assert!(text.contains("\"warnings\": 0"), "{text}");
+    assert!(text.contains("\"diagnostics\": []"), "{text}");
+
+    let (text, err, status) = run(&[
+        "grow",
+        library.to_str().expect("library path"),
+        source.to_str().expect("source path"),
+        "F_NONE",
+        "--out",
+        grown.to_str().expect("grown path"),
+        "--json",
+    ]);
+    assert_eq!(status, 1, "{text}{err}");
+    assert!(text.contains("\"verdict\": \"rejected\""), "{text}");
+    assert!(text.contains("F_NONE"), "{text}");
+}

@@ -1,2 +1,6 @@
 before: 0 errors, 4 warnings (holes not counted)
 no verified candidate reduces this
+candidates that do not pay:
+  - P_ONE: add a warrant over its premises  (no gain: +0 errors, +1 warnings)
+  - P_TWO: add a warrant over its premises  (no gain: +0 errors, +1 warnings)
+  - P_THREE: add a warrant over its premises  (no gain: +0 errors, +1 warnings)
