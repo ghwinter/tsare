@@ -37,66 +37,7 @@ pub fn id_field<'a>(decl: &'a Decl, key: &str) -> Option<&'a str> {
     None
 }
 
-fn holds(value: &Val, pattern: &Val) -> bool {
-    match pattern {
-        Val::List(items) => items.iter().all(|item| holds(value, item)),
-        _ => match value {
-            Val::List(items) => items.iter().any(|item| holds(item, pattern)),
-            Val::Id(left) => matches!(pattern, Val::Id(right) if left == right),
-            Val::Str(left) => matches!(pattern, Val::Str(right) if left == right),
-            Val::Num(left) => matches!(pattern, Val::Num(right) if left == right),
-            _ => false,
-        },
-    }
-}
-
-fn matches(decl: &Decl, record: &[(String, Val)]) -> bool {
-    record.iter().all(|(key, pattern)| {
-        decl.fields
-            .iter()
-            .find(|(name, _)| name == key)
-            .map(|(_, value)| holds(value, pattern))
-            .unwrap_or(false)
-    })
-}
-
-/// One application of a warrant: the warrant's name, the premises it reads, and the name it
-/// reaches.
-pub struct Rule {
-    pub warrant: String,
-    pub premises: Vec<String>,
-    pub target: String,
-}
-
-/// Every way a warrant applies.  `to` names one target directly; `concludes` is a pattern, and
-/// each proposition whose fields satisfy it becomes a target.
-pub fn applications(decls: &[Decl]) -> Vec<Rule> {
-    let mut out = Vec::new();
-    for decl in decls.iter().filter(|decl| decl.kind == "warrant") {
-        let premises = field_ids(decl, "from");
-        if let Some(target) = id_field(decl, "to") {
-            out.push(Rule {
-                warrant: decl.name.clone(),
-                premises,
-                target: target.to_string(),
-            });
-            continue;
-        }
-        let record = decl.fields.iter().find(|(name, _)| name == "concludes");
-        if let Some((_, Val::Rec(fields))) = record {
-            for proposition in decls.iter().filter(|decl| decl.kind == "proposition") {
-                if matches(proposition, fields) {
-                    out.push(Rule {
-                        warrant: decl.name.clone(),
-                        premises: premises.clone(),
-                        target: proposition.name.clone(),
-                    });
-                }
-            }
-        }
-    }
-    out
-}
+pub use crate::program::{applications, Rule};
 
 /// The warrants that survive every attack: the first half of `grounded_sets`.
 pub fn grounded(decls: &[Decl]) -> HashSet<String> {

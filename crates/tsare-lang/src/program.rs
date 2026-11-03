@@ -202,7 +202,7 @@ pub fn evidence_status(decl: &Decl) -> &'static str {
 /// `from` names, and a hypothesis's `assumes` names.
 pub fn support_edges(prog: &Program) -> HashMap<String, Vec<String>> {
     let mut edges: HashMap<String, Vec<String>> = HashMap::new();
-    for rule in crate::closure::applications(prog.decls) {
+    for rule in crate::program::applications(prog.decls) {
         edges.entry(rule.target).or_default().extend(rule.premises);
     }
     for proposition in prog.of_kind("proposition") {
@@ -345,7 +345,7 @@ pub fn obligations(prog: &Program, decl: &Decl) -> Vec<String> {
             }
         }
         "proposition" => {
-            let supported = crate::closure::applications(prog.decls)
+            let supported = crate::program::applications(prog.decls)
                 .iter()
                 .any(|rule| rule.target == decl.name);
             if !supported {
@@ -416,4 +416,65 @@ pub fn fmt_g(value: f64) -> String {
     } else {
         format!("{value}")
     }
+}
+
+fn holds(value: &Val, pattern: &Val) -> bool {
+    match pattern {
+        Val::List(items) => items.iter().all(|item| holds(value, item)),
+        _ => match value {
+            Val::List(items) => items.iter().any(|item| holds(item, pattern)),
+            Val::Id(left) => matches!(pattern, Val::Id(right) if left == right),
+            Val::Str(left) => matches!(pattern, Val::Str(right) if left == right),
+            Val::Num(left) => matches!(pattern, Val::Num(right) if left == right),
+            _ => false,
+        },
+    }
+}
+
+fn matches(decl: &Decl, record: &[(String, Val)]) -> bool {
+    record.iter().all(|(key, pattern)| {
+        decl.fields
+            .iter()
+            .find(|(name, _)| name == key)
+            .map(|(_, value)| holds(value, pattern))
+            .unwrap_or(false)
+    })
+}
+
+/// One application of a warrant: the warrant's name, the premises it reads, and the name it
+/// reaches.
+pub struct Rule {
+    pub warrant: String,
+    pub premises: Vec<String>,
+    pub target: String,
+}
+
+/// Every way a warrant applies.  `to` names one target directly; `concludes` is a pattern, and
+/// each proposition whose fields satisfy it becomes a target.
+pub fn applications(decls: &[Decl]) -> Vec<Rule> {
+    let mut out = Vec::new();
+    for decl in decls.iter().filter(|decl| decl.kind == "warrant") {
+        let premises = f_ids(decl, "from");
+        if let Some(target) = f_id(decl, "to") {
+            out.push(Rule {
+                warrant: decl.name.clone(),
+                premises,
+                target: target.to_string(),
+            });
+            continue;
+        }
+        let record = decl.fields.iter().find(|(name, _)| name == "concludes");
+        if let Some((_, Val::Rec(fields))) = record {
+            for proposition in decls.iter().filter(|decl| decl.kind == "proposition") {
+                if matches(proposition, fields) {
+                    out.push(Rule {
+                        warrant: decl.name.clone(),
+                        premises: premises.clone(),
+                        target: proposition.name.clone(),
+                    });
+                }
+            }
+        }
+    }
+    out
 }

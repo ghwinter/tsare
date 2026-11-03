@@ -10,12 +10,13 @@ pub mod check;
 pub mod cli;
 pub mod emit;
 pub mod io;
-pub mod lang;
+pub use tsare_lang as lang;
 pub mod mcp;
 pub mod out;
 pub mod reason;
 pub use tsare_util as util;
 
+pub mod contracts_report;
 pub use check::render;
 pub use check::{budget, decide, epistemic, fix, kernel, provenance, status};
 pub use emit::{build, format, graph, growth, mapping, outline, views};

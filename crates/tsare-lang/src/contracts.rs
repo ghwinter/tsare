@@ -229,13 +229,3 @@ impl ContractsReport {
         J::Obj(vec![("contracts".to_string(), J::Arr(items))])
     }
 }
-
-impl crate::out::Report for ContractsReport {
-    fn text(&self) -> String {
-        ContractsReport::text(self)
-    }
-
-    fn json(&self) -> J {
-        ContractsReport::json(self)
-    }
-}

@@ -5,10 +5,9 @@
 //! attribute learner cannot see.  A feature here is a directed path of edge labels up to
 //! length two, e.g. `premise>attacked by`.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
-use crate::impact::dependents;
-use crate::program::Program;
+use crate::program::{f_id, f_ids, neg, pos, Program};
 
 fn adjacency(prog: &Program) -> std::collections::HashMap<String, Vec<(String, String)>> {
     let mut out: std::collections::HashMap<String, Vec<(String, String)>> =
@@ -113,4 +112,82 @@ fn negative_ok(
     !negatives
         .iter()
         .any(|name| combo.iter().all(|feature| feats[name].contains(feature)))
+}
+
+/// Insertion-ordered adjacency: the order is part of the output when a walk is printed.
+#[derive(Default)]
+pub struct Deps {
+    pub keys: Vec<String>,
+    pub map: HashMap<String, Vec<(String, String)>>,
+}
+
+impl Deps {
+    pub fn add(&mut self, from: &str, to: &str, kind: &str) {
+        if !self.map.contains_key(from) {
+            self.keys.push(from.to_string());
+        }
+        self.map
+            .entry(from.to_string())
+            .or_default()
+            .push((to.to_string(), kind.to_string()));
+    }
+
+    pub fn get(&self, key: &str) -> Option<&Vec<(String, String)>> {
+        self.map.get(key)
+    }
+
+    pub fn items(&self) -> Vec<(String, Vec<(String, String)>)> {
+        self.keys
+            .iter()
+            .map(|key| (key.clone(), self.map.get(key).cloned().unwrap_or_default()))
+            .collect()
+    }
+}
+
+/// node -> [(dependent, edge kind)]
+pub fn dependents(prog: &Program) -> Deps {
+    let mut out = Deps::default();
+    for concept in prog.of_kind("concept") {
+        for fact in pos(concept) {
+            out.add(&fact, &concept.name, "positive");
+        }
+        for fact in neg(concept) {
+            out.add(&fact, &concept.name, "negative");
+        }
+    }
+    for warrant in prog.of_kind("warrant") {
+        for premise in f_ids(warrant, "from") {
+            out.add(&premise, &warrant.name, "premise");
+        }
+        for basis in f_ids(warrant, "basis") {
+            out.add(&basis, &warrant.name, "basis");
+        }
+        for target in f_ids(warrant, "attacks") {
+            out.add(&target, &warrant.name, "attacked by");
+        }
+        if let Some(conclusion) = f_id(warrant, "to") {
+            out.add(&warrant.name, conclusion, "concludes");
+        }
+    }
+    for hypothesis in prog.of_kind("hypothesis") {
+        for premise in f_ids(hypothesis, "assumes") {
+            out.add(&premise, &hypothesis.name, "assumes");
+        }
+    }
+    for proposition in prog.of_kind("proposition") {
+        for premise in f_ids(proposition, "from") {
+            out.add(&premise, &proposition.name, "from");
+        }
+    }
+    for question in prog.of_kind("question") {
+        for hypothesis in f_ids(question, "separates") {
+            out.add(&hypothesis, &question.name, "separates");
+        }
+    }
+    for blindspot in prog.of_kind("blindspot") {
+        for question in f_ids(blindspot, "closes_with") {
+            out.add(&blindspot.name, &question, "closes with");
+        }
+    }
+    out
 }

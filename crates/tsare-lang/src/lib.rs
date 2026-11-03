@@ -9,3 +9,5 @@ pub mod program;
 pub mod specs;
 pub mod sugar;
 pub mod syntax;
+
+pub use tsare_util as util;
