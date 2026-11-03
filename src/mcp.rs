@@ -22,14 +22,14 @@ fn error(id: &Json, code: i32, message: &str) -> String {
     format!(
         "{{\"jsonrpc\":\"2.0\",\"id\":{},\"error\":{{\"code\":{code},\"message\":\"{}\"}}}}",
         json::serialize(id),
-        crate::cli::escape(message)
+        crate::util::escape(message)
     )
 }
 
 fn text_result(text: String, failed: bool) -> String {
     format!(
         "{{\"content\":[{{\"type\":\"text\",\"text\":\"{}\"}}],\"isError\":{failed}}}",
-        crate::cli::escape(&text)
+        crate::util::escape(&text)
     )
 }
 

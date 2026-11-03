@@ -1,5 +1,17 @@
 //! Reasoning over a whole document: closure, argument, structure, and what it owes.
-
+//!
+//! The analyzers are grouped by the question they answer, so a new one has a home:
+//!
+//! - proof: the derivation and its defeat -- argue, assumptions, chain, closure, derive, egraph,
+//!   imply, weigh;
+//! - structure: the shapes declarations take -- cat, fca, moves, patterns, shape;
+//! - candidates: what the engine proposes and the check may refuse -- abstraction, ask, generalize,
+//!   hint, induce, novel, propose;
+//! - evidence: what a document owes and the store remembers -- audit, blame, cost, coverage, debt;
+//! - change: what a withdrawal, a merge or an edit does -- delta, diff, impact, merge, whatif.
+//!
+//! The groups are a reading order, not a visibility rule: every analyzer sees the same `check`
+//! types, and none of them depends on another.
 pub mod abstraction;
 pub mod argue;
 pub mod ask;

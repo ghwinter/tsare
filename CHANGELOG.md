@@ -6,6 +6,14 @@ All notable changes are recorded here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- `escape` moved from the CLI into `util`; the diagnostic render moved from `lang` into `check`, so
+  `lang` no longer depends on `check`. The public path `tsare::lang::render` is now `tsare::render`;
+  `tsare::lang::render` is no longer exported.
+- `reason`'s module doc and `CORE.md` group the analyzers by question (proof, structure,
+  candidates, evidence, change).
+
 ### Added
 
 - `library LIBRARY [--cases STORE]`: each grown abstract's bytes, the cases' uses, and the compression; `apply --library` records the abstracts a process touched, so the library and the case store report the same reuse.
@@ -226,6 +234,14 @@ All notable changes are recorded here. The format follows
   answer was recorded, and `next` still called it open. Measured: no corpus document changes --
   none yet has a question with every hypothesis settled.
 
+### Changed
+
+- `escape` moved from the CLI into `util`; the diagnostic render moved from `lang` into `check`, so
+  `lang` no longer depends on `check`. The public path `tsare::lang::render` is now `tsare::render`;
+  `tsare::lang::render` is no longer exported.
+- `reason`'s module doc and `CORE.md` group the analyzers by question (proof, structure,
+  candidates, evidence, change).
+
 ### Added
 
 - `library LIBRARY [--cases STORE]`: each grown abstract's bytes, the cases' uses, and the compression; `apply --library` records the abstracts a process touched, so the library and the case store report the same reuse.
@@ -267,6 +283,14 @@ All notable changes are recorded here. The format follows
 
 - `W-UNWARRANTED-BASIS` pointed its caret at `claim`, blaming the sentence for a missing licence.
   It points at `basis` when the field exists and at the declaration otherwise.
+### Changed
+
+- `escape` moved from the CLI into `util`; the diagnostic render moved from `lang` into `check`, so
+  `lang` no longer depends on `check`. The public path `tsare::lang::render` is now `tsare::render`;
+  `tsare::lang::render` is no longer exported.
+- `reason`'s module doc and `CORE.md` group the analyzers by question (proof, structure,
+  candidates, evidence, change).
+
 ### Added
 
 - `library LIBRARY [--cases STORE]`: each grown abstract's bytes, the cases' uses, and the compression; `apply --library` records the abstracts a process touched, so the library and the case store report the same reuse.
@@ -377,6 +401,14 @@ All notable changes are recorded here. The format follows
 The version where the engine starts judging its own vocabulary: whether a predicate is new,
 which observation would decide an open list, and what the attribute table already implies.
 
+### Changed
+
+- `escape` moved from the CLI into `util`; the diagnostic render moved from `lang` into `check`, so
+  `lang` no longer depends on `check`. The public path `tsare::lang::render` is now `tsare::render`;
+  `tsare::lang::render` is no longer exported.
+- `reason`'s module doc and `CORE.md` group the analyzers by question (proof, structure,
+  candidates, evidence, change).
+
 ### Added
 
 - `library LIBRARY [--cases STORE]`: each grown abstract's bytes, the cases' uses, and the compression; `apply --library` records the abstracts a process touched, so the library and the case store report the same reuse.
@@ -430,6 +462,14 @@ which observation would decide an open list, and what the attribute table alread
 
 The version that learns to say what it cannot tell apart, and to say which format it speaks.
 
+### Changed
+
+- `escape` moved from the CLI into `util`; the diagnostic render moved from `lang` into `check`, so
+  `lang` no longer depends on `check`. The public path `tsare::lang::render` is now `tsare::render`;
+  `tsare::lang::render` is no longer exported.
+- `reason`'s module doc and `CORE.md` group the analyzers by question (proof, structure,
+  candidates, evidence, change).
+
 ### Added
 
 - `library LIBRARY [--cases STORE]`: each grown abstract's bytes, the cases' uses, and the compression; `apply --library` records the abstracts a process touched, so the library and the case store report the same reuse.
@@ -463,6 +503,14 @@ The version that learns to say what it cannot tell apart, and to say which forma
 ## [0.2.0] - 2026-10-26
 
 The version that can be published: one crate, no dependencies, MIT.
+
+### Changed
+
+- `escape` moved from the CLI into `util`; the diagnostic render moved from `lang` into `check`, so
+  `lang` no longer depends on `check`. The public path `tsare::lang::render` is now `tsare::render`;
+  `tsare::lang::render` is no longer exported.
+- `reason`'s module doc and `CORE.md` group the analyzers by question (proof, structure,
+  candidates, evidence, change).
 
 ### Added
 

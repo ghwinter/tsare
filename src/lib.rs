@@ -14,11 +14,13 @@ pub mod lang;
 pub mod mcp;
 pub mod out;
 pub mod reason;
+pub mod util;
 
+pub use check::render;
 pub use check::{budget, decide, epistemic, fix, kernel, provenance, status};
 pub use emit::{build, format, graph, growth, mapping, outline, views};
 pub use io::{apply, cache, cases, session, trace, version};
-pub use lang::{contracts, explain, hash, json, paths, program, render, specs, sugar, syntax};
+pub use lang::{contracts, explain, hash, json, paths, program, specs, sugar, syntax};
 pub use reason::{
     abstraction, argue, ask, assumptions, audit, blame, cat, chain, closure, cost, coverage, debt,
     delta, derive, diff, egraph, fca, generalize, hint, impact, imply, induce, merge, moves, novel,
