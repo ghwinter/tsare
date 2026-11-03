@@ -679,7 +679,13 @@ pub(crate) fn cmd_restore(hash: &str, store: &str, out: &str) -> Outcome {
 }
 
 /// Add one declaration from a source document to a library, if the library stays admissible.
-pub(crate) fn cmd_grow(library: &Path, source: &Path, name: &str, out: &str) -> Outcome {
+pub(crate) fn cmd_grow(
+    library: &Path,
+    source: &Path,
+    name: &str,
+    out: &str,
+    json: bool,
+) -> Outcome {
     let library_text = match fs::read_to_string(library) {
         Ok(text) => text,
         Err(error) => return fail(format!("{}: {error}", library.display())),
@@ -694,6 +700,20 @@ pub(crate) fn cmd_grow(library: &Path, source: &Path, name: &str, out: &str) -> 
                 return fail(format!("{out}: {error}"));
             }
             let short: String = grown.source_sha256.chars().take(12).collect();
+            if json {
+                println!(
+                    "{}",
+                    crate::json::serialize(&J::Obj(vec![
+                        ("verdict".to_string(), J::Str("accepted".to_string())),
+                        ("name".to_string(), J::Str(grown.name.clone())),
+                        ("out".to_string(), J::Str(out.to_string())),
+                        ("source".to_string(), J::Str(short)),
+                        ("warnings".to_string(), J::Num(grown.warnings as f64)),
+                        ("diagnostics".to_string(), J::Arr(Vec::new())),
+                    ]))
+                );
+                return Outcome::Ok;
+            }
             println!(
                 "accepted {} (source {short}, {} warning(s)) -> {out}",
                 grown.name, grown.warnings
@@ -704,6 +724,32 @@ pub(crate) fn cmd_grow(library: &Path, source: &Path, name: &str, out: &str) -> 
             reason,
             diagnostics,
         } => {
+            if json {
+                let rows: Vec<J> = diagnostics
+                    .iter()
+                    .map(|item| {
+                        J::Obj(vec![
+                            ("code".to_string(), J::Str(item.code.to_string())),
+                            (
+                                "name".to_string(),
+                                J::Str(item.witness.clone().unwrap_or_default()),
+                            ),
+                            ("line".to_string(), J::Num(item.line as f64)),
+                            ("message".to_string(), J::Str(item.message.clone())),
+                        ])
+                    })
+                    .collect();
+                println!(
+                    "{}",
+                    crate::json::serialize(&J::Obj(vec![
+                        ("verdict".to_string(), J::Str("rejected".to_string())),
+                        ("name".to_string(), J::Str(name.to_string())),
+                        ("reason".to_string(), J::Str(reason)),
+                        ("diagnostics".to_string(), J::Arr(rows)),
+                    ]))
+                );
+                return Outcome::Failed;
+            }
             println!("rejected {name}: {reason}");
             for item in &diagnostics {
                 let witness = item.witness.as_deref().unwrap_or("<file>");

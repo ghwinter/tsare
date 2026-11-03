@@ -38,7 +38,7 @@ pub const COMMANDS: &[Command] = &[
     Command { group: "checking", name: "project", usage: "project DIR                                          the same, grouped by file", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_project(path) } },
     Command { group: "checking", name: "trace", usage: "trace PATH [--out FILE | --append FILE]   one run, or append it to a session", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_trace(path, args.option("--out"), args.option("--append")) } },
     Command { group: "checking", name: "replay", usage: "replay TRACE [--diff]        re-run a recorded session, show the write-backs, compare", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_replay(path, args.has("--diff")) } },
-    Command { group: "checking", name: "grow", usage: "grow LIBRARY SOURCE NAME --out FILE   add one checked declaration to a library", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); {
+    Command { group: "checking", name: "grow", usage: "grow LIBRARY SOURCE NAME --out FILE [--json]   add one checked declaration to a library", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); {
             let (Some(library), Some(source), Some(name)) = (args.at(0), args.at(1), args.at(2))
             else {
                 println!("usage: tsare grow LIBRARY SOURCE NAME --out FILE");
@@ -48,7 +48,7 @@ pub const COMMANDS: &[Command] = &[
                 println!("usage: tsare grow LIBRARY SOURCE NAME --out FILE");
                 return Outcome::Usage;
             };
-            cmd_grow(Path::new(library), Path::new(source), name, out)
+            cmd_grow(Path::new(library), Path::new(source), name, out, args.has("--json"))
         } } },
     Command { group: "checking", name: "library", usage: "library LIBRARY [--cases STORE] [--json]  what the grown abstracts cover, and how often they are used", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_library(path, args.option("--cases"), args.has("--json")) } },
     Command { group: "checking", name: "save", usage: "save FILE [--store DIR]      store a ledger under its content hash", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_save(path, args.option("--store").unwrap_or(".tsare/versions")) } },
