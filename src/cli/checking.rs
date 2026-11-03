@@ -430,6 +430,7 @@ pub(crate) fn cmd_status(path: &Path, json: bool, trace: Option<&str>) -> i32 {
         ]),
         None => J::Null,
     };
+    let open_chains = crate::chain::open(&loaded.decls).len();
     let value = J::Obj(vec![
         (
             "decision".to_string(),
@@ -450,6 +451,7 @@ pub(crate) fn cmd_status(path: &Path, json: bool, trace: Option<&str>) -> i32 {
         ("first".to_string(), first),
         ("claims".to_string(), J::Num(loaded.decls.len() as f64)),
         ("debt".to_string(), debt),
+        ("open_chains".to_string(), J::Num(open_chains as f64)),
     ]);
     let report = format!("{}\n", crate::json::serialize(&value));
     if json {

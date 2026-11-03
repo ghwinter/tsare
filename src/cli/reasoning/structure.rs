@@ -340,18 +340,7 @@ pub(crate) fn cmd_chains(path: &Path, json: bool) -> i32 {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
     };
-    let mut rows = Vec::new();
-    for decl in &loaded.decls {
-        if !matches!(decl.kind.as_str(), "proposition" | "warrant") {
-            continue;
-        }
-        if let Ok(link) = crate::chain::chain(&loaded.decls, &decl.name) {
-            let undecided = crate::chain::undecided(&link);
-            if !undecided.is_empty() {
-                rows.push((decl.name.clone(), decl.kind.clone(), undecided));
-            }
-        }
-    }
+    let rows = crate::chain::open(&loaded.decls);
     if json {
         let items: Vec<J> = rows
             .iter()

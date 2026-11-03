@@ -8,6 +8,9 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `status --json` also reports `open_chains`: how many propositions or warrants stand on a
+  hypothesis no verdict has decided.
+
 - `chains FILE [--json]`: every proposition or warrant whose support path rests on a hypothesis
   no verdict fact has decided; exits 1 when any is open.
 

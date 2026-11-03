@@ -87,6 +87,23 @@ fn walk_undecided(link: &Link, out: &mut Vec<String>) {
     }
 }
 
+/// The conclusions whose support path reaches an unbacked hypothesis.
+pub fn open(decls: &[Decl]) -> Vec<(String, String, Vec<String>)> {
+    let mut rows = Vec::new();
+    for decl in decls {
+        if !matches!(decl.kind.as_str(), "proposition" | "warrant") {
+            continue;
+        }
+        if let Ok(link) = chain(decls, &decl.name) {
+            let undecided = undecided(&link);
+            if !undecided.is_empty() {
+                rows.push((decl.name.clone(), decl.kind.clone(), undecided));
+            }
+        }
+    }
+    rows
+}
+
 fn supports(decls: &[Decl], decl: &Decl) -> Vec<String> {
     let mut out = Vec::new();
     let mut add = |key: &str| {

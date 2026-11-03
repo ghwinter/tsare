@@ -57,6 +57,7 @@ fn the_json_view_carries_the_same_fields() {
     assert!(out.contains("\"decision\""), "{out}");
     assert!(out.contains("closed"), "{out}");
     assert!(out.contains("\"verified\""), "{out}");
+    assert!(out.contains("\"open_chains\": 0"), "{out}");
     assert!(out.contains("\"errors\""), "{out}");
     assert!(out.contains("\"first\""), "{out}");
     assert!(out.contains("\"claims\""), "{out}");
@@ -92,4 +93,18 @@ fn status_appends_a_replayable_run() {
     let (out, _, status) = run(&["replay", trace.to_str().expect("trace path")]);
     assert_eq!(status, 0, "{out}");
     assert_eq!(out, "match\n");
+}
+
+#[test]
+fn the_json_counts_open_chains() {
+    let dir = work("open-chains");
+    let path = dir.join("doc.tsare");
+    fs::write(
+        &path,
+        "tsare 1\nfact F { claim: \"f\", evidence: user }\nhypothesis H { assumes: [F], predicts: \"p\", test: \"t\" }\nproposition P { statement: \"s\", from: [H] }\n",
+    )
+    .expect("doc");
+    let (out, err, status) = run(&["status", path.to_str().expect("path"), "--json"]);
+    assert_eq!(status, 0, "{out}{err}");
+    assert!(out.contains("\"open_chains\": 1"), "{out}");
 }

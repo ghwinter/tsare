@@ -1,1 +1,1 @@
-{"decision": "closed", "verified": 1, "inferred": 1, "unverified": 0, "errors": 0, "warnings": 0, "question": null, "first": null, "claims": 4, "debt": null}
+{"decision": "closed", "verified": 1, "inferred": 1, "unverified": 0, "errors": 0, "warnings": 0, "question": null, "first": null, "claims": 4, "debt": null, "open_chains": 0}
