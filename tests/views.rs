@@ -435,3 +435,16 @@ fn the_logic_reads_back_to_the_rules() {
         "the logic view does not reconstruct the rules"
     );
 }
+
+#[test]
+fn the_check_verifies_all_round_trips() {
+    let dir = work("check");
+    let path = dir.join("doc.tsare");
+    fs::write(&path, DOC).expect("doc");
+    let (out, err, status) = run(&["views", path.to_str().expect("path"), "--check"]);
+    assert_eq!(status, 0, "{out}{err}");
+    assert!(out.contains("round trips ok"), "{out}");
+    let (out, err, status) = run(&["views", path.to_str().expect("path"), "--check", "--json"]);
+    assert_eq!(status, 0, "{out}{err}");
+    assert!(out.contains("\"ok\": true"), "{out}");
+}

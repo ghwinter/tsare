@@ -284,7 +284,7 @@ const COMMANDS: &[Command] = &[
         Command("emitting", "outline", "outline PATH                        the document read as prose, grounds in the margin"),
         Command("emitting", "build", "build PATH [--out DIR] [--goals F]   obligations, clauses, open items, predicates"),
         Command("emitting", "graph", "graph PATH [--out FILE]             the relation net as Mermaid"),
-        Command("emitting", "views", "views PATH [--as VIEW] [--json]     five projections of the same document"),
+        Command("emitting", "views", "views PATH [--as VIEW] [--check] [--json]   five projections of the same document"),
         Command("emitting", "map", "map LEFT RIGHT [--top N]            structure mapping between two documents"),
         Command("emitting", "induce", "induce PATH                         the clause each concept's examples support"),
         Command("emitting", "pattern", "pattern PATH CONCEPT [--vars]       the structure that separates the examples"),
@@ -375,6 +375,7 @@ const FLAGS: &[&str] = &[
     "--vars",
     "--dry-run",
     "--diff",
+    "--check",
     "--recall",
     "--help",
     "--version",
@@ -615,7 +616,12 @@ pub fn run() -> i32 {
             cmd_whatif(&path, name)
         }
         "graph" => cmd_graph(&path, args.option("--out")),
-        "views" => cmd_views(&path, args.has("--json"), args.option("--as")),
+        "views" => cmd_views(
+            &path,
+            args.has("--json"),
+            args.option("--as"),
+            args.has("--check"),
+        ),
         "fix" => cmd_fix(&path, args.option("--apply")),
         "map" => {
             let Some(right) = args.at(1) else {

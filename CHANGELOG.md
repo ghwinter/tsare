@@ -8,9 +8,10 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
-- `views FILE [--as VIEW] [--json]`: the same document as five typed projections — tree, graph,
-  hypergraph, matrix (facts × attrs) and logic — each declaring what it preserves and loses. The
-  matrix and graph read back to the attributes and references they came from; `--as` selects one.
+- `views FILE [--as VIEW] [--check] [--json]`: the same document as five typed projections —
+  tree, graph, hypergraph, matrix (facts × attrs) and logic — each declaring what it preserves and
+  loses. The matrix and graph read back to the attributes and references they came from; `--as`
+  selects one, and `--check` verifies every round trip.
 
 - `blame STORE NAME [--json]`: which version on the store's HEAD chain last changed each field,
   walking the parent links from HEAD.

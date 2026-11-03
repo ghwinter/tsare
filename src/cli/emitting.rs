@@ -504,13 +504,31 @@ pub(crate) fn cmd_fmt(path: &Path) -> i32 {
 }
 
 /// Five projections of one document: tree, graph, hypergraph, matrix and logic.
-pub(crate) fn cmd_views(path: &Path, json: bool, only: Option<&str>) -> i32 {
+pub(crate) fn cmd_views(path: &Path, json: bool, only: Option<&str>, check: bool) -> i32 {
     use crate::json::Json as J;
 
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
     };
+    if check {
+        let issues = crate::views::check(&loaded.decls);
+        if json {
+            let items: Vec<J> = issues.iter().map(|issue| J::Str(issue.clone())).collect();
+            let value = J::Obj(vec![
+                ("ok".to_string(), J::Bool(issues.is_empty())),
+                ("issues".to_string(), J::Arr(items)),
+            ]);
+            println!("{}", crate::json::serialize(&value));
+        } else if issues.is_empty() {
+            println!("views: round trips ok");
+        } else {
+            for issue in &issues {
+                println!("{issue}");
+            }
+        }
+        return if issues.is_empty() { 0 } else { 1 };
+    }
     let views = crate::views::json(&loaded.decls);
     if let Some(name) = only {
         if !crate::views::VIEWS.contains(&name) {

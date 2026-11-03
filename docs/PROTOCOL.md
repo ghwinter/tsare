@@ -84,7 +84,7 @@ answers `--json`.
 | `merge BASE OURS THEIRS --out FILE [--json]` | a structural three-way merge by declaration and field; 0 merged, 1 conflict (nothing written), 2 cannot load | yes |
 | `whatif FILE NAME` | what falls when one assumption is removed | |
 | `graph FILE [--out]` | the typed relation net as Mermaid | |
-| `views FILE [--as VIEW] [--json]` | the same document as five typed projections: tree, graph, hypergraph, matrix (facts × attrs) and logic; each declares what it preserves and loses | yes |
+| `views FILE [--as VIEW] [--check] [--json]` | the same document as five typed projections: tree, graph, hypergraph, matrix (facts × attrs) and logic; each declares what it preserves and loses, and `--check` reads every view back to the IR | yes |
 | `map LEFT RIGHT` | structure mapping between two documents | |
 | `audit FILE` | whether a kind can be written with a smaller vocabulary | |
 | `egraph FILE [--write]` | equivalent declarations merged, references rewritten | |
