@@ -7,7 +7,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use tsare_lang::program::{f_id, f_ids, Program};
+use tsare_lang::program::{f_id, f_ids, f_str, Program};
 use tsare_lang::syntax::Decl;
 
 pub use tsare_lang::paths::{dependents, Deps};
@@ -73,6 +73,52 @@ pub struct Decision {
     pub label: String,
     pub node: String,
     pub count: usize,
+    /// What an answer would have to be, in the document's own vocabulary: the type of a hole,
+    /// who answers a question and with which options, what a blind spot cannot express.
+    pub needs: String,
+}
+
+fn field_type(kind: &str, key: &str) -> Option<&'static str> {
+    tsare_lang::specs::spec(kind)?
+        .iter()
+        .find(|(name, _, _)| *name == key)
+        .map(|(_, ftype, _)| *ftype)
+}
+
+fn strings(decl: &Decl, key: &str) -> Vec<String> {
+    match decl
+        .fields
+        .iter()
+        .find(|(name, _)| name == key)
+        .map(|(_, value)| value)
+    {
+        Some(tsare_lang::syntax::Val::List(items)) => items
+            .iter()
+            .filter_map(|item| match item {
+                tsare_lang::syntax::Val::Str(text) => Some(text.clone()),
+                _ => None,
+            })
+            .collect(),
+        _ => Vec::new(),
+    }
+}
+
+/// What a question's answer looks like, from the respondent and the options it names.
+fn question_needs(question: &Decl) -> String {
+    let respondent = f_id(question, "to").unwrap_or("user");
+    let options = strings(question, "answers");
+    let separated = f_ids(question, "separates");
+    match respondent {
+        "experiment" if !separated.is_empty() => {
+            format!("an experiment that decides {}", separated.join(" vs "))
+        }
+        "experiment" => "an experiment that answers it".to_string(),
+        "tool" => "a tool run that answers it".to_string(),
+        _ if !options.is_empty() => {
+            format!("the user's answer, one of: {}", options.join(" / "))
+        }
+        _ => "an answer".to_string(),
+    }
 }
 
 /// Open decisions: holes, questions, blind spots. Ranked by what they touch.
@@ -81,10 +127,15 @@ pub fn decisions(prog: &Program) -> Vec<Decision> {
     for decl in prog.decls {
         for (key, value) in &decl.fields {
             if matches!(value, tsare_lang::syntax::Val::Hole) {
+                let needs = match field_type(&decl.kind, key) {
+                    Some(ftype) => format!("a value of type {ftype}"),
+                    None => "a value".to_string(),
+                };
                 rows.push(Decision {
                     label: format!("{}.{key} (hole)", decl.name),
                     node: decl.name.clone(),
                     count: unlocks(prog, &decl.name, 2),
+                    needs,
                 });
             }
         }
@@ -108,13 +159,19 @@ pub fn decisions(prog: &Program) -> Vec<Decision> {
             label: format!("{} (question)", question.name),
             node: question.name.clone(),
             count: unlocks(prog, &question.name, 2),
+            needs: question_needs(question),
         });
     }
     for blindspot in prog.of_kind("blindspot") {
+        let needs = match f_str(blindspot, "cannot_express") {
+            Some(limit) => format!("a declaration that can express: {limit}"),
+            None => "a declaration the signature admits".to_string(),
+        };
         rows.push(Decision {
             label: format!("{} (blind spot)", blindspot.name),
             node: blindspot.name.clone(),
             count: unlocks(prog, &blindspot.name, 2),
+            needs,
         });
     }
     rows.sort_by(|left, right| {
@@ -278,4 +335,37 @@ pub fn retirement(prog: &Program) -> Vec<(String, Vec<String>)> {
     }
     out.sort();
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_decision_says_what_an_answer_would_look_like() {
+        let source = "\
+fact F_A { claim: \"a\", evidence: user }
+fact F_H { claim: \"h\", evidence: ? }
+hypothesis H_ONE { assumes: [F_A], predicts: \"one\", rival: H_TWO }
+hypothesis H_TWO { assumes: [F_A], predicts: \"two\", rival: H_ONE }
+question Q { asks: \"which?\", answers: [\"one\", \"two\"], separates: [H_ONE, H_TWO], to: experiment }
+";
+        let decls = tsare_lang::syntax::parse(source).expect("parses");
+        let rows = decisions(&Program::new(&decls));
+
+        let hole = rows
+            .iter()
+            .find(|row| row.label.contains("(hole)"))
+            .expect("the hole is a decision");
+        assert_eq!(hole.needs, "a value of type evidence");
+
+        let question = rows
+            .iter()
+            .find(|row| row.label.contains("(question)"))
+            .expect("the question is a decision");
+        assert_eq!(
+            question.needs, "an experiment that decides H_ONE vs H_TWO",
+            "the answer names the experiment and the hypotheses it separates"
+        );
+    }
 }

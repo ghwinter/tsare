@@ -65,7 +65,7 @@ answers `--json`.
 | `derive FILE` | which conclusions are grounded in facts | |
 | `debt FILE [--all]` | which facts transitively gate a conclusion | |
 | `impact FILE` | dead facts, single support, load-bearing nodes | |
-| `next FILE [--json]` | open decisions ranked by what they touch | yes |
+| `next FILE [--json]` | open decisions ranked by what they touch, each with `needs`: the type a hole wants, who answers a question and with which options, what a blind spot cannot express | yes |
 | `ask FILE [--json] [--one]` | the next question the document needs: a gap in a list, two facts nothing tells apart, or a concept whose examples look alike; `--one` gives the question that settles the most | yes |
 | `novel FILE --attribute N [--holds IDS]` | new, redundant, or a recombination: whether a proposed attribute is a distinction the recorded vocabulary already contains | |
 | `shape FILE [--top N] [--depth D] [--layers] [--against OTHER [--near N]] [--json]` | the forms declarations share, at a depth; `--layers` the forms that cross a layer, `--against` the forms two documents differ in, `--near` the closest unshared forms and how close they are | yes |
