@@ -120,3 +120,39 @@ fn the_extractor_says_what_it_did_not_read() {
     assert_eq!(status, 0, "{text}{err}");
     assert!(!text.contains("with tables and no definition"), "{text}");
 }
+
+#[test]
+fn a_quote_the_page_does_not_contain_is_a_compile_error() {
+    // The extraction is only a claim about the page if the checker can refuse it: the written
+    // document carries the page text and quotes the words, so a fabricated quote is an error and
+    // not a matter of opinion.  This is the property the whitepaper's R1 asks for.
+    let dir = std::env::temp_dir().join(format!("tsare-span-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).expect("temp dir");
+    let out = dir.join("pages.tsare");
+    let (text, err, status) = run(&[
+        "extract",
+        pages().to_str().expect("pages"),
+        "--terms-from",
+        pages()
+            .join("vocabulary.tsare")
+            .to_str()
+            .expect("vocabulary"),
+        "--write",
+        out.to_str().expect("out"),
+    ]);
+    assert_eq!(status, 0, "{text}{err}");
+    let written = std::fs::read_to_string(&out).expect("the written document");
+    assert!(written.contains("source: S_"), "{written}");
+    assert!(written.contains("quote: \"structure\""), "{written}");
+
+    let tampered = dir.join("tampered.tsare");
+    std::fs::write(
+        &tampered,
+        written.replace("quote: \"structure\"", "quote: \"not-on-the-page\""),
+    )
+    .expect("tampered");
+    let (text, _err, status) = run(&["check", tampered.to_str().expect("tampered")]);
+    assert_eq!(status, 1, "{text}");
+    assert!(text.contains("E-QUOTE"), "{text}");
+}

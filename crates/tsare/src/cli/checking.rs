@@ -50,6 +50,7 @@ pub(crate) fn cmd_extract(
     words.dedup();
     let terms: Vec<&str> = words.iter().map(String::as_str).collect();
     let mut found = Vec::new();
+    let mut page_texts: Vec<(String, String)> = Vec::new();
     let mut tables = 0;
     let mut rows = 0;
     let mut silent: Vec<String> = Vec::new();
@@ -59,6 +60,7 @@ pub(crate) fn cmd_extract(
             Err(error) => return fail(format!("{}: {error}", page.display())),
         };
         let (page_tables, page_rows) = crate::extract::tables(&text);
+        page_texts.push((page.display().to_string(), text.clone()));
         tables += page_tables;
         rows += page_rows;
         let definitions = crate::extract::definitions(&text, &page.display().to_string(), &terms);
@@ -72,7 +74,7 @@ pub(crate) fn cmd_extract(
         found.extend(definitions);
     }
     if let Some(out) = write {
-        return write_definitions(&found, Path::new(out));
+        return write_definitions(&page_texts, &found, Path::new(out));
     }
     if json {
         let items: Vec<J> = found
@@ -147,12 +149,38 @@ pub(crate) fn cmd_extract(
     Outcome::Ok
 }
 
-/// The same definitions as a document the checker can read: one fact per term, its evidence the
-/// page it was read from.  The extraction is a claim about the page, so the claim says what the
-/// page states and where -- never what the term means.
-pub(crate) fn write_definitions(found: &[crate::extract::Definition], out: &Path) -> Outcome {
+/// The same definitions as a document the checker can read: one fact per term, quoting the line of
+/// the page it was read from.
+///
+/// The page's own text is carried in a `source`, and every fact names that source and the words it
+/// quotes.  That is what makes the claim checkable rather than a label: `E-QUOTE` will fail if the
+/// quote is not in the page, so an extraction that invents a term cannot survive `check`.
+pub(crate) fn write_definitions(
+    pages: &[(String, String)],
+    found: &[crate::extract::Definition],
+    out: &Path,
+) -> Outcome {
     let escape = |text: &str| text.replace('\\', "\\\\").replace('"', "\\\"");
     let mut text = String::from("tsare 1\n");
+
+    let mut source_of: std::collections::HashMap<&str, String> = std::collections::HashMap::new();
+    for (index, (path, body)) in pages.iter().enumerate() {
+        if !found.iter().any(|item| item.file == *path) {
+            continue;
+        }
+        let name = format!("S_{:02}", index + 1);
+        let lines: Vec<String> = body
+            .lines()
+            .map(|line| format!("    \"{}\",", escape(&crate::extract::plain(line))))
+            .collect();
+        text.push_str(&format!(
+            "\n# the page itself, so the quotes below can be checked against it\nsource {name} {{\n  name: \"{}\",\n  text: [\n{}\n  ]\n}}\n",
+            escape(path),
+            lines.join("\n")
+        ));
+        source_of.insert(path.as_str(), name);
+    }
+
     for (index, item) in found.iter().enumerate() {
         let name = format!("D_{:04}", index + 1);
         let page = std::path::Path::new(&item.file)
@@ -162,14 +190,19 @@ pub(crate) fn write_definitions(found: &[crate::extract::Definition], out: &Path
         // a document that names a Windows path in its evidence is not portable, and the goldens
         // would differ between platforms
         let page_path = item.file.replace('\\', "/");
+        let source = source_of
+            .get(item.file.as_str())
+            .cloned()
+            .unwrap_or_default();
         text.push_str(&format!(
-            "\n# {page}:{} -- {}\nfact {name} {{\n  claim: \"{} defines 「{}」 under 「{}」\",\n  evidence: doc(\"{}\")\n}}\n",
+            "\n# {page}:{} -- {}\nfact {name} {{\n  claim: \"{} defines 「{}」 under 「{}」\",\n  evidence: doc(\"{}\"),\n  source: {source},\n  quote: \"{}\"\n}}\n",
             item.line,
             item.term,
             page,
             escape(&item.term),
             escape(&item.section),
-            escape(&page_path)
+            escape(&page_path),
+            escape(&item.term)
         ));
     }
     match fs::write(out, text) {

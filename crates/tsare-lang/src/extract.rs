@@ -102,6 +102,13 @@ fn unescape(fragment: &str) -> String {
         .replace("&nbsp;", " ")
 }
 
+/// The text a reader sees on one line: tags removed, entities resolved.  A quote has to be checked
+/// against this and not against the markup: `生长通道</strong>（横切）` is one word to the reader
+/// and two to the file.
+pub fn plain(fragment: &str) -> String {
+    text_of(fragment)
+}
+
 fn text_of(fragment: &str) -> String {
     let mut out = String::new();
     let mut inside = false;
