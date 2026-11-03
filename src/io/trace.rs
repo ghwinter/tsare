@@ -18,11 +18,19 @@ pub const FORMAT: &str = "tsare-trace 3";
 /// A trace larger than this is a corpus, not a document.
 const MAX_LEDGER: usize = 1 << 20;
 
-/// The commands a run records, in order, with the flags their report is compared on.
+/// The commands `trace` records on its own.
+const RUN_STEPS: &[(&str, &[&str])] = &[
+    ("check", &["--json"]),
+    ("ask", &["--one"]),
+    ("decide", &["--json"]),
+];
+
+/// Every command a recorded step may name: `status` steps come from `status --trace`.
 const STEPS: &[(&str, &[&str])] = &[
     ("check", &["--json"]),
     ("ask", &["--one"]),
     ("decide", &["--json"]),
+    ("status", &["--json"]),
 ];
 
 /// One command in a run: what was run, the exact report, and the status.
@@ -194,7 +202,7 @@ pub fn record(path: &Path) -> Result<Run, String> {
     let exe =
         std::env::current_exe().map_err(|error| format!("cannot find the checker: {error}"))?;
     let mut steps = Vec::new();
-    for &(command, flags) in STEPS {
+    for &(command, flags) in RUN_STEPS {
         let output = spawn(&exe, command, flags, path)?;
         let status = output.status.code().unwrap_or(-1);
         let report = normalize(&String::from_utf8_lossy(&output.stdout), path);
@@ -205,6 +213,24 @@ pub fn record(path: &Path) -> Result<Run, String> {
         });
     }
     Ok(Run::new(&ledger, steps))
+}
+
+/// Append one run to a trace file, creating it when it does not exist.
+pub fn append(file: &Path, run: Run) -> Result<Trace, String> {
+    let text = match fs::read_to_string(file) {
+        Ok(text) => text,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => String::new(),
+        Err(error) => return Err(format!("{}: {error}", file.display())),
+    };
+    let trace = if text.trim().is_empty() {
+        Trace::new(run)
+    } else {
+        let mut trace = Trace::parse(&text)?;
+        trace.push(run);
+        trace
+    };
+    fs::write(file, trace.to_json()).map_err(|error| format!("{}: {error}", file.display()))?;
+    Ok(trace)
 }
 
 /// Re-run every run in order and compare.  The first difference names the run and the step.

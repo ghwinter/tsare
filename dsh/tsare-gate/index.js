@@ -31,8 +31,7 @@
  *   command            argv override for tests and wrappers; replaces [binary, check, ledger, --json]
  *   statusCommand      argv override for the brief's call (default [binary, status, ledger, --json])
  *   decideCommand      argv override for the decision call at turn stopping (default [binary, decide, ledger, --json])
- *   traceFile          when set, append one trace run per turn to this path (default null: no trace)
- *   traceCommand       argv override for that call (default [binary, trace, ledger, --append, traceFile])
+ *   traceFile          when set, the brief's status call appends one trace run per ledger change
  *   debug              append one line per hook to <tmp>/tsare-gate.log (default false)
  */
 
@@ -67,7 +66,6 @@ const DEFAULTS = {
   statusCommand: null,
   decideCommand: null,
   traceFile: null,
-  traceCommand: null,
   debug: false,
 }
 
@@ -215,9 +213,10 @@ async function checkLedger(config, cwd) {
 
 /** The status report, or the sentence that says why there is none.  The brief is one call. */
 async function statusLedger(config, cwd) {
-  const argv =
+  const base =
     config.statusCommand ?? (config.command ? null : [config.binary, 'status', config.ledger, '--json'])
-  if (!argv) return null
+  if (!base) return null
+  const argv = config.traceFile ? [...base, '--trace', config.traceFile] : base
   const { error, stdout, stderr } = await run(argv, config, cwd)
   let report = null
   try {
@@ -553,15 +552,6 @@ export function apply(ctx, raw) {
     void refreshBrief(agent)
     const verdict = await checkLedger(config, cwdOf(agent))
     trace(`turn-stopping status=${verdict.status}`)
-    // G1: the write→check→write-back loop is replayable only if it is recorded.  One trace run per
-    // turn when the config asks for it; the trace command re-runs check/ask/decide, so this is
-    // opt-in and costs one extra child.
-    if (config.traceFile) {
-      const argv =
-        config.traceCommand ?? [config.binary, 'trace', config.ledger, '--append', config.traceFile]
-      const { error } = await run(argv, config, cwdOf(agent))
-      trace(`turn-stopping trace error=${error ? error.message : 'none'}`)
-    }
     if (verdict.status === 'ok') {
       if (config.level === 'gate') {
         const decided = await decideLedger(config, cwdOf(agent))

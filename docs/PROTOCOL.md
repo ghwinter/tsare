@@ -54,7 +54,7 @@ answers `--json`.
 | command | what it answers | JSON |
 | --- | --- | --- |
 | `check FILE\|DIR` | which declarations are well formed; `--goals`, `--sugar`, `--cache`, `--against OTHER`, `--strict` | yes |
-| `status FILE [--json]` | one line: the decision, the epistemic counts, and the next question; the JSON also carries the first debt and the claim count; errors exit 1 | yes |
+| `status FILE [--json] [--trace FILE]` | one line: the decision, the epistemic counts, and the next question; the JSON also carries the first debt and the claim count; `--trace` appends the report as a replayable run; errors exit 1 | yes |
 | `provenance FILE [--json]` | where each quoted claim sits in its source: the source, the line and the column | yes |
 | `engine FILE\|DIR` | held, conditional, blocked, chains, gates | yes |
 | `argue FILE [--against OTHER]` | which conclusions survive attack; with `--against`, the attack graph is the merge | |
@@ -87,7 +87,7 @@ answers `--json`.
 | `egraph FILE [--write]` | equivalent declarations merged, references rewritten | |
 | `cat FILE` | the pipeline read as a category, and which functors hold | |
 | `project DIR` | a directory checked as one program, grouped by file | |
-| `trace FILE [--out FILE \| --append FILE]` | one run, or a session of runs appended; each run embeds the ledger, its hash, and `check`, `ask` and `decide` with their reports and statuses | yes |
+| `trace FILE [--out FILE \| --append FILE]` | one run, or a session of runs appended; each run embeds the ledger, its hash, and the steps — `check`, `ask` and `decide`, or one `status` step from `status --trace` — with their reports and statuses | yes |
 | `replay TRACE [--diff]` | re-run every run in order and compare byte for byte; `--diff` names the lines each run wrote back; `match` or the first difference, naming the run and the step | |
 | `grow LIBRARY SOURCE NAME --out FILE` | copy one declaration and a content-addressed entry note into a library, keeping it only if the grown document has no error | |
 | `fix FILE [--apply]` | verified repair candidates, and applying them | |

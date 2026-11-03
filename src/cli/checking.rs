@@ -294,28 +294,10 @@ pub(crate) fn cmd_trace(path: &Path, out: Option<&str>, append: Option<&str>) ->
         Err(error) => return fail(error),
     };
     if let Some(file) = append {
-        let text = match fs::read_to_string(file) {
-            Ok(text) => text,
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => String::new(),
-            Err(error) => return fail(format!("{file}: {error}")),
+        let trace = match crate::trace::append(Path::new(file), run) {
+            Ok(trace) => trace,
+            Err(error) => return fail(error),
         };
-        let trace = if text.trim().is_empty() {
-            crate::trace::Trace::new(run)
-        } else {
-            match crate::trace::Trace::parse(&text) {
-                Ok(mut trace) => {
-                    trace.push(run);
-                    trace
-                }
-                Err(error) => {
-                    println!("not a tsare trace: {error}");
-                    return 2;
-                }
-            }
-        };
-        if let Err(error) = fs::write(file, trace.to_json()) {
-            return fail(format!("{file}: {error}"));
-        }
         print_trace_summary(&trace, file, true);
         return 0;
     }
@@ -400,7 +382,7 @@ pub(crate) fn cmd_replay(path: &Path, diff: bool) -> i32 {
 
 /// The loop's one line: the decision, the epistemic counts, and the next question.  Errors decide
 /// the exit code; warnings are reported but do not.
-pub(crate) fn cmd_status(path: &Path, json: bool) -> i32 {
+pub(crate) fn cmd_status(path: &Path, json: bool, trace: Option<&str>) -> i32 {
     let loaded = match load(path) {
         Ok(loaded) => loaded,
         Err(error) => return fail(error),
@@ -430,56 +412,69 @@ pub(crate) fn cmd_status(path: &Path, json: bool) -> i32 {
         .into_iter()
         .next()
         .map(|item| item.question);
+    let first = match diagnostics.first() {
+        Some(item) => J::Obj(vec![
+            ("code".to_string(), J::Str(item.code.to_string())),
+            (
+                "name".to_string(),
+                J::Str(item.witness.clone().unwrap_or_default()),
+            ),
+            ("message".to_string(), J::Str(item.message.clone())),
+        ]),
+        None => J::Null,
+    };
+    let debt = match verdict.items.first() {
+        Some(item) => J::Obj(vec![
+            ("name".to_string(), J::Str(item.name.clone())),
+            ("kind".to_string(), J::Str(item.kind.clone())),
+            ("reason".to_string(), J::Str(item.reason.to_string())),
+        ]),
+        None => J::Null,
+    };
+    let value = J::Obj(vec![
+        (
+            "decision".to_string(),
+            J::Str(verdict.decision.label().to_string()),
+        ),
+        ("verified".to_string(), J::Num(verified as f64)),
+        ("inferred".to_string(), J::Num(inferred as f64)),
+        ("unverified".to_string(), J::Num(unverified as f64)),
+        ("errors".to_string(), J::Num(errors as f64)),
+        ("warnings".to_string(), J::Num(warnings as f64)),
+        (
+            "question".to_string(),
+            match &question {
+                Some(text) => J::Str(text.clone()),
+                None => J::Null,
+            },
+        ),
+        ("first".to_string(), first),
+        ("claims".to_string(), J::Num(loaded.decls.len() as f64)),
+        ("debt".to_string(), debt),
+    ]);
+    let report = format!("{}\n", crate::json::serialize(&value));
     if json {
-        let first = match diagnostics.first() {
-            Some(item) => J::Obj(vec![
-                ("code".to_string(), J::Str(item.code.to_string())),
-                (
-                    "name".to_string(),
-                    J::Str(item.witness.clone().unwrap_or_default()),
-                ),
-                ("message".to_string(), J::Str(item.message.clone())),
-            ]),
-            None => J::Null,
+        print!("{report}");
+    } else {
+        println!("{}", crate::status::line(&loaded.decls));
+    }
+    if let Some(file) = trace {
+        let status = if errors > 0 { 1 } else { 0 };
+        let step = crate::trace::Step {
+            command: "status".to_string(),
+            status,
+            report: report.clone(),
         };
-        let debt = match verdict.items.first() {
-            Some(item) => J::Obj(vec![
-                ("name".to_string(), J::Str(item.name.clone())),
-                ("kind".to_string(), J::Str(item.kind.clone())),
-                ("reason".to_string(), J::Str(item.reason.to_string())),
-            ]),
-            None => J::Null,
-        };
-        let value = J::Obj(vec![
-            (
-                "decision".to_string(),
-                J::Str(verdict.decision.label().to_string()),
-            ),
-            ("verified".to_string(), J::Num(verified as f64)),
-            ("inferred".to_string(), J::Num(inferred as f64)),
-            ("unverified".to_string(), J::Num(unverified as f64)),
-            ("errors".to_string(), J::Num(errors as f64)),
-            ("warnings".to_string(), J::Num(warnings as f64)),
-            (
-                "question".to_string(),
-                match &question {
-                    Some(text) => J::Str(text.clone()),
-                    None => J::Null,
-                },
-            ),
-            ("first".to_string(), first),
-            ("claims".to_string(), J::Num(loaded.decls.len() as f64)),
-            ("debt".to_string(), debt),
-        ]);
-        println!("{}", crate::json::serialize(&value));
-        return if errors > 0 { 1 } else { 0 };
+        let run = crate::trace::Run::new(&loaded.text, vec![step]);
+        if let Err(error) = crate::trace::append(Path::new(file), run) {
+            eprintln!("trace: {error}");
+        }
     }
     if errors > 0 {
-        println!("{}", crate::status::line(&loaded.decls));
-        return 1;
+        1
+    } else {
+        0
     }
-    println!("{}", crate::status::line(&loaded.decls));
-    0
 }
 
 /// Where each quoted claim sits in its source: the source, the line and the column.

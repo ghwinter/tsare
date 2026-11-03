@@ -36,17 +36,16 @@ if (args[0] === 'status') {
     report.unverified = 0
     report.first = { code: 'E-MISSING', name: 'F_X', message: 'F_X needs evidence' }
   }
+  const traceAt = args.indexOf('--trace')
+  if (traceAt >= 0) {
+    try {
+      appendFileSync(args[traceAt + 1], 'run\n')
+    } catch {
+      // the fake cannot promise the caller's file either
+    }
+  }
   process.stdout.write(`${JSON.stringify(report)}\n`)
   process.exit(report.errors > 0 ? 1 : 0)
-}
-
-if (args[0] === 'trace') {
-  try {
-    appendFileSync(args[args.length - 1], 'run\n')
-  } catch {
-    // the fake cannot promise the caller's file either
-  }
-  process.exit(0)
 }
 
 if (args[0] === 'decide') {

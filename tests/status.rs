@@ -62,3 +62,34 @@ fn the_json_view_carries_the_same_fields() {
     assert!(out.contains("\"claims\""), "{out}");
     assert!(out.contains("\"debt\""), "{out}");
 }
+
+#[test]
+fn status_appends_a_replayable_run() {
+    let dir = work("trace");
+    let path = dir.join("doc.tsare");
+    fs::write(&path, "tsare 1\nfact F { claim: \"x\", evidence: user }\n").expect("ledger");
+    let trace = dir.join("session.trace.json");
+    let (out, err, status) = run(&[
+        "status",
+        path.to_str().expect("path"),
+        "--json",
+        "--trace",
+        trace.to_str().expect("trace path"),
+    ]);
+    assert_eq!(status, 0, "{out}{err}");
+    let text = fs::read_to_string(&trace).expect("trace");
+    assert!(text.contains("\"command\":\"status\""), "{text}");
+    let (out, err, status) = run(&["replay", trace.to_str().expect("trace path")]);
+    assert_eq!(status, 0, "{out}{err}");
+    assert_eq!(out, "match\n");
+    let (_, _, status) = run(&[
+        "status",
+        path.to_str().expect("path"),
+        "--trace",
+        trace.to_str().expect("trace path"),
+    ]);
+    assert_eq!(status, 0);
+    let (out, _, status) = run(&["replay", trace.to_str().expect("trace path")]);
+    assert_eq!(status, 0, "{out}");
+    assert_eq!(out, "match\n");
+}

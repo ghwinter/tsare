@@ -239,7 +239,7 @@ const HIDDEN: &[&str] = &["mcp"];
 
 const COMMANDS: &[Command] = &[
         Command("checking", "check", "check PATH [--json] [--goals F] [--sugar] [--cache] [--against OTHER] [--strict]   parse and check (the default)"),
-        Command("checking", "status", "status PATH [--json]         the decision, the epistemic counts and the next question"),
+        Command("checking", "status", "status PATH [--json] [--trace FILE]   the decision, the counts and the next question"),
         Command("checking", "provenance", "provenance PATH [--json]    where each quoted claim sits in its source"),
         Command("checking", "project", "project DIR                                          the same, grouped by file"),
         Command("checking", "trace", "trace PATH [--out FILE | --append FILE]   one run, or append it to a session"),
@@ -336,6 +336,7 @@ const VALUE_FLAGS: &[&str] = &[
     "--threshold",
     "--out",
     "--append",
+    "--trace",
     "--goals",
     "--k",
     "--proposals",
@@ -532,7 +533,7 @@ pub fn run() -> i32 {
             args.has("--strict"),
         ),
         "engine" => cmd_engine(&path, args.has("--json")),
-        "status" => cmd_status(&path, args.has("--json")),
+        "status" => cmd_status(&path, args.has("--json"), args.option("--trace")),
         "provenance" => cmd_provenance(&path, args.has("--json")),
         "trace" => cmd_trace(&path, args.option("--out"), args.option("--append")),
         "replay" => cmd_replay(&path, args.has("--diff")),

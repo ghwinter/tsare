@@ -309,24 +309,19 @@ await ctx.fire('tools/post-execute', { name: 'read', arguments: {}, agent })
 const view = contexts[0].text()
 assert.match(view, /closed; 1 verified, 1 inferred, 2 unverified/, view)
 
-// 22. an enabled trace file records one run per turn
+// 22. the brief's status call appends a trace run when a trace file is set
 const liveCtx = context()
 const traceFile = join(dir, 'live.trace.json')
 apply(liveCtx, {
   command,
   statusCommand,
-  traceCommand: [process.execPath, fake, 'trace', '.tsare/session.tsare', '--append', traceFile],
   traceFile,
   level: 'steer',
 })
 const liveAgent = makeAgent()
 await liveCtx.fire('agent/created', { agent: liveAgent })
 writeFileSync(ledger, clean)
-await liveCtx.fire('agent/turn-stopping', {
-  agent: liveAgent,
-  turn: 1,
-  signal: new AbortController().signal,
-})
-assert.match(readFileSync(traceFile, 'utf8'), /run/, 'the trace file must record the turn')
+await liveCtx.fire('tools/post-execute', { name: 'read', arguments: {}, agent: liveAgent })
+assert.match(readFileSync(traceFile, 'utf8'), /run/, 'the trace file must record the brief refresh')
 
 console.log('tsare-gate selftest: 22 checks passed')
