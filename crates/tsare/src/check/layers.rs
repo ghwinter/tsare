@@ -57,7 +57,7 @@ pub(crate) fn check_tension(decls: &[Decl], out: &mut Vec<Diagnostic>) {
 pub(crate) fn check_refinements(decls: &[Decl], out: &mut Vec<Diagnostic>) {
     // A retired law still resolves and no longer holds a position, so it cannot be the signatory
     // that makes a refinement honest.
-    let gone = crate::closure::retired(decls);
+    let gone = tsare_lang::program::retired(decls);
     let refiners: Vec<&Decl> = decls
         .iter()
         .filter(|decl| {

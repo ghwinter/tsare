@@ -43,7 +43,7 @@ pub struct Row {
 
 /// Every conclusion in the document, in declaration order.
 pub fn report(decls: &[Decl]) -> Vec<Row> {
-    let gone = closure::retired(decls);
+    let gone = tsare_lang::program::retired(decls);
     let concluded: HashMap<String, String> = closure::applications(decls)
         .into_iter()
         .filter(|rule| !gone.contains(&rule.warrant))

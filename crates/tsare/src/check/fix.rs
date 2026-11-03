@@ -260,7 +260,7 @@ pub fn candidates(decls: &[Decl]) -> Vec<(String, Vec<Decl>)> {
     let warranted: HashSet<String> = decls
         .iter()
         .filter(|decl| decl.kind == "warrant")
-        .flat_map(|decl| crate::closure::field_ids(decl, "to"))
+        .flat_map(|decl| tsare_lang::program::f_ids(decl, "to"))
         .collect();
 
     // a duplicate name is the one repair a machine can make without guessing meaning:
@@ -326,7 +326,7 @@ pub fn candidates(decls: &[Decl]) -> Vec<(String, Vec<Decl>)> {
             }
         }
         if decl.kind == "proposition"
-            && !crate::closure::field_ids(decl, "from").is_empty()
+            && !tsare_lang::program::f_ids(decl, "from").is_empty()
             && !warranted.contains(&decl.name)
         {
             out.push((
@@ -392,7 +392,7 @@ pub fn verified(decls: &[Decl]) -> (Vec<Verified>, (usize, usize)) {
 }
 
 fn add_warrant(decls: &[Decl], proposition: &Decl) -> Vec<Decl> {
-    let premises = crate::closure::field_ids(proposition, "from");
+    let premises = tsare_lang::program::f_ids(proposition, "from");
     let mut copy = proposition.clone();
     copy.kind = "warrant".to_string();
     copy.name = format!("W_AUTO_{}", proposition.name);
@@ -437,12 +437,12 @@ pub fn suggestions(decls: &[Decl]) -> Vec<Suggestion> {
     let warranted: std::collections::HashSet<String> = decls
         .iter()
         .filter(|decl| decl.kind == "warrant")
-        .flat_map(|decl| crate::closure::field_ids(decl, "to"))
+        .flat_map(|decl| tsare_lang::program::f_ids(decl, "to"))
         .collect();
 
     for decl in decls {
         if decl.kind == "proposition"
-            && !crate::closure::field_ids(decl, "from").is_empty()
+            && !tsare_lang::program::f_ids(decl, "from").is_empty()
             && !warranted.contains(&decl.name)
         {
             let trial = add_warrant(decls, decl);

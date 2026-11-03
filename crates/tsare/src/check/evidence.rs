@@ -8,8 +8,8 @@
 //! they are all failures of the accounting.
 
 use super::{id_field, ids, list_field, sem, string_field, Diagnostic, REF_KEYS};
-use crate::closure::field_ids;
 use crate::syntax::{Decl, Val};
+use tsare_lang::program::f_ids;
 
 /// The seven checks, in the order a reader would ask the questions.
 pub(crate) fn check(decls: &[Decl], out: &mut Vec<Diagnostic>) {
@@ -34,7 +34,7 @@ fn check_requirements(decls: &[Decl], out: &mut Vec<Diagnostic>) {
         .collect();
     for decl in decls.iter().filter(|decl| decl.kind != "law") {
         for key in ["from", "basis", "checked_by"] {
-            for cited in field_ids(decl, key) {
+            for cited in f_ids(decl, key) {
                 let Some(law) = laws.get(cited.as_str()) else {
                     continue;
                 };
@@ -337,9 +337,9 @@ fn check_bare_numbers(decls: &[Decl], out: &mut Vec<Diagnostic>) {
         if !states_a_quantity(text) {
             continue;
         }
-        let cited: std::collections::HashSet<String> = field_ids(decl, "from")
+        let cited: std::collections::HashSet<String> = f_ids(decl, "from")
             .into_iter()
-            .chain(field_ids(decl, "basis"))
+            .chain(f_ids(decl, "basis"))
             .collect();
         if cited.iter().any(|name| measured.contains(name.as_str())) {
             continue;
@@ -488,7 +488,7 @@ fn check_retirement(decls: &[Decl], out: &mut Vec<Diagnostic>) {
             out,
         );
     }
-    let gone = crate::closure::retired(decls);
+    let gone = tsare_lang::program::retired(decls);
     if gone.is_empty() {
         return;
     }

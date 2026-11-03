@@ -43,7 +43,7 @@ pub fn check(kernel: &[Decl], target: &[Decl]) -> Vec<Diagnostic> {
     // laws the kernel holds in each governed layer.  A retired law is not one of them: `supersedes`
     // inside the kernel used to be a no-op here, so a target could stand on a principle the kernel
     // had withdrawn and still read as licensed.
-    let gone = crate::closure::retired(kernel);
+    let gone = tsare_lang::program::retired(kernel);
     let mut governed: HashMap<&str, Vec<&str>> = HashMap::new();
     for law in kernel
         .iter()

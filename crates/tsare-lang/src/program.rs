@@ -478,3 +478,11 @@ pub fn applications(decls: &[Decl]) -> Vec<Rule> {
     }
     out
 }
+
+/// The declarations a supersedes list retires: the names a later declaration replaces.
+pub fn retired(decls: &[Decl]) -> std::collections::HashSet<String> {
+    decls
+        .iter()
+        .flat_map(|decl| f_ids(decl, "supersedes"))
+        .collect()
+}

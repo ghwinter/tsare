@@ -54,7 +54,7 @@ pub fn decide(decls: &[Decl]) -> Decision {
 
 /// Every declaration that still owes a witness, in document order.
 pub fn report(decls: &[Decl]) -> Verdict {
-    let gone = closure::retired(decls);
+    let gone = tsare_lang::program::retired(decls);
     let concluded: HashSet<String> = closure::applications(decls)
         .into_iter()
         .filter(|rule| !gone.contains(&rule.warrant))
