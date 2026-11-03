@@ -65,7 +65,22 @@ pub const COMMANDS: &[Command] = &[
                 out,
             )
         } } },
-    Command { group: "reasoning", name: "engine", usage: "engine PATH [--json]         held, conditional, blocked, chains, gates", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_engine(path, args.has("--json")) } },
+    Command { group: "reasoning", name: "route", usage: "route PATH --goal TEXT          (prototype) which command reads this document for the goal", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); {
+            let Some(goal) = args.option("--goal") else {
+                println!("usage: tsare route FILE --goal TEXT");
+                return Outcome::Usage;
+            };
+            cmd_route(path, goal)
+        } } },
+    Command { group: "reasoning", name: "sat", usage: "sat PATH                        (prototype) whether every fact, rule and attack can hold at once", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_sat(path) } },
+    Command { group: "reasoning", name: "causal", usage: "causal PATH --do NAME           (prototype) what follows when a value is set rather than observed", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); {
+            let Some(name) = args.option("--do") else {
+                println!("usage: tsare causal FILE --do NAME");
+                return Outcome::Usage;
+            };
+            cmd_causal(path, name)
+        } } },
+    Command { group: "reasoning", name: "similar", usage: "similar PATH [--top N]          (prototype) which declarations are near each other in their own words", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_similar(path, args.option("--top").and_then(|value| value.parse().ok()).unwrap_or(5)) } },    Command { group: "reasoning", name: "engine", usage: "engine PATH [--json]         held, conditional, blocked, chains, gates", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_engine(path, args.has("--json")) } },
     Command { group: "reasoning", name: "arrows", usage: "arrows PATH [--json]         the relations the document states, with kinds and spans", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_arrows(path, args.has("--json")) } },
     Command { group: "reasoning", name: "argue", usage: "argue PATH [--against OTHER] [--json]   which conclusions survive attack", needs_target: true, run: |path: &Path, args: &Args| { let _ = (path, args); cmd_argue(
             path,

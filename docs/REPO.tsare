@@ -159,7 +159,7 @@ hypothesis H_KEEP_PROSE {
 
 layer L_COMMANDS {
   name: "the commands this build dispatches",
-  exposes: [F_CMD_ABSTRACT, F_CMD_APPLY, F_CMD_ARGUE, F_CMD_ARROWS, F_CMD_ASK, F_CMD_ASSUMPTIONS, F_CMD_AUDIT, F_CMD_BLAME, F_CMD_BUILD, F_CMD_CAT, F_CMD_CHAIN, F_CMD_CHAINS, F_CMD_CHECK, F_CMD_CONFRONT, F_CMD_CONTRACTS, F_CMD_COST, F_CMD_DEBT, F_CMD_DECIDE, F_CMD_DELTA, F_CMD_DERIVE, F_CMD_DIFF, F_CMD_EGRAPH, F_CMD_ENGINE, F_CMD_EPISTEMIC, F_CMD_EXTRACT, F_CMD_FCA, F_CMD_FIX, F_CMD_FMT, F_CMD_GRAPH, F_CMD_GROW, F_CMD_HINT, F_CMD_IMPACT, F_CMD_IMPLY, F_CMD_INDUCE, F_CMD_INVENTORY, F_CMD_KINDS, F_CMD_LIBRARY, F_CMD_LOG, F_CMD_MAP, F_CMD_MCP, F_CMD_MEET, F_CMD_MEM, F_CMD_MERGE, F_CMD_MOVES, F_CMD_NEXT, F_CMD_NOVEL, F_CMD_OUTLINE, F_CMD_PATTERN, F_CMD_PROJECT, F_CMD_PROPOSE, F_CMD_PROVENANCE, F_CMD_REPLAY, F_CMD_RESTORE, F_CMD_RETRACT, F_CMD_SAVE, F_CMD_SHAPE, F_CMD_STATUS, F_CMD_SUGGEST, F_CMD_TRACE, F_CMD_VIEWS, F_CMD_WEIGH, F_CMD_WHATIF]
+  exposes: [F_CMD_ABSTRACT, F_CMD_APPLY, F_CMD_ARGUE, F_CMD_ARROWS, F_CMD_ASK, F_CMD_ASSUMPTIONS, F_CMD_AUDIT, F_CMD_BLAME, F_CMD_BUILD, F_CMD_CAT, F_CMD_CAUSAL, F_CMD_CHAIN, F_CMD_CHAINS, F_CMD_CHECK, F_CMD_CONFRONT, F_CMD_CONTRACTS, F_CMD_COST, F_CMD_DEBT, F_CMD_DECIDE, F_CMD_DELTA, F_CMD_DERIVE, F_CMD_DIFF, F_CMD_EGRAPH, F_CMD_ENGINE, F_CMD_EPISTEMIC, F_CMD_EXTRACT, F_CMD_FCA, F_CMD_FIX, F_CMD_FMT, F_CMD_GRAPH, F_CMD_GROW, F_CMD_HINT, F_CMD_IMPACT, F_CMD_IMPLY, F_CMD_INDUCE, F_CMD_INVENTORY, F_CMD_KINDS, F_CMD_LIBRARY, F_CMD_LOG, F_CMD_MAP, F_CMD_MCP, F_CMD_MEET, F_CMD_MEM, F_CMD_MERGE, F_CMD_MOVES, F_CMD_NEXT, F_CMD_NOVEL, F_CMD_OUTLINE, F_CMD_PATTERN, F_CMD_PROJECT, F_CMD_PROPOSE, F_CMD_PROVENANCE, F_CMD_REPLAY, F_CMD_RESTORE, F_CMD_RETRACT, F_CMD_ROUTE, F_CMD_SAT, F_CMD_SAVE, F_CMD_SHAPE, F_CMD_SIMILAR, F_CMD_STATUS, F_CMD_SUGGEST, F_CMD_TRACE, F_CMD_VIEWS, F_CMD_WEIGH, F_CMD_WHATIF]
 }
 fact F_CMD_ABSTRACT { claim: "the build dispatches the command `abstract`", evidence: tool("tsare --help"), layer: L_COMMANDS }
 fact F_CMD_APPLY { claim: "the build dispatches the command `apply`", evidence: tool("tsare --help"), layer: L_COMMANDS }
@@ -171,6 +171,7 @@ fact F_CMD_AUDIT { claim: "the build dispatches the command `audit`", evidence: 
 fact F_CMD_BLAME { claim: "the build dispatches the command `blame`", evidence: tool("tsare --help"), layer: L_COMMANDS }
 fact F_CMD_BUILD { claim: "the build dispatches the command `build`", evidence: tool("tsare --help"), layer: L_COMMANDS }
 fact F_CMD_CAT { claim: "the build dispatches the command `cat`", evidence: tool("tsare --help"), layer: L_COMMANDS }
+fact F_CMD_CAUSAL { claim: "the build dispatches the command `causal`", evidence: tool("tsare --help"), layer: L_COMMANDS }
 fact F_CMD_CHAIN { claim: "the build dispatches the command `chain`", evidence: tool("tsare --help"), layer: L_COMMANDS }
 fact F_CMD_CHAINS { claim: "the build dispatches the command `chains`", evidence: tool("tsare --help"), layer: L_COMMANDS }
 fact F_CMD_CHECK { claim: "the build dispatches the command `check`", evidence: tool("tsare --help"), layer: L_COMMANDS }
@@ -215,8 +216,11 @@ fact F_CMD_PROVENANCE { claim: "the build dispatches the command `provenance`", 
 fact F_CMD_REPLAY { claim: "the build dispatches the command `replay`", evidence: tool("tsare --help"), layer: L_COMMANDS }
 fact F_CMD_RESTORE { claim: "the build dispatches the command `restore`", evidence: tool("tsare --help"), layer: L_COMMANDS }
 fact F_CMD_RETRACT { claim: "the build dispatches the command `retract`", evidence: tool("tsare --help"), layer: L_COMMANDS }
+fact F_CMD_ROUTE { claim: "the build dispatches the command `route`", evidence: tool("tsare --help"), layer: L_COMMANDS }
+fact F_CMD_SAT { claim: "the build dispatches the command `sat`", evidence: tool("tsare --help"), layer: L_COMMANDS }
 fact F_CMD_SAVE { claim: "the build dispatches the command `save`", evidence: tool("tsare --help"), layer: L_COMMANDS }
 fact F_CMD_SHAPE { claim: "the build dispatches the command `shape`", evidence: tool("tsare --help"), layer: L_COMMANDS }
+fact F_CMD_SIMILAR { claim: "the build dispatches the command `similar`", evidence: tool("tsare --help"), layer: L_COMMANDS }
 fact F_CMD_STATUS { claim: "the build dispatches the command `status`", evidence: tool("tsare --help"), layer: L_COMMANDS }
 fact F_CMD_SUGGEST { claim: "the build dispatches the command `suggest`", evidence: tool("tsare --help"), layer: L_COMMANDS }
 fact F_CMD_TRACE { claim: "the build dispatches the command `trace`", evidence: tool("tsare --help"), layer: L_COMMANDS }

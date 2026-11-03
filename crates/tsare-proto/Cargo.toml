@@ -1,0 +1,14 @@
+[package]
+name = "tsare-proto"
+version = "0.4.0"
+edition = "2021"
+rust-version = "1.85"
+description = "Prototypes: a router, a satisfiability check, an intervention, a similarity index.  Not part of the trusted base."
+license = "MIT"
+repository = "https://github.com/ghwinter/tsare"
+
+[dependencies]
+tsare-lang = { path = "../tsare-lang" }
+
+[lints]
+workspace = true

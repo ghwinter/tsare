@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/tsare", "crates/tsare-core", "crates/tsare-state", "crates/tsare-util", "crates/tsare-lang"]
+members = ["crates/tsare", "crates/tsare-core", "crates/tsare-state", "crates/tsare-util", "crates/tsare-lang", "crates/tsare-proto"]
 resolver = "2"
 
 [workspace.lints.rust]

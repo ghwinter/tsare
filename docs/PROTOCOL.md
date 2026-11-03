@@ -87,6 +87,10 @@ answers `--json`.
 | `diff BEFORE AFTER [--json]` | what changed between two ledgers: declarations added, removed, or changed by kind or field; 0 same, 1 changed, 2 cannot load | yes |
 | `merge BASE OURS THEIRS --out FILE [--json]` | a structural three-way merge by declaration and field; 0 merged, 1 conflict (nothing written), 2 cannot load | yes |
 | `whatif FILE NAME` | what falls when one assumption is removed | |
+| `route FILE --goal TEXT` | (prototype) which commands speak to a goal, ranked by shared words and by the kinds the document holds | |
+| `sat FILE` | (prototype) whether every fact, rule and attack can hold at once; when not, a deletion-shrunk core | |
+| `causal FILE --do NAME` | (prototype) what follows when a value is set rather than observed: the edges into it are cut, its consequences still fire | |
+| `similar FILE [--top N]` | (prototype) the nearest declaration pairs by term-frequency cosine, with the words they share | |
 | `graph FILE [--out]` | the typed relation net as Mermaid | |
 | `views FILE [--as VIEW] [--check] [--json]` | the same document as five typed projections: tree, graph, hypergraph, matrix (facts × attrs) and logic; each declares what it preserves and loses, and `--check` reads every view back to the IR | yes |
 | `map LEFT RIGHT` | structure mapping between two documents | |

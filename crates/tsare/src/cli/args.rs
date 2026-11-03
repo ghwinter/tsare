@@ -37,6 +37,8 @@ const VALUE_FLAGS: &[&str] = &[
     "--fixtures",
     "--write",
     "--verify",
+    "--goal",
+    "--do",
 ];
 
 /// Options that take no value.  An option in neither list is a usage error: a silently ignored

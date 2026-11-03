@@ -34,4 +34,5 @@ tsare-analyses = { path = "../tsare-analyses" }
 tsare-emit = { path = "../tsare-emit" }
 tsare-infer = { path = "../tsare-infer" }
 tsare-lang = { path = "../tsare-lang" }
+tsare-proto = { path = "../tsare-proto" }
 tsare-util = { path = "../tsare-util" }

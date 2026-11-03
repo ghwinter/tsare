@@ -161,6 +161,30 @@ pub const CONTRACTS: &[Contract] = &[
         effect: Effect::Read,
     },
     Contract {
+        name: "route",
+        input: "file",
+        output: "commands",
+        effect: Effect::Read,
+    },
+    Contract {
+        name: "sat",
+        input: "file",
+        output: "answer",
+        effect: Effect::Read,
+    },
+    Contract {
+        name: "causal",
+        input: "file",
+        output: "effect",
+        effect: Effect::Read,
+    },
+    Contract {
+        name: "similar",
+        input: "file",
+        output: "pairs",
+        effect: Effect::Read,
+    },
+    Contract {
         name: "extract",
         input: "file",
         output: "definitions",

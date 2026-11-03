@@ -93,6 +93,8 @@ pub fn run() -> i32 {
 mod args;
 mod help;
 mod inventory;
+mod prototype;
+use prototype::{cmd_causal, cmd_route, cmd_sat, cmd_similar};
 mod registry;
 mod support;
 
