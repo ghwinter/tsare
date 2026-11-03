@@ -8,6 +8,10 @@ All notable changes are recorded here. The format follows
 
 ### Added
 
+- `views FILE [--json]`: the same document as five typed projections — tree, graph, hypergraph,
+  matrix (facts × attrs) and logic. The matrix and graph read back to the attributes and
+  references they came from.
+
 - `blame STORE NAME [--json]`: which version on the store's HEAD chain last changed each field,
   walking the parent links from HEAD.
 

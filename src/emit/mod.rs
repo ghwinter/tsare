@@ -6,3 +6,4 @@ pub mod graph;
 pub mod growth;
 pub mod mapping;
 pub mod outline;
+pub mod views;

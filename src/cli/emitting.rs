@@ -502,3 +502,55 @@ pub(crate) fn cmd_fmt(path: &Path) -> i32 {
     print!("{}", crate::format::document(&loaded.decls));
     0
 }
+
+/// Five projections of one document: tree, graph, hypergraph, matrix and logic.
+pub(crate) fn cmd_views(path: &Path, json: bool) -> i32 {
+    use crate::json::Json as J;
+
+    let loaded = match load(path) {
+        Ok(loaded) => loaded,
+        Err(error) => return fail(error),
+    };
+    let views = crate::views::json(&loaded.decls);
+    if json {
+        println!("{}", crate::json::serialize(&views));
+        return 0;
+    }
+    fn count(value: &J) -> usize {
+        value.as_arr().map(|items| items.len()).unwrap_or(0)
+    }
+    let part = |name: &str| -> Option<&J> { views.get(name) };
+    let nodes = part("graph")
+        .and_then(|graph| graph.get("nodes"))
+        .map(count)
+        .unwrap_or(0);
+    let edges = part("graph")
+        .and_then(|graph| graph.get("edges"))
+        .map(count)
+        .unwrap_or(0);
+    let concepts = part("hypergraph")
+        .and_then(|hyper| hyper.get("hyperedges"))
+        .map(count)
+        .unwrap_or(0);
+    let rows = part("matrix")
+        .and_then(|matrix| matrix.get("rows"))
+        .map(count)
+        .unwrap_or(0);
+    let attributes = part("matrix")
+        .and_then(|matrix| matrix.get("attributes"))
+        .map(count)
+        .unwrap_or(0);
+    let rules = part("logic")
+        .and_then(|logic| logic.get("rules"))
+        .map(count)
+        .unwrap_or(0);
+    println!(
+        "tree: {} declarations",
+        part("tree").map(count).unwrap_or(0)
+    );
+    println!("graph: {nodes} nodes, {edges} edges");
+    println!("hypergraph: {concepts} concepts");
+    println!("matrix: {rows} rows, {attributes} attributes");
+    println!("logic: {rules} rules");
+    0
+}
