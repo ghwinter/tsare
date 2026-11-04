@@ -671,6 +671,39 @@ pub(crate) fn cmd_replay(path: &Path, diff: bool) -> Outcome {
 
 /// The loop's one line: the decision, the epistemic counts, and the next question.  Errors decide
 /// the exit code; warnings are reported but do not.
+/// What a speaking agent needs beyond the ledger's state: the shape of the next answer, whether
+/// the ledger contradicts itself, and whether two declarations say the same thing.  The plugin's
+/// brief reads these; keeping them out of `status` proper would cost a second process per change.
+fn briefed(value: J, decls: &[tsare_lang::syntax::Decl]) -> J {
+    let J::Obj(mut fields) = value else {
+        return value;
+    };
+    let program = crate::program::Program::new(decls);
+    if let Some(decision) = crate::impact::decisions(&program).first() {
+        fields.push(("needs".to_string(), J::Str(decision.needs.clone())));
+    }
+    let answer = tsare_proto::sat::solve(decls);
+    fields.push((
+        "conflict".to_string(),
+        match answer.core.first() {
+            Some(line) => J::Str(line.clone()),
+            None => J::Null,
+        },
+    ));
+    if let Some(pair) = tsare_proto::index::nearest(decls, 1).into_iter().next() {
+        if pair.score >= 0.8 {
+            fields.push((
+                "near".to_string(),
+                J::Str(format!(
+                    "{} ~ {} ({:.2})",
+                    pair.left, pair.right, pair.score
+                )),
+            ));
+        }
+    }
+    J::Obj(fields)
+}
+
 pub(crate) fn cmd_status(
     path: &Path,
     json: bool,
@@ -685,9 +718,15 @@ pub(crate) fn cmd_status(
         Some(limit) => crate::status::report_with_budget(&loaded.decls, limit),
         None => crate::status::report(&loaded.decls),
     };
-    let mut sink = crate::out::Stdout;
-    crate::out::render(&report, json, &mut sink);
-    let rendered_json = crate::json::serialize(&report.json());
+    let value = briefed(report.json(), &loaded.decls);
+    match json {
+        true => println!("{}", crate::json::serialize(&value)),
+        false => {
+            let mut sink = crate::out::Stdout;
+            crate::out::render(&report, false, &mut sink);
+        }
+    }
+    let rendered_json = crate::json::serialize(&value);
     let unfinished = report
         .budget
         .as_ref()

@@ -260,6 +260,13 @@ async function statusLedger(config, cwd) {
       typeof report.question === 'string' && report.question.length > 0 ? report.question : null,
     first: report.first && typeof report.first === 'object' ? report.first : null,
     debt: report.debt && typeof report.debt === 'object' ? report.debt : null,
+    // what the checker can say beyond the state: the shape of the next answer, whether the claims
+    // contradict each other, and whether two of them say the same thing.  Optional: an older
+    // binary just omits them.
+    needs: typeof report.needs === 'string' && report.needs.length > 0 ? report.needs : null,
+    conflict:
+      typeof report.conflict === 'string' && report.conflict.length > 0 ? report.conflict : null,
+    near: typeof report.near === 'string' && report.near.length > 0 ? report.near : null,
   }
 }
 
@@ -391,17 +398,23 @@ export function apply(ctx, raw) {
       )
     }
     if (status.question) {
+      const answer = status.needs ? ` — answer: ${status.needs}` : ''
       return oneLine(
-        `tsare[${config.level}]: ${status.decision}; ${tally}; next question — ${status.question} (ledger ${config.ledger})`,
+        `tsare[${config.level}]: ${status.decision}; ${tally}; next question — ${status.question}${answer} (ledger ${config.ledger})`,
         config.briefMaxChars,
       )
     }
     // `terse` states the state and nothing else; `full` also tells the model what to do next.
     // The difference is one sentence on every step, which is what the cost experiment varies.
+    // The reasoning hints ride along when the checker found something to reason about: a
+    // contradiction between the claims, or two declarations that say the same thing.
+    const hints =
+      (status.conflict ? ` Your claims contradict: ${status.conflict}.` : '') +
+      (status.near ? ` Two declarations say the same thing: ${status.near}.` : '')
     const tail =
       config.briefStyle === 'terse'
-        ? ''
-        : ' Record a claim with evidence, or say unchecked with the reason.'
+        ? hints
+        : hints + ' Record a claim with evidence, or say unchecked with the reason.'
     return oneLine(
       `tsare[${config.level}]: ${status.decision}; ${tally}; ledger clean, ${status.claims} claim(s); nothing to ask.${tail}`,
       config.briefMaxChars,

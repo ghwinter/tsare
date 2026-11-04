@@ -13,7 +13,7 @@ choice at three seams DSH owns:
 | seam | behaviour |
 | --- | --- |
 | `agent/turn-stopping` | the turn is about to close; the plugin runs `tsare check LEDGER --json` and, if the ledger is not checkable, calls `agent.steer(...)` with the diagnostics. The machine runs another step: **the turn cannot close while the checker objects**, up to `steerLimit` times. |
-| `systemPrompt.context` | one standing line from `tsare status --json`: the decision, the verified/inferred/unverified counts, and the ledger's **next question** or its first error, replaced in place and recomputed only when the ledger changes. When `traceFile` is set, that same call appends one replayable trace run. This is the engine; the gate is the brake. |
+| `systemPrompt.context` | one standing line from `tsare status --json`: the decision, the verified/inferred/unverified counts, and the ledger's **next question** or its first error, replaced in place and recomputed only when the ledger changes. The same call now also carries three reasoning hints when they exist: `needs` (the shape of the answer the next decision wants), `conflict` (two claims that cannot both hold, with the rule that forces it) and `near` (two declarations that say the same thing) | When `traceFile` is set, that same call appends one replayable trace run. This is the engine; the gate is the brake. |
 | `tools/post-execute` | for the tools named in `remindAfterTools`, a dirty ledger rides along as context on the next request; for arguments matching `remindWhen`, one reminder that the result is a claim, once per ledger state. It never blocks the tool. |
 | `agent/created` | a session that starts without a ledger gets one: a single `note` declaration, which is a valid document. |
 
